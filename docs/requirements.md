@@ -9,7 +9,7 @@ A daily mock-interview practice tool. You load your own Q&A notes, an animated i
 | Document formats | .md, .txt, .docx, .pdf |
 | Repository | Private to start |
 | Main answer mode | Voice, with typing as fallback |
-| Language / accent | English (India), `en-IN` for voice and recognition |
+| Language / accent | Default English (India), `en-IN`. Separate pickers for the interviewer voice and the user's speech: en-IN, en-US, en-GB |
 | Devices | Laptop and phone (mobile-friendly layout) |
 
 ## Goals
@@ -86,6 +86,8 @@ A daily mock-interview practice tool. You load your own Q&A notes, an animated i
 **Extract Q&A:** "Extract every interview question and its reference answer from this text. Return only JSON: `[{"question": "...", "answer": "...", "topic": "..."}]`."
 
 **Evaluate answer:** "You are a {persona} interviewer for an Engineering Manager role. Compare the candidate's answer with the reference answer. Return only JSON: `{"score": 0-10, "covered": [...], "missed": [...], "tip": "...", "spoken_feedback": "two short sentences"}`."
+
+**Voice answers:** answers may come from speech recognition, so the evaluate prompt must say: "The answer is a voice transcript and may contain misheard words or misspellings. Judge the meaning, not the spelling, and do not penalise recognition errors." The user can also edit the transcript before submitting.
 
 ## Privacy and GitHub notes
 

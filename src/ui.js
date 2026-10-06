@@ -1,7 +1,11 @@
 // UI: wires the page together. For now: avatar test buttons, a spoken sample
 // question, and voice answers with a live transcript.
 import { createAvatar } from './avatar.js';
-import { speak, stopSpeaking, pickVoice, createRecognizer, isRecognitionSupported } from './speech.js';
+import {
+  speak, stopSpeaking, pickVoice, createRecognizer, isRecognitionSupported,
+  LANGUAGES, setVoiceLang, setRecognitionLang,
+} from './speech.js';
+import { loadSettings, saveSettings } from './storage.js';
 
 const avatar = createAvatar(document.getElementById('avatar'));
 const caption = document.getElementById('caption');
@@ -11,6 +15,24 @@ const micBtn = document.getElementById('mic-btn');
 const speakBtn = document.getElementById('speak-btn');
 
 const SAMPLE_QUESTION = 'Tell me about a time you had to handle a conflict in your team.';
+
+/* ---------- Language pickers (saved in this browser) ---------- */
+const settings = loadSettings();
+const voiceSelect = document.getElementById('voice-lang');
+const recogSelect = document.getElementById('recognition-lang');
+
+function setupPicker(select, key, apply) {
+  select.innerHTML = LANGUAGES.map((l) => `<option value="${l.code}">${l.label}</option>`).join('');
+  select.value = settings[key];
+  apply(select.value);
+  select.addEventListener('change', () => {
+    settings[key] = select.value;
+    apply(select.value);
+    saveSettings(settings);
+  });
+}
+setupPicker(voiceSelect, 'voiceLang', setVoiceLang);
+setupPicker(recogSelect, 'recognitionLang', setRecognitionLang);
 
 // Highlight the pressed test button (or none, when speech drives the avatar)
 const testButtons = document.querySelectorAll('.state-test button[data-state]');

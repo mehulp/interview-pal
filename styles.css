@@ -122,3 +122,7 @@ button.big:focus-visible { outline: 3px solid #ffb703; outline-offset: 2px; }
 .state-test button:focus-visible { outline: 3px solid #ffb703; outline-offset: 2px; }
 
 .status { min-height: 1.5em; margin: 8px 0 0; font-size: 0.95rem; color: #555; }
+
+.lang-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.lang-row label { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; flex: 1; min-width: 140px; }
+.lang-row select { font: inherit; padding: 6px; border: 1px solid #c5cad8; border-radius: 8px; background: #fff; }

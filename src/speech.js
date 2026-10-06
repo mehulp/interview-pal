@@ -1,7 +1,18 @@
 // Speech: text-to-speech (interviewer voice) and speech recognition (your answer).
 // Both use built-in browser features. Nothing is sent to any server by this file.
 
-const LANG = 'en-IN';
+// Accents offered in the language pickers. en-IN is the default.
+export const LANGUAGES = [
+  { code: 'en-IN', label: 'English (India)' },
+  { code: 'en-US', label: 'English (US)' },
+  { code: 'en-GB', label: 'English (UK)' },
+];
+
+// Interviewer voice and your own speech can use different accents.
+let voiceLang = 'en-IN';
+let recognitionLang = 'en-IN';
+export function setVoiceLang(code) { voiceLang = code; }
+export function setRecognitionLang(code) { recognitionLang = code; }
 
 /* ---------- Text to speech ---------- */
 
@@ -18,12 +29,12 @@ function loadVoices() {
   });
 }
 
-// Prefer an en-IN voice, then any English voice, then the browser default.
+// Prefer a voice for the chosen accent, then any English voice, then the browser default.
 export async function pickVoice() {
   const voices = await loadVoices();
   const norm = (v) => v.lang.replace('_', '-').toLowerCase(); // Android uses en_IN
   return (
-    voices.find((v) => norm(v) === 'en-in') ||
+    voices.find((v) => norm(v) === voiceLang.toLowerCase()) ||
     voices.find((v) => norm(v).startsWith('en')) ||
     null
   );
@@ -54,7 +65,7 @@ export async function speak(text, { onStart, onEnd } = {}) {
     if (token !== speakToken) break;
     await new Promise((resolve) => {
       const u = new SpeechSynthesisUtterance(chunk);
-      u.lang = voice ? voice.lang : LANG;
+      u.lang = voice ? voice.lang : voiceLang;
       if (voice) u.voice = voice;
       u.onend = resolve;
       u.onerror = resolve;
@@ -94,7 +105,6 @@ export function createRecognizer({ onText, onEnd, onError }) {
   if (!Recognition) return null;
 
   const rec = new Recognition();
-  rec.lang = LANG;
   rec.continuous = true; // keep listening through short pauses
   rec.interimResults = true; // show words while you are still speaking
 
@@ -118,6 +128,7 @@ export function createRecognizer({ onText, onEnd, onError }) {
   return {
     start() {
       finalText = '';
+      rec.lang = recognitionLang; // read now, so a changed setting applies
       try {
         rec.start();
       } catch {
