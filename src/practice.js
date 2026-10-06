@@ -130,6 +130,10 @@ export function initPractice(avatar) {
 
   /* ---------- Speaking ---------- */
 
+  // Wait a moment, e.g. to let you settle before the first question.
+  const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const START_DELAY_MS = 2000;
+
   // The interviewer says something; the avatar's mouth moves while it plays.
   async function say(text) {
     if (!text) return;
@@ -176,6 +180,14 @@ export function initPractice(avatar) {
     status.textContent = '';
     timerEl.hidden = true;
     setButtons();
+
+    // A short breather after pressing Start, before the interviewer speaks
+    if (kind === 'opening') {
+      status.textContent = 'Get ready…';
+      await pause(START_DELAY_MS);
+      if (run !== runId) return; // you ended the session during the pause
+      status.textContent = '';
+    }
 
     const lead = kind === 'none' ? '' : pickPhrase(options.difficulty, kind);
     $('interviewer-line').textContent = lead;
