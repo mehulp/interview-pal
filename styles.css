@@ -42,7 +42,8 @@ body {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
-#avatar { display: block; width: 100%; max-width: 240px; margin: 0 auto; }
+#avatar { width: 100%; max-width: 240px; margin: 0 auto; }
+.avatar { display: block; width: 100%; color: var(--accent); }
 .caption { text-align: center; min-height: 3em; }
 
 textarea {
@@ -67,3 +68,55 @@ button.big {
   cursor: pointer;
 }
 button.big:focus-visible { outline: 3px solid #ffb703; outline-offset: 2px; }
+
+/* ---------- Avatar states ---------- */
+/* Each part is scaled around its own centre */
+.avatar .av-eye, .avatar .av-mouth, .avatar .av-head, .avatar .av-ring, .avatar .av-brows {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* Default (idle): smile visible, open mouth and ring hidden */
+.av-mouth { opacity: 0; }
+.av-ring { opacity: 0; }
+
+/* Idle: gentle breathing and blinking */
+.avatar--idle .av-head { animation: av-breathe 4s ease-in-out infinite; }
+.avatar--idle .av-eye, .avatar--listening .av-eye { animation: av-blink 5s infinite; }
+
+/* Talking: open mouth that opens and closes like speech */
+.avatar--talking .av-smile { opacity: 0; }
+.avatar--talking .av-mouth { opacity: 1; animation: av-talk 0.45s ease-in-out infinite; }
+.avatar--talking .av-eye { animation: av-blink 5s infinite; }
+
+/* Listening: raised brows, head tilt, pulsing ring */
+.avatar--listening .av-brows { transform: translateY(-5px); }
+.avatar--listening .av-head { transform: rotate(-4deg); }
+.avatar--listening .av-ring { opacity: 1; animation: av-pulse 1.6s ease-out infinite; }
+
+@keyframes av-breathe { 50% { transform: scale(1.015); } }
+@keyframes av-blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(0.1); } }
+@keyframes av-talk { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
+@keyframes av-pulse { 0% { transform: scale(0.96); opacity: 0.9; } 100% { transform: scale(1.04); opacity: 0.2; } }
+
+/* Reduced motion: no animation at all. The states still look different
+   (open mouth, raised brows + tilt + ring), just without movement. */
+@media (prefers-reduced-motion: reduce) {
+  .avatar *, .avatar { animation: none !important; transition: none !important; }
+  .avatar--talking .av-mouth { transform: scaleY(0.7); }
+  .avatar--listening .av-ring { opacity: 0.8; }
+}
+
+/* ---------- Test control ---------- */
+.state-test { display: flex; gap: 8px; justify-content: center; margin-top: 12px; }
+.state-test button {
+  padding: 8px 12px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+}
+.state-test button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.state-test button:focus-visible { outline: 3px solid #ffb703; outline-offset: 2px; }

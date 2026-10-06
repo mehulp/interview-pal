@@ -14,13 +14,15 @@
   <main class="app-main">
     <!-- Placeholder avatar: a simple SVG face. Real states come in build step 2. -->
     <section class="avatar-panel" aria-label="Interviewer">
-      <svg id="avatar" viewBox="0 0 200 200" role="img" aria-label="Interviewer avatar">
-        <circle cx="100" cy="100" r="80" fill="#f2c9a0"/>
-        <circle cx="72" cy="85" r="8" fill="#333"/>
-        <circle cx="128" cy="85" r="8" fill="#333"/>
-        <path d="M70 130 Q100 150 130 130" stroke="#333" stroke-width="5" fill="none" stroke-linecap="round"/>
-      </svg>
+      <div id="avatar"></div>
       <p class="caption" aria-live="polite">Hello! Questions will appear here as captions.</p>
+
+      <!-- Test control: switch the avatar state by hand (temporary, for development) -->
+      <div class="state-test" role="group" aria-label="Avatar state test">
+        <button type="button" data-state="idle" aria-pressed="true">Idle</button>
+        <button type="button" data-state="talking" aria-pressed="false">Talking</button>
+        <button type="button" data-state="listening" aria-pressed="false">Listening</button>
+      </div>
     </section>
 
     <section class="controls" aria-label="Answer controls">
@@ -31,5 +33,7 @@
       </div>
     </section>
   </main>
+
+  <script type="module" src="src/ui.js"></script>
 </body>
 </html>
