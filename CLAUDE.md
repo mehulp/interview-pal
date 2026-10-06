@@ -13,12 +13,24 @@ Build the app described in `docs/requirements.md`. Read that file first; it is t
 
 - Never commit an API key, and never put one in code. The key is entered in Settings and kept in localStorage.
 - Never commit personal notes. Keep `my-notes/` in `.gitignore`.
-- Documents and answers go only to the Anthropic API. No analytics, no other servers.
+- Documents and answers go only to the Anthropic API, and only in Coach mode. Practice mode makes no network calls to any AI service. No analytics, no other servers.
+- Practice mode is the default and must work with no API key. Coach mode stays disabled, with a note pointing to Settings, until a key is saved.
+- In Practice mode, documents are read with the rule-based parser in `src/parser.js`, never with AI. "Tidy up with AI" is an optional Coach-mode button only.
+- Interviewer phrases and tone for each difficulty live in `src/phrases.js`, not scattered through the code.
 - Voice defaults to `en-IN`; fall back gracefully if that voice is missing.
 - Typing must always work, because speech recognition is unreliable on some browsers.
 - Respect `prefers-reduced-motion` in avatar animations.
 
-## First task
+## Modes
+
+The app has two modes, described in full in `docs/requirements.md` (see "Modes" and "Build order"):
+
+- **Practice** (default, no AI): spoken questions with serial or random order, a question level filter, difficulty (timer, tone, speech rate, repeat and skip rules) and optional self-marking.
+- **Coach** (AI, needs an API key): everything in Practice plus scoring, feedback, follow-ups and weak-area ordering.
+
+The build order was updated: 4 parser and review screen, 5 Practice loop, 6 mode picker, settings and Claude client, 7 Coach mode, 8 summary and history, 9 polish and deployment. Steps 1 to 3 are done. Keep to one step at a time and wait for my go-ahead after each.
+
+## First task (done)
 
 1. Create the folder structure from the Modules table in the requirements, plus `.gitignore`, `README.md` and `LICENSE` (MIT).
 2. Create `index.html` with a basic responsive layout and a placeholder avatar.
