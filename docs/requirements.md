@@ -82,6 +82,7 @@ Until an API key is saved in Settings, Coach mode is disabled in the mode picker
 12. **Realistic interviewer (video clips).** The user supplies short video clips of a realistic person, such as AI-generated clips or licensed stock footage. The app plays them locally. No paid service, and nothing is uploaded.
     - Each interviewer is a folder `assets/interviewers/<name>/` with `listening.mp4` (played while the user answers and when idle) and `talking.mp4` (played while the interviewer speaks). A small list file, `assets/interviewers/interviewers.json`, names the interviewers.
     - Clips loop smoothly: two copies of a clip take turns and cross-fade at the seam, so a clip does not need to be a perfect loop. Switching between listening and talking also cross-fades.
+    - **Photo frames (alternative to clips).** An interviewer can instead be a small set of still photos of the same person with the same framing: a neutral frame, an optional second neutral frame, an eyes-closed frame for blinking, and one or more mouth-open frames for talking. The app swaps between them with short fades: blinks and slow expression changes while listening, and quick mouth-open and closed frames while the interviewer speaks. Which photo plays which role is set in `interviewers.json`.
     - The clips are muted. The voice is the browser's text-to-speech, so the mouth does not match the exact words. This is accepted.
     - The user can choose the interviewer on the setup screen, and several interviewers can be installed (for example a friendly one and a stern one). If no clips exist, or they fail to load, the drawn face is used and a message says so.
     - With "reduce motion" switched on, clips do not play. A still frame is shown for each state.
@@ -173,7 +174,7 @@ An answer is optional in Practice mode, because the interviewer only needs the q
 ## Privacy and GitHub notes
 
 - The camera (self-view) is used only to show a picture on your own screen. Frames are never recorded, stored or sent anywhere.
-- Interviewer clips are local files in `assets/interviewers/`. Use AI-generated people or footage you have the right to use. Do not use a real person's likeness without permission. Keep each clip small (under about 10 MB), because they are committed with the project if you add them.
+- Interviewer clips and photos are local files in `assets/interviewers/`. Use AI-generated people or images you have the right to use, and do not use a real person's likeness without permission. The folders inside `assets/interviewers/` are git-ignored, so your own images and clips are not committed or published by accident; only the README and `interviewers.json` are tracked. Keep clips small (under about 10 MB each).
 - Keep personal Q&A notes out of the repo. They are loaded in the browser and never need to be committed. A `my-notes/` folder is git-ignored for local use.
 - Voice input uses the browser's speech recognition. In Chrome this sends the audio to Google's speech service, which is outside this app's control. Typing sends nothing anywhere.
 - GitHub Pages on a **private** repo needs a paid GitHub plan. On a free plan, either make the repo public (safe, because it holds no keys or notes) or run the app locally with `python3 -m http.server`.

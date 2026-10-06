@@ -21,7 +21,7 @@ Build the app described in `docs/requirements.md`. Read that file first; it is t
 - Typing must always work, because speech recognition is unreliable on some browsers.
 - Respect `prefers-reduced-motion` in avatar animations, including the video clips (show a still frame instead of playing).
 - Camera self-view stays on screen only. Never record, store, upload or analyse camera frames, never request the microphone for it, and stop the camera when the session ends.
-- Interviewer video clips are local files supplied by the user. No paid or third-party avatar service, and no uploading anything for the avatar.
+- Interviewer video clips and photos are local files supplied by the user, and are git-ignored (never commit them). No paid or third-party avatar service, and no uploading anything for the avatar.
 
 ## Modes
 

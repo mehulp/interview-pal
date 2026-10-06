@@ -9,3 +9,6 @@ node_modules/
 
 # Exported question sets contain personal notes
 interviewpal-sets-*.json
+
+# Your own interviewer clips and photos (private)
+assets/interviewers/*/
