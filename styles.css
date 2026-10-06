@@ -120,3 +120,5 @@ button.big:focus-visible { outline: 3px solid #ffb703; outline-offset: 2px; }
 }
 .state-test button[aria-pressed="true"] { background: var(--accent); color: #fff; }
 .state-test button:focus-visible { outline: 3px solid #ffb703; outline-offset: 2px; }
+
+.status { min-height: 1.5em; margin: 8px 0 0; font-size: 0.95rem; color: #555; }

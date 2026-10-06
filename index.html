@@ -12,10 +12,14 @@
   </header>
 
   <main class="app-main">
-    <!-- Placeholder avatar: a simple SVG face. Real states come in build step 2. -->
     <section class="avatar-panel" aria-label="Interviewer">
       <div id="avatar"></div>
-      <p class="caption" aria-live="polite">Hello! Questions will appear here as captions.</p>
+      <p class="caption" id="caption" aria-live="polite">Hello! Questions will appear here as captions.</p>
+
+      <!-- Demo (temporary): hear the interviewer voice -->
+      <div class="state-test">
+        <button type="button" id="speak-btn">🔊 Speak sample question</button>
+      </div>
 
       <!-- Test control: switch the avatar state by hand (temporary, for development) -->
       <div class="state-test" role="group" aria-label="Avatar state test">
@@ -26,9 +30,10 @@
     </section>
 
     <section class="controls" aria-label="Answer controls">
-      <textarea placeholder="Type your answer here (always available)" rows="4"></textarea>
+      <textarea id="answer" placeholder="Type your answer here (always available)" rows="4"></textarea>
+      <p class="status" id="status" aria-live="polite"></p>
       <div class="buttons">
-        <button type="button" class="big">🎤 Answer</button>
+        <button type="button" class="big" id="mic-btn">🎤 Answer</button>
         <button type="button" class="big">Next</button>
       </div>
     </section>
