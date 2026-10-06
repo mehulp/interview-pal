@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>InterviewPal</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <h1>InterviewPal</h1>
+  </header>
+
+  <main class="app-main">
+    <!-- Placeholder avatar: a simple SVG face. Real states come in build step 2. -->
+    <section class="avatar-panel" aria-label="Interviewer">
+      <svg id="avatar" viewBox="0 0 200 200" role="img" aria-label="Interviewer avatar">
+        <circle cx="100" cy="100" r="80" fill="#f2c9a0"/>
+        <circle cx="72" cy="85" r="8" fill="#333"/>
+        <circle cx="128" cy="85" r="8" fill="#333"/>
+        <path d="M70 130 Q100 150 130 130" stroke="#333" stroke-width="5" fill="none" stroke-linecap="round"/>
+      </svg>
+      <p class="caption" aria-live="polite">Hello! Questions will appear here as captions.</p>
+    </section>
+
+    <section class="controls" aria-label="Answer controls">
+      <textarea placeholder="Type your answer here (always available)" rows="4"></textarea>
+      <div class="buttons">
+        <button type="button" class="big">🎤 Answer</button>
+        <button type="button" class="big">Next</button>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

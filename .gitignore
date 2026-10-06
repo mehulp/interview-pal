@@ -1,0 +1,8 @@
+my-notes/
+.env
+*.key
+.DS_Store
+node_modules/
+
+# Windows download markers
+*:Zone.Identifier
