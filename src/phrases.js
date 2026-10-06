@@ -57,3 +57,10 @@ export function pickPhrase(difficulty, kind) {
   const list = PHRASES[difficulty]?.[kind] || [];
   return list[Math.floor(Math.random() * list.length)] || '';
 }
+
+// The tone Claude is asked to use when marking answers in Coach mode.
+export const TONE = {
+  easy: 'warm and encouraging',
+  medium: 'neutral and professional',
+  hard: 'strict and challenging, but fair',
+};

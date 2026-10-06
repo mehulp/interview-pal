@@ -190,3 +190,11 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .mode-opt span { font-size: 0.95rem; }
 .card h2.spaced { margin-top: 20px; }
 #screen-settings .buttons { margin: 8px 0; }
+
+/* ---------- Coach feedback ---------- */
+#feedback h2 { margin: 0 0 8px; font-size: 1.1rem; }
+#feedback h3 { margin: 12px 0 4px; font-size: 0.95rem; }
+#feedback ul { margin: 0; padding-left: 1.2em; }
+#feedback .score { font-size: 1.6rem; font-weight: 700; margin: 0 0 4px; }
+#fb-buttons { margin: 12px 0 8px; }
+#fb-error-text { color: #c92a2a; }

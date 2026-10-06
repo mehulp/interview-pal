@@ -25,6 +25,7 @@ export function initPractice(avatar) {
   const optCount = $('opt-count');
   const optEasyTimer = $('opt-easy-timer');
   const optSelfMark = $('opt-selfmark');
+  const optCoachSpeak = $('opt-coach-speak');
   const startBtn = $('start-btn');
   const modeRadios = document.querySelectorAll('input[name="mode"]');
   const modeCoach = $('mode-coach');
@@ -69,6 +70,7 @@ export function initPractice(avatar) {
   optCount.value = settings.practiceCount;
   optEasyTimer.checked = settings.practiceEasyTimer;
   optSelfMark.checked = settings.practiceSelfMark;
+  optCoachSpeak.checked = settings.coachSpeak;
 
   const selectedMode = () => document.querySelector('input[name="mode"]:checked').value;
   modeRadios.forEach((r) => { r.checked = r.value === settings.mode; });
@@ -82,6 +84,7 @@ export function initPractice(avatar) {
       count: Math.max(1, parseInt(optCount.value, 10) || 10),
       easyTimer: optEasyTimer.checked,
       selfMark: optSelfMark.checked,
+      coachSpeak: optCoachSpeak.checked,
     };
   }
 
@@ -92,7 +95,12 @@ export function initPractice(avatar) {
     modeCoach.disabled = !hasKey;
     if (!hasKey && modeCoach.checked) document.querySelector('input[value="practice"]').checked = true;
     $('mode-note').hidden = hasKey;
-    startBtn.textContent = selectedMode() === 'coach' ? 'Start coaching' : 'Start practice';
+    const coach = selectedMode() === 'coach';
+    startBtn.textContent = coach ? 'Start coaching' : 'Start practice';
+    // Coach mode: the AI marks you, so self-marking is replaced by the "speak feedback" choice
+    $('selfmark-row').hidden = coach;
+    $('coach-speak-row').hidden = !coach;
+    $('coach-note').hidden = !coach;
 
     const o = readOptions();
     const all = usableQuestions(loadQuestions());
@@ -106,7 +114,7 @@ export function initPractice(avatar) {
     startBtn.disabled = matching.length === 0;
     $('setup-status').textContent = '';
   }
-  [optOrder, optLevel, optDifficulty, optCount, optEasyTimer, optSelfMark, ...modeRadios].forEach((control) =>
+  [optOrder, optLevel, optDifficulty, optCount, optEasyTimer, optSelfMark, optCoachSpeak, ...modeRadios].forEach((control) =>
     control.addEventListener('change', refreshSetup));
 
   function showSetup() {
@@ -126,11 +134,11 @@ export function initPractice(avatar) {
       practiceCount: options.count,
       practiceEasyTimer: options.easyTimer,
       practiceSelfMark: options.selfMark,
+      coachSpeak: options.coachSpeak,
     });
 
-    if (options.mode === 'coach') {
-      // Coach mode itself is built in the next step
-      $('setup-status').textContent = 'Coach mode is coming in the next build step. Use Practice for now.';
+    if (options.mode === 'coach' && !getApiKey()) {
+      $('setup-status').textContent = 'Coach mode needs an API key. Add one in Settings.';
       return;
     }
 
@@ -172,6 +180,7 @@ export function initPractice(avatar) {
   function showAnswerArea() {
     $('answer-area').hidden = false;
     $('reveal').hidden = true;
+    $('feedback').hidden = true;
     $('finished').hidden = true;
   }
 
@@ -251,7 +260,7 @@ export function initPractice(avatar) {
     stopListening();
     hush();
 
-    session.record({
+    const record = {
       question: q.question,
       topic: q.topic,
       level: q.level,
@@ -260,7 +269,8 @@ export function initPractice(avatar) {
       timedOut: reason === 'timeup',
       mark: null,
       seconds: phase === 'answering' ? Math.round((Date.now() - startedAt) / 1000) : 0,
-    });
+    };
+    session.record(record);
 
     const wantsMark = options.selfMark && reason !== 'skip' && q.answer;
     if (reason === 'timeup') {
@@ -272,6 +282,10 @@ export function initPractice(avatar) {
       if (run !== runId) return;
     }
 
+    if (options.mode === 'coach' && reason !== 'skip') {
+      coachMark(record, q); // AI marking (see below)
+      return;
+    }
     if (wantsMark) {
       phase = 'marking';
       $('reference').textContent = q.answer;
@@ -281,6 +295,85 @@ export function initPractice(avatar) {
     }
     goNext(reason === 'timeup' ? 'none' : 'next');
   }
+
+  /* ---------- Coach mode: AI marking ---------- */
+  let marking = null; // { record, q } for the answer being marked, so "Try again" can repeat it
+
+  // Show one of three views in the feedback panel: loading, error or result.
+  function setFeedbackView(view) {
+    $('fb-loading').hidden = view !== 'loading';
+    $('fb-error').hidden = view !== 'error';
+    $('fb-result').hidden = view !== 'result';
+    $('fb-buttons').hidden = view !== 'result';
+  }
+
+  const bulletList = (items) => items.length ? items : ['(nothing noted)'];
+  function fillList(id, items) {
+    $(id).replaceChildren(...bulletList(items).map((text) => {
+      const li = document.createElement('li');
+      li.textContent = text; // textContent: Claude's text can't inject HTML
+      return li;
+    }));
+  }
+
+  function showFeedback(record) {
+    $('fb-score').textContent = record.score;
+    $('fb-note').textContent = record.noAnswer
+      ? 'No answer was given, so no AI marking was done.'
+      : record.noReference ? 'No reference answer is saved for this question, so it was judged on general merit.' : '';
+    fillList('fb-covered', record.covered);
+    fillList('fb-missed', record.missed);
+    $('fb-tip').textContent = record.tip;
+    $('fb-next').textContent = session.position() === session.total ? 'Finish' : 'Next question';
+    setFeedbackView('result');
+  }
+
+  async function coachMark(record, q) {
+    const run = runId;
+    marking = { record, q };
+    phase = 'feedback';
+    $('answer-area').hidden = true;
+    $('reveal').hidden = true;
+    $('feedback').hidden = false;
+    setFeedbackView('loading');
+
+    // Nothing to mark: score 0 without calling the AI (saves cost)
+    if (!record.answer) {
+      Object.assign(record, { score: 0, covered: [], missed: [], tip: 'Try to give at least a short answer next time.', spoken: '', noAnswer: true });
+      showFeedback(record);
+      return;
+    }
+
+    const claude = await import('./claude.js'); // loaded only in Coach mode
+    try {
+      const result = await claude.evaluateAnswer({
+        question: q.question,
+        reference: q.answer,
+        answer: record.answer,
+        difficulty: options.difficulty,
+      });
+      if (run !== runId) return; // you ended the session while it was marking
+      Object.assign(record, result, { noReference: !q.answer?.trim() });
+      showFeedback(record);
+      if (options.coachSpeak && record.spoken) say(record.spoken);
+    } catch (err) {
+      if (run !== runId) return;
+      $('fb-error-text').textContent = err instanceof claude.ClaudeError
+        ? err.message
+        : 'Something went wrong while marking. You can try again or skip the feedback.';
+      setFeedbackView('error');
+    }
+  }
+
+  $('fb-retry').addEventListener('click', () => { if (phase === 'feedback') coachMark(marking.record, marking.q); });
+  $('fb-skip').addEventListener('click', () => {
+    if (phase !== 'feedback') return;
+    marking.record.feedbackSkipped = true; // stays in the list, without a score
+    hush();
+    goNext('next');
+  });
+  $('fb-next').addEventListener('click', () => { if (phase === 'feedback') { hush(); goNext('next'); } });
+  $('fb-end').addEventListener('click', () => finishSession(false));
 
   // Ask the next question, or finish if that was the last one.
   function goNext(kind) {
@@ -323,20 +416,25 @@ export function initPractice(avatar) {
     const results = session.results;
     const skipped = results.filter((r) => r.skipped).length;
     const timedOut = results.filter((r) => r.timedOut).length;
+    const scored = results.filter((r) => r.score != null);
     $('progress').textContent = '';
     $('question-text').textContent = '';
     $('interviewer-line').textContent = completed ? pickPhrase(options.difficulty, 'closing') : 'Session ended.';
 
     $('finished-summary').textContent =
-      `${results.length} of ${session.total} question(s) asked. ${skipped} skipped, ${timedOut} ran out of time.`;
+      `${results.length} of ${session.total} question(s) asked. ${skipped} skipped, ${timedOut} ran out of time.` +
+      (scored.length ? ` Average score: ${(scored.reduce((sum, r) => sum + r.score, 0) / scored.length).toFixed(1)} / 10.` : '');
     $('finished-list').replaceChildren(...results.map((r) => {
-      const note = r.skipped ? 'skipped' : r.mark ? MARK_TEXT[r.mark] : r.timedOut ? 'time up' : 'answered';
+      const note = r.skipped ? 'skipped'
+        : r.score != null ? `${r.score}/10${r.timedOut ? ', time up' : ''}`
+        : r.mark ? MARK_TEXT[r.mark] : r.timedOut ? 'time up' : 'answered';
       const li = document.createElement('li');
       li.textContent = `${r.question} (${note})`; // textContent: notes can't inject HTML
       return li;
     }));
     $('answer-area').hidden = true;
     $('reveal').hidden = true;
+    $('feedback').hidden = true;
     $('finished').hidden = false;
 
     if (completed) await say($('interviewer-line').textContent);

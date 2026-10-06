@@ -15,6 +15,7 @@ const DEFAULTS = {
   practiceCount: 10,
   practiceSelfMark: false,
   practiceEasyTimer: false,
+  coachSpeak: true, // speak the AI feedback aloud
 };
 
 export function loadSettings() {

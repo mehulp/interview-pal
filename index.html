@@ -64,9 +64,15 @@
       <label class="check" id="easy-timer-row">
         <input type="checkbox" id="opt-easy-timer"> Use a timer on Easy (about 5 minutes per answer)
       </label>
-      <label class="check">
+      <label class="check" id="selfmark-row">
         <input type="checkbox" id="opt-selfmark"> After each answer, show my reference answer and let me mark myself
       </label>
+      <label class="check" id="coach-speak-row" hidden>
+        <input type="checkbox" id="opt-coach-speak"> Speak the feedback aloud (it is always shown as text too)
+      </label>
+      <p class="hint" id="coach-note" hidden>
+        Coach mode sends each question, your reference answer and your answer to the Anthropic API for marking.
+      </p>
       <p class="status" id="setup-status" aria-live="polite"></p>
       <button type="button" class="big" id="start-btn">Start practice</button>
     </section>
@@ -109,6 +115,32 @@
             <button type="button" class="big" data-mark="partly">Partly</button>
             <button type="button" class="big" data-mark="missed">Missed</button>
           </div>
+        </div>
+
+        <div id="feedback" hidden>
+          <h2>Feedback</h2>
+          <p class="status" id="fb-loading">Marking your answer…</p>
+          <div id="fb-error" hidden>
+            <p id="fb-error-text"></p>
+            <div class="buttons">
+              <button type="button" class="big" id="fb-retry">Try again</button>
+              <button type="button" class="big secondary" id="fb-skip">Skip feedback</button>
+            </div>
+          </div>
+          <div id="fb-result" hidden>
+            <p class="score"><span id="fb-score"></span> / 10</p>
+            <p class="hint" id="fb-note"></p>
+            <h3>You covered</h3>
+            <ul id="fb-covered"></ul>
+            <h3>You missed</h3>
+            <ul id="fb-missed"></ul>
+            <h3>Tip</h3>
+            <p id="fb-tip"></p>
+          </div>
+          <div class="buttons" id="fb-buttons" hidden>
+            <button type="button" class="big" id="fb-next">Next question</button>
+          </div>
+          <button type="button" class="small danger" id="fb-end">End session</button>
         </div>
 
         <div id="finished" hidden>

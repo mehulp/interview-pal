@@ -59,6 +59,13 @@ Everything in Practice mode (order, level filter, difficulty, timer, phrases), e
 - A third order option: weak areas first, based on past scores and self-marks.
 - An optional "Tidy up with AI" button on the document review screen for messy files.
 
+Rules for scoring (part 7a):
+- If the answer box is empty, the answer scores 0 and no AI call is made.
+- If a question has no reference answer, Claude judges the answer on general merit and the feedback says so.
+- Skipped questions are not scored.
+- Only the question, the reference answer and the user's answer are sent to the API.
+- Each answer's feedback is shown, then the user presses Next. If the AI call fails, the user can retry or skip the feedback.
+
 Until an API key is saved in Settings, Coach mode is disabled in the mode picker, with a note pointing to Settings.
 
 ## Functional requirements
@@ -125,7 +132,7 @@ An answer is optional in Practice mode, because the interviewer only needs the q
 | `src/avatar.js` | SVG interviewer and its state animations |
 | `src/speech.js` | Text-to-speech and speech recognition wrappers |
 | `src/phrases.js` | Interviewer phrases and tone per difficulty (easy, medium, hard) |
-| `src/claude.js` | API client, prompts, JSON parsing (Coach mode only) |
+| `src/claude.js` | API client, prompts (evaluate answer), JSON parsing and checking (Coach mode only) |
 | `src/parser.js` | File reading (md, txt, docx, pdf) and rule-based Q&A extraction |
 | `src/session.js` | Question ordering and filtering, session flow, timer, difficulty rules, scoring |
 | `src/storage.js` | localStorage for settings, notes and history |
@@ -156,7 +163,8 @@ An answer is optional in Practice mode, because the interviewer only needs the q
 4. Rule-based document parser and review screen (edit, add, delete pairs). (done)
 5. Practice mode loop: difficulty, tone (`src/phrases.js`), timer, order, level filter, repeat and skip rules, optional self-marking. (done)
 6. Mode picker, Settings (API key, model) and Claude client. (done)
-7. Coach mode: scoring, feedback, follow-ups, weak-area ordering, and "Tidy up with AI" on the review screen.
+7a. Coach mode, part 1: AI scoring and feedback for each answer (shown as text, spoken aloud with an off switch).
+7b. Coach mode, part 2: follow-up questions, weak-area-first ordering, and "Tidy up with AI" on the review screen.
 8. Session summary and history.
 9. Mobile polish, README, GitHub Pages deployment.
 
