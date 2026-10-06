@@ -153,9 +153,9 @@ An answer is optional in Practice mode, because the interviewer only needs the q
 1. Project scaffold and static page that loads. (done)
 2. Avatar with idle, talking and listening states. (done)
 3. Speech: speak a line, then capture a spoken answer. (done)
-4. Rule-based document parser and review screen (edit, add, delete pairs).
-5. Practice mode loop: difficulty, tone (`src/phrases.js`), timer, order, level filter, repeat and skip rules, optional self-marking.
-6. Mode picker, Settings (API key, model) and Claude client.
+4. Rule-based document parser and review screen (edit, add, delete pairs). (done)
+5. Practice mode loop: difficulty, tone (`src/phrases.js`), timer, order, level filter, repeat and skip rules, optional self-marking. (done)
+6. Mode picker, Settings (API key, model) and Claude client. (done)
 7. Coach mode: scoring, feedback, follow-ups, weak-area ordering, and "Tidy up with AI" on the review screen.
 8. Session summary and history.
 9. Mobile polish, README, GitHub Pages deployment.
