@@ -10,15 +10,28 @@
   <header class="app-header">
     <h1>InterviewPal</h1>
     <nav class="tabs" aria-label="Screens">
-      <button type="button" data-screen="practice" aria-pressed="true">Practice</button>
+      <button type="button" data-screen="practice" aria-pressed="true">Interview</button>
       <button type="button" data-screen="questions" aria-pressed="false">Questions</button>
+      <button type="button" data-screen="settings" aria-pressed="false">Settings</button>
     </nav>
   </header>
 
-  <!-- Practice screen: setup, then the interview, then the end-of-session list -->
+  <!-- Interview screen: setup (with mode picker), then the interview, then the end-of-session list -->
   <main class="app-main single" id="screen-practice">
     <section class="card" id="setup" aria-label="Practice setup">
-      <h2>Practice setup</h2>
+      <h2>Interview setup</h2>
+      <fieldset class="mode-picker">
+        <legend>Mode</legend>
+        <label class="mode-opt">
+          <input type="radio" name="mode" value="practice" checked>
+          <span><strong>Practice</strong><br>No AI, no API key. The interviewer asks, you answer.</span>
+        </label>
+        <label class="mode-opt">
+          <input type="radio" name="mode" value="coach" id="mode-coach">
+          <span><strong>Coach</strong><br>AI scores your answers and gives feedback.</span>
+        </label>
+      </fieldset>
+      <p class="hint" id="mode-note">Coach mode needs an API key. Add one in <a href="#" id="to-settings">Settings</a>.</p>
       <p class="hint" id="available"></p>
       <div class="form-grid">
         <label class="field">Order
@@ -132,6 +145,44 @@
         <button type="button" class="big" id="add-btn">+ Add question</button>
         <button type="button" class="big secondary" id="clear-btn">Clear all</button>
       </div>
+    </section>
+  </main>
+
+  <!-- Settings screen: API key and model for Coach mode -->
+  <main class="app-main single" id="screen-settings" hidden>
+    <section class="card" aria-label="Coach mode settings">
+      <h2>Coach mode (AI)</h2>
+      <p class="hint">
+        Practice mode needs none of this. For Coach mode, paste an Anthropic API key.
+        It is kept only in this browser and sent only to the Anthropic API.
+      </p>
+
+      <label class="field">API key
+        <input type="password" id="key-input" autocomplete="off" spellcheck="false" placeholder="sk-ant-...">
+      </label>
+      <label class="check"><input type="checkbox" id="key-show"> Show the key while typing</label>
+      <div class="buttons">
+        <button type="button" class="big" id="key-save">Save key</button>
+        <button type="button" class="big secondary" id="key-remove">Remove key</button>
+      </div>
+      <p class="status" id="key-status" aria-live="polite"></p>
+
+      <label class="field">Model
+        <input type="text" id="model-input" spellcheck="false" autocomplete="off">
+      </label>
+      <div class="buttons">
+        <button type="button" class="small" id="model-reset">Use the default model</button>
+      </div>
+
+      <h2 class="spaced">Test it</h2>
+      <p class="hint">Sends one tiny request to Anthropic to check that the key and model work. It costs a fraction of a cent.</p>
+      <button type="button" class="big" id="test-btn">Test connection</button>
+      <p class="status" id="test-status" aria-live="polite"></p>
+
+      <p class="hint">
+        Anyone who can open this browser profile can read the saved key, so do not use a shared computer.
+        You can also set a monthly spend limit for the key in the Anthropic Console.
+      </p>
     </section>
   </main>
 

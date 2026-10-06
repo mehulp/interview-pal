@@ -179,3 +179,14 @@ button.small:focus-visible, button.big:focus-visible { outline: 3px solid #ffb70
 #finished-list { padding-left: 1.2em; }
 #finished-list li { margin-bottom: 6px; }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ---------- Mode picker and Settings ---------- */
+.mode-picker { border: 1px solid #d5d9e6; border-radius: 10px; padding: 8px 12px 12px; margin: 0 0 8px; display: grid; gap: 8px; }
+.mode-picker legend { padding: 0 6px; font-size: 0.9rem; }
+.mode-opt { display: flex; gap: 10px; align-items: flex-start; padding: 8px; border-radius: 8px; cursor: pointer; }
+.mode-opt:has(input:checked) { background: #f0f3ff; }
+.mode-opt:has(input:disabled) { opacity: 0.55; cursor: not-allowed; }
+.mode-opt input { margin-top: 4px; width: 18px; height: 18px; }
+.mode-opt span { font-size: 0.95rem; }
+.card h2.spaced { margin-top: 20px; }
+#screen-settings .buttons { margin: 8px 0; }

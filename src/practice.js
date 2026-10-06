@@ -11,7 +11,7 @@ import {
   DIFFICULTY, timerSecondsFor, describeDifficulty, usableQuestions, filterByLevel,
   buildQuestionList, createSession, createTimer, formatTime,
 } from './session.js';
-import { loadQuestions, loadSettings, saveSettings } from './storage.js';
+import { loadQuestions, loadSettings, saveSettings, getApiKey } from './storage.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -26,6 +26,8 @@ export function initPractice(avatar) {
   const optEasyTimer = $('opt-easy-timer');
   const optSelfMark = $('opt-selfmark');
   const startBtn = $('start-btn');
+  const modeRadios = document.querySelectorAll('input[name="mode"]');
+  const modeCoach = $('mode-coach');
 
   // Interview controls
   const answerBox = $('answer');
@@ -53,9 +55,8 @@ export function initPractice(avatar) {
     select.value = settings[key];
     apply(select.value);
     select.addEventListener('change', () => {
-      settings[key] = select.value;
       apply(select.value);
-      saveSettings(settings);
+      saveSettings({ [key]: select.value }); // saves just this one setting
     });
   }
   setupPicker($('voice-lang'), 'voiceLang', setVoiceLang);
@@ -69,8 +70,12 @@ export function initPractice(avatar) {
   optEasyTimer.checked = settings.practiceEasyTimer;
   optSelfMark.checked = settings.practiceSelfMark;
 
+  const selectedMode = () => document.querySelector('input[name="mode"]:checked').value;
+  modeRadios.forEach((r) => { r.checked = r.value === settings.mode; });
+
   function readOptions() {
     return {
+      mode: selectedMode(),
       order: optOrder.value,
       level: optLevel.value,
       difficulty: optDifficulty.value,
@@ -82,6 +87,13 @@ export function initPractice(avatar) {
 
   // Update the "how many questions" line, the difficulty note and the Start button.
   function refreshSetup() {
+    // Coach mode needs an API key. Without one it is switched off, with a pointer to Settings.
+    const hasKey = Boolean(getApiKey());
+    modeCoach.disabled = !hasKey;
+    if (!hasKey && modeCoach.checked) document.querySelector('input[value="practice"]').checked = true;
+    $('mode-note').hidden = hasKey;
+    startBtn.textContent = selectedMode() === 'coach' ? 'Start coaching' : 'Start practice';
+
     const o = readOptions();
     const all = usableQuestions(loadQuestions());
     const matching = filterByLevel(all, o.level);
@@ -94,7 +106,7 @@ export function initPractice(avatar) {
     startBtn.disabled = matching.length === 0;
     $('setup-status').textContent = '';
   }
-  [optOrder, optLevel, optDifficulty, optCount, optEasyTimer, optSelfMark].forEach((control) =>
+  [optOrder, optLevel, optDifficulty, optCount, optEasyTimer, optSelfMark, ...modeRadios].forEach((control) =>
     control.addEventListener('change', refreshSetup));
 
   function showSetup() {
@@ -106,7 +118,8 @@ export function initPractice(avatar) {
 
   startBtn.addEventListener('click', () => {
     options = readOptions();
-    Object.assign(settings, {
+    saveSettings({
+      mode: options.mode,
       practiceOrder: options.order,
       practiceLevel: options.level,
       practiceDifficulty: options.difficulty,
@@ -114,7 +127,12 @@ export function initPractice(avatar) {
       practiceEasyTimer: options.easyTimer,
       practiceSelfMark: options.selfMark,
     });
-    saveSettings(settings);
+
+    if (options.mode === 'coach') {
+      // Coach mode itself is built in the next step
+      $('setup-status').textContent = 'Coach mode is coming in the next build step. Use Practice for now.';
+      return;
+    }
 
     const questions = buildQuestionList(loadQuestions(), options);
     if (!questions.length) {
