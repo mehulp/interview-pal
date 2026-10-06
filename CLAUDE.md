@@ -15,7 +15,7 @@ Build the app described in `docs/requirements.md`. Read that file first; it is t
 - Never commit personal notes. Keep `my-notes/` in `.gitignore`.
 - Documents and answers go only to the Anthropic API, and only in Coach mode. Practice mode makes no network calls to any AI service. No analytics, no other servers.
 - Practice mode is the default and must work with no API key. Coach mode stays disabled, with a note pointing to Settings, until a key is saved.
-- In Practice mode, documents are read with the rule-based parser in `src/parser.js`, never with AI. "Tidy up with AI" is an optional Coach-mode button only.
+- In Practice mode, documents are read with the rule-based parser in `src/parser.js`, never with AI. A "Tidy up with AI" button is planned for v2 (Coach mode only).
 - Interviewer phrases and tone for each difficulty live in `src/phrases.js`, not scattered through the code.
 - Voice defaults to `en-IN`; fall back gracefully if that voice is missing.
 - Typing must always work, because speech recognition is unreliable on some browsers.
@@ -26,9 +26,9 @@ Build the app described in `docs/requirements.md`. Read that file first; it is t
 The app has two modes, described in full in `docs/requirements.md` (see "Modes" and "Build order"):
 
 - **Practice** (default, no AI): spoken questions with serial or random order, a question level filter, difficulty (timer, tone, speech rate, repeat and skip rules) and optional self-marking.
-- **Coach** (AI, needs an API key): everything in Practice plus scoring, feedback, follow-ups and weak-area ordering.
+- **Coach** (AI, needs an API key): everything in Practice plus AI scoring and feedback. Follow-ups, weak-area ordering and tidy-up are deferred to v2.
 
-The build order was updated: 4 parser and review screen, 5 Practice loop, 6 mode picker, settings and Claude client, 7a Coach scoring and feedback, 7b Coach follow-ups, weak-area order and tidy-up, 8 summary and history, 9 polish and deployment. Steps 1 to 6 are done. Keep to one step at a time and wait for my go-ahead after each.
+The build order was updated: 4 parser and review screen, 5 Practice loop, 6 mode picker, settings and Claude client, 7 Coach scoring and feedback, 8 summary and history, 9 polish and deployment. Steps 1 to 6 are done, and step 7 is built and awaiting testing. Do not build the v2 items (see "Deferred to v2" in the requirements) unless asked. Keep to one step at a time and wait for my go-ahead after each.
 
 ## First task (done)
 

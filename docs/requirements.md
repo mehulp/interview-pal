@@ -16,9 +16,9 @@ A daily mock-interview practice tool. You load your own Q&A notes and an animate
 ## Goals
 
 - Practice interviews daily using your own prepared questions and answers.
-- Feel like a real interview: spoken questions, a visible interviewer, time pressure, and in Coach mode follow-ups.
+- Feel like a real interview: spoken questions, a visible interviewer, and time pressure.
 - Work fully offline from AI: Practice mode needs no key and sends nothing to any AI service.
-- In Coach mode, show what you missed compared with your own notes, and track weak topics over time.
+- In Coach mode, show what you missed compared with your own notes. (Tracking weak topics over time is planned for v2.)
 
 ## Non-goals (v1)
 
@@ -48,18 +48,17 @@ The interviewer asks the questions aloud. There is no scoring and no AI feedback
 
 - **Interviewer phrases:** the lines the interviewer says around each question (opening, "next question", "take your time", "time is up", closing) are stored in `src/phrases.js`, with a few variants per difficulty so it does not sound repetitive.
 - **Timer:** a visible countdown per answer. When it reaches zero the interviewer says a time-up line and moves on. The timer is optional on easy.
-- **Self-marking (optional, off by default):** a toggle "Reveal my reference answer and self-mark". After each answer the reference answer from the user's notes is shown, and the user taps Got it / Partly / Missed. Self-marks are saved in history and count towards weak topics.
+- **Self-marking (optional, off by default):** a toggle "Reveal my reference answer and self-mark". After each answer the reference answer from the user's notes is shown, and the user taps Got it / Partly / Missed. Self-marks are saved in history (and can feed weak-area ordering in v2).
 
 ### Coach mode (AI, needs an API key)
 
 Everything in Practice mode (order, level filter, difficulty, timer, phrases), except that AI marking replaces self-marking, plus:
 
 - Scoring out of 10 and feedback against the reference answer (covered, missed, one tip), shown as text and spoken aloud (the spoken part can be switched off).
-- Follow-up questions generated from the answer.
-- A third order option: weak areas first, based on past scores and self-marks.
-- An optional "Tidy up with AI" button on the document review screen for messy files.
 
-Rules for scoring (part 7a):
+Planned for v2 (not in v1, see "Deferred to v2" below): follow-up questions, weak-area-first ordering and a "Tidy up with AI" button.
+
+Rules for scoring:
 - If the answer box is empty, the answer scores 0 and no AI call is made.
 - If a question has no reference answer, Claude judges the answer on general merit and the feedback says so.
 - Skipped questions are not scored.
@@ -74,17 +73,20 @@ Until an API key is saved in Settings, Coach mode is disabled in the mode picker
 
 1. **Load documents.** Upload one or more .md, .txt, .docx or .pdf files, or paste text. In Practice mode the questions and answers are found by a **rule-based parser** (no AI). The user can review and edit the list before starting.
 2. **Review screen.** Shows every extracted pair. The user can edit, add and delete pairs, set a question's level (easy or hard) and fix anything the parser did not recognise. Text the parser could not place is listed so nothing is silently lost.
-3. **Session setup.** Choose mode, number of questions, order, question level filter and difficulty (Coach mode adds weak-areas-first order).
+3. **Session setup.** Choose mode, number of questions, order, question level filter and difficulty.
 4. **Interviewer voice.** Questions are read aloud with browser text-to-speech, preferring a voice for the chosen accent and falling back to any English voice.
 5. **Voice answers.** Browser speech recognition with a live transcript the user can correct. A typing box is always available as a fallback.
 6. **Animated avatar.** A simple SVG interviewer with idle, talking and listening states. The mouth animates while speech plays.
 7. **Practice mode loop.** Spoken questions with difficulty, tone, timer, order, repeat and skip rules, and optional self-marking, as described above.
-8. **Coach mode.** Scoring, feedback, follow-ups and weak-area ordering, as described above.
+8. **Coach mode.** AI scoring and feedback for each answer, as described above.
 9. **Session summary.** Practice: questions asked, time taken, and self-marks if used. Coach: scores per question, an overall score and topics to revisit.
 10. **Local storage.** Documents, settings, API key and session history are stored in the browser only.
 
 ### Should have (v2)
 
+- Follow-up questions generated from the user's answer (Coach mode).
+- Weak-area-first ordering, based on past scores and self-marks, as a third order option (Coach mode).
+- An optional "Tidy up with AI" button on the review screen, for messy files that the rule-based parser cannot read (Coach mode).
 - A "give me a hint" control.
 - Panel-style interviewer persona (friendly and tough are covered by difficulty tone).
 - Daily streak.
@@ -98,7 +100,7 @@ Until an API key is saved in Settings, Coach mode is disabled in the mode picker
 ## Non-functional requirements
 
 - **Simple:** static site, no build step required for v1 (plain HTML, CSS, JavaScript with ES modules). A bundler can be added later if needed.
-- **Private:** documents and the API key never leave the browser except for Anthropic API calls, which happen only in Coach mode (feedback, follow-ups and the optional tidy-up). Practice mode makes no AI calls. Nothing is sent to any other server by the app.
+- **Private:** documents and the API key never leave the browser except for Anthropic API calls, which happen only in Coach mode (answer feedback). Practice mode makes no AI calls. Nothing is sent to any other server by the app.
 - **Cheap:** a 10-question Coach session should cost only a few cents on a Sonnet-class model. Keep prompts small by sending only the current question, reference answer and user answer. Practice mode costs nothing.
 - **Browser support:** Chrome (laptop and Android) is the primary target. Safari and iOS have limited speech recognition, so typing must always work.
 - **Responsive:** usable on a phone screen, with large mic and next buttons.
@@ -123,7 +125,7 @@ Until an API key is saved in Settings, Coach mode is disabled in the mode picker
 
 Optional tags on a question: `[easy]` or `[hard]` at the end of the question line, or a line `Level: easy` / `Level: hard` under it. A nearby heading can set the topic.
 
-An answer is optional in Practice mode, because the interviewer only needs the question. Text that matches no pattern goes to the review screen as unplaced text, where the user can turn it into a pair or delete it. In Coach mode the review screen also has an optional **Tidy up with AI** button that sends the text to Claude to extract pairs from messy files.
+An answer is optional in Practice mode, because the interviewer only needs the question. Text that matches no pattern goes to the review screen as unplaced text, where the user can turn it into a pair or delete it. (An optional **Tidy up with AI** button for messy files is planned for v2.)
 
 ### Modules
 
@@ -143,7 +145,7 @@ An answer is optional in Practice mode, because the interviewer only needs the q
 
 ## Prompts (Coach mode, starting point)
 
-**Tidy up with AI (optional):** "Extract every interview question and its reference answer from this text. Return only JSON: `[{"question": "...", "answer": "...", "topic": "...", "level": "easy|hard|null"}]`."
+**Tidy up with AI (v2, not built yet):** "Extract every interview question and its reference answer from this text. Return only JSON: `[{"question": "...", "answer": "...", "topic": "...", "level": "easy|hard|null"}]`."
 
 **Evaluate answer:** "You are a {persona} interviewer for an Engineering Manager role. Compare the candidate's answer with the reference answer. Return only JSON: `{"score": 0-10, "covered": [...], "missed": [...], "tip": "...", "spoken_feedback": "two short sentences"}`." The persona follows the chosen difficulty tone (warm, neutral or challenging).
 
@@ -163,10 +165,18 @@ An answer is optional in Practice mode, because the interviewer only needs the q
 4. Rule-based document parser and review screen (edit, add, delete pairs). (done)
 5. Practice mode loop: difficulty, tone (`src/phrases.js`), timer, order, level filter, repeat and skip rules, optional self-marking. (done)
 6. Mode picker, Settings (API key, model) and Claude client. (done)
-7a. Coach mode, part 1: AI scoring and feedback for each answer (shown as text, spoken aloud with an off switch).
-7b. Coach mode, part 2: follow-up questions, weak-area-first ordering, and "Tidy up with AI" on the review screen.
+7. Coach mode: AI scoring and feedback for each answer (shown as text, spoken aloud with an off switch).
 8. Session summary and history.
 9. Mobile polish, README, GitHub Pages deployment.
+
+### Deferred to v2
+
+Decided to keep these out of v1 and build them later (they were the planned "7b"):
+
+- Follow-up questions generated from the answer.
+- Weak-area-first ordering using past scores and self-marks (needs the history from step 8).
+- "Tidy up with AI" on the review screen.
+- From the earlier v2 list: a "give me a hint" control, a panel-style persona and a daily streak.
 
 ## Acceptance criteria for v1
 
