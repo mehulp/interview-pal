@@ -198,3 +198,11 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 #feedback .score { font-size: 1.6rem; font-weight: 700; margin: 0 0 4px; }
 #fb-buttons { margin: 12px 0 8px; }
 #fb-error-text { color: #c92a2a; }
+
+/* ---------- Sets ---------- */
+#set-choices { display: grid; gap: 4px; }
+#set-choices .check { margin: 0; }
+.set-buttons, .card .buttons { flex-wrap: wrap; }
+.hint.spaced-top { margin-top: 16px; }
+#import-input { display: block; margin: 8px 0 12px; max-width: 100%; }
+.pair-move { margin-top: 4px; }

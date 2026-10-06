@@ -11,7 +11,7 @@ import {
   DIFFICULTY, timerSecondsFor, describeDifficulty, usableQuestions, filterByLevel,
   buildQuestionList, createSession, createTimer, formatTime,
 } from './session.js';
-import { loadQuestions, loadSettings, saveSettings, getApiKey } from './storage.js';
+import { loadSets, loadQuestions, loadSettings, saveSettings, getApiKey } from './storage.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -72,6 +72,26 @@ export function initPractice(avatar) {
   optSelfMark.checked = settings.practiceSelfMark;
   optCoachSpeak.checked = settings.coachSpeak;
 
+  // The sets you can tick for a session. The last choice is remembered (none saved = all ticked).
+  const selectedSetIds = () => [...document.querySelectorAll('#set-choices input:checked')].map((i) => i.value);
+
+  function renderSetChoices() {
+    const sets = loadSets();
+    const saved = loadSettings().practiceSets.filter((id) => sets.some((s) => s.id === id));
+    const ticked = saved.length ? saved : sets.map((s) => s.id);
+    $('set-choices').replaceChildren(...sets.map((set) => {
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.value = set.id;
+      box.checked = ticked.includes(set.id);
+      box.addEventListener('change', refreshSetup);
+      const label = document.createElement('label');
+      label.className = 'check';
+      label.append(box, `${set.name} (${set.questions.length})`); // append with text: no HTML injection
+      return label;
+    }));
+  }
+
   const selectedMode = () => document.querySelector('input[name="mode"]:checked').value;
   modeRadios.forEach((r) => { r.checked = r.value === settings.mode; });
 
@@ -103,12 +123,15 @@ export function initPractice(avatar) {
     $('coach-note').hidden = !coach;
 
     const o = readOptions();
-    const all = usableQuestions(loadQuestions());
+    const setIds = selectedSetIds();
+    const all = usableQuestions(loadQuestions(setIds));
     const matching = filterByLevel(all, o.level);
 
-    $('available').textContent = all.length
-      ? `${all.length} question(s) saved. ${matching.length} match your choices.`
-      : 'No questions saved yet. Add some on the Questions tab first.';
+    $('available').textContent = !usableQuestions(loadQuestions()).length
+      ? 'No questions saved yet. Add some on the Questions tab first.'
+      : !setIds.length
+        ? 'Tick at least one set.'
+        : `${all.length} question(s) in the ticked set(s). ${matching.length} match your choices.`;
     $('difficulty-note').textContent = `${DIFFICULTY[o.difficulty].label}: ${describeDifficulty(o.difficulty, o.easyTimer)}`;
     $('easy-timer-row').hidden = o.difficulty !== 'easy';
     startBtn.disabled = matching.length === 0;
@@ -121,6 +144,7 @@ export function initPractice(avatar) {
     $('setup').hidden = false;
     $('interview').hidden = true;
     phase = 'setup';
+    renderSetChoices();
     refreshSetup();
   }
 
@@ -135,6 +159,7 @@ export function initPractice(avatar) {
       practiceEasyTimer: options.easyTimer,
       practiceSelfMark: options.selfMark,
       coachSpeak: options.coachSpeak,
+      practiceSets: selectedSetIds(),
     });
 
     if (options.mode === 'coach' && !getApiKey()) {
@@ -142,7 +167,7 @@ export function initPractice(avatar) {
       return;
     }
 
-    const questions = buildQuestionList(loadQuestions(), options);
+    const questions = buildQuestionList(loadQuestions(selectedSetIds()), options);
     if (!questions.length) {
       $('setup-status').textContent = 'No questions match these choices.';
       return;
@@ -264,6 +289,7 @@ export function initPractice(avatar) {
       question: q.question,
       topic: q.topic,
       level: q.level,
+      set: q.set,
       answer: answerBox.value.trim(),
       skipped: reason === 'skip',
       timedOut: reason === 'timeup',

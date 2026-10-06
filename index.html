@@ -32,6 +32,10 @@
         </label>
       </fieldset>
       <p class="hint" id="mode-note">Coach mode needs an API key. Add one in <a href="#" id="to-settings">Settings</a>.</p>
+      <fieldset class="mode-picker">
+        <legend>Question sets (tick one or more)</legend>
+        <div id="set-choices"></div>
+      </fieldset>
       <p class="hint" id="available"></p>
       <div class="form-grid">
         <label class="field">Order
@@ -155,9 +159,23 @@
 
   <!-- Questions screen: load notes, then review and edit the pairs -->
   <main class="app-main single" id="screen-questions" hidden>
+    <section class="card" aria-label="Question sets">
+      <h2>Question sets</h2>
+      <p class="hint">Keep separate sets, for example Leadership and Technical. Each question belongs to one set. You pick which sets to practise when you start.</p>
+      <label class="field">Open set
+        <select id="set-select"></select>
+      </label>
+      <div class="buttons">
+        <button type="button" class="small" id="set-new">New set</button>
+        <button type="button" class="small" id="set-rename">Rename</button>
+        <button type="button" class="small danger" id="set-delete">Delete set</button>
+      </div>
+      <p class="status" id="set-status" aria-live="polite"></p>
+    </section>
+
     <section class="card" aria-label="Load notes">
       <h2>Load your notes</h2>
-      <p class="hint">Supports .md, .txt, .docx and .pdf. Files are read in your browser and never uploaded.</p>
+      <p class="hint">Supports .md, .txt, .docx and .pdf. Files are read in your browser and never uploaded. Questions are added to the open set.</p>
       <input type="file" id="file-input" multiple accept=".md,.txt,.docx,.pdf" aria-label="Choose note files">
       <textarea id="paste-box" rows="4" placeholder="…or paste your notes here" aria-label="Paste notes"></textarea>
       <button type="button" class="big" id="parse-btn">Find questions</button>
@@ -171,12 +189,25 @@
     </section>
 
     <section class="card" aria-label="Review questions">
-      <h2>Your questions <span id="pair-count"></span></h2>
+      <h2>Questions in "<span id="set-name"></span>" <span id="pair-count"></span></h2>
       <div id="pairs-list"></div>
       <div class="buttons">
         <button type="button" class="big" id="add-btn">+ Add question</button>
-        <button type="button" class="big secondary" id="clear-btn">Clear all</button>
+        <button type="button" class="big secondary" id="clear-btn">Clear this set</button>
       </div>
+    </section>
+
+    <section class="card" aria-label="Backup">
+      <h2>Backup</h2>
+      <p class="hint">
+        Save all your sets to a file, or restore them from one. The file contains your notes,
+        so keep it private and do not put it in the git repository.
+      </p>
+      <button type="button" class="big" id="export-btn">Export sets</button>
+      <p class="hint spaced-top">Import a sets file (sets with the same name are merged, and questions that already exist are skipped):</p>
+      <input type="file" id="import-input" accept=".json,application/json" aria-label="Choose a sets file to import">
+      <button type="button" class="big secondary" id="import-btn">Import sets</button>
+      <p class="status" id="backup-status" aria-live="polite"></p>
     </section>
   </main>
 
