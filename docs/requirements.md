@@ -16,6 +16,7 @@ A daily mock-interview practice tool. You load your own Q&A notes and an animate
 
 ## Goals
 
+- Build confidence in facing an interviewer. The main reason for this app is to get over the fear of facing an interviewer, so the interviewer should look like a real person and the user should practise eye contact, not only the answers.
 - Practice interviews daily using your own prepared questions and answers.
 - Feel like a real interview: spoken questions, a visible interviewer, and time pressure.
 - Work fully offline from AI: Practice mode needs no key and sends nothing to any AI service.
@@ -24,7 +25,7 @@ A daily mock-interview practice tool. You load your own Q&A notes and an animate
 ## Non-goals (v1)
 
 - No backend, no login, no user accounts.
-- No realistic video avatar.
+- No paid or live lip-synced avatar service in v1. A realistic face is done with local video clips instead (see "Realistic interviewer").
 - No multi-user or sharing features.
 
 ## Modes
@@ -77,7 +78,15 @@ Until an API key is saved in Settings, Coach mode is disabled in the mode picker
 3. **Session setup.** Choose mode, which sets to draw from (one or several), number of questions, order, question level filter and difficulty.
 4. **Interviewer voice.** Questions are read aloud with browser text-to-speech, preferring a voice for the chosen accent and falling back to any English voice.
 5. **Voice answers.** Browser speech recognition with a live transcript the user can correct. A typing box is always available as a fallback.
-6. **Animated avatar.** A simple SVG interviewer with idle, talking and listening states. The mouth animates while speech plays.
+6. **Animated avatar.** A simple SVG interviewer with idle, talking and listening states. The mouth animates while speech plays. This drawn face is always available and is the fallback when no video clips are installed.
+12. **Realistic interviewer (video clips).** The user supplies short video clips of a realistic person, such as AI-generated clips or licensed stock footage. The app plays them locally. No paid service, and nothing is uploaded.
+    - Each interviewer is a folder `assets/interviewers/<name>/` with `listening.mp4` (played while the user answers and when idle) and `talking.mp4` (played while the interviewer speaks). A small list file, `assets/interviewers/interviewers.json`, names the interviewers.
+    - Clips loop smoothly: two copies of a clip take turns and cross-fade at the seam, so a clip does not need to be a perfect loop. Switching between listening and talking also cross-fades.
+    - The clips are muted. The voice is the browser's text-to-speech, so the mouth does not match the exact words. This is accepted.
+    - The user can choose the interviewer on the setup screen, and several interviewers can be installed (for example a friendly one and a stern one). If no clips exist, or they fail to load, the drawn face is used and a message says so.
+    - With "reduce motion" switched on, clips do not play. A still frame is shown for each state.
+    - The face is shown large and centred, so the eyes are near the top of the picture and close to the webcam.
+13. **Self-view (optional, off by default).** A small mirrored picture of the user's own camera in the corner of the interview screen, to help with eye contact and posture. It uses the camera only to show the picture on screen. It never records, saves, uploads or analyses anything, never uses the microphone, and switches off when the session ends or the tab is left. It can be turned on at setup or with a button during the interview.
 7. **Practice mode loop.** Spoken questions with difficulty, tone, timer, order, repeat and skip rules, and optional self-marking, as described above.
 8. **Coach mode.** AI scoring and feedback for each answer, as described above.
 9. **Session summary.** Practice: questions asked, time taken, and self-marks if used. Coach: scores per question, an overall score and topics to revisit.
@@ -100,7 +109,7 @@ Until an API key is saved in Settings, Coach mode is disabled in the mode picker
 
 ### Later
 
-- Realistic video avatar through a third-party service.
+- A live, lip-synced avatar through a third-party service (v1 uses local video clips instead).
 - Export and import of session history (question sets already have export and import in v1).
 - Installable as a phone app (PWA).
 
@@ -138,7 +147,9 @@ An answer is optional in Practice mode, because the interviewer only needs the q
 
 | File | Responsibility |
 |---|---|
-| `src/avatar.js` | SVG interviewer and its state animations |
+| `src/avatar.js` | The interviewer's face: drawn SVG fallback and looping video clips, with idle, talking and listening states |
+| `src/interviewers.js` | Reads the list of installed interviewer clip folders |
+| `src/selfview.js` | Optional mirrored camera picture (stays on screen only) |
 | `src/speech.js` | Text-to-speech and speech recognition wrappers |
 | `src/phrases.js` | Interviewer phrases and tone per difficulty (easy, medium, hard) |
 | `src/claude.js` | API client, prompts (evaluate answer), JSON parsing and checking (Coach mode only) |
@@ -161,6 +172,8 @@ An answer is optional in Practice mode, because the interviewer only needs the q
 
 ## Privacy and GitHub notes
 
+- The camera (self-view) is used only to show a picture on your own screen. Frames are never recorded, stored or sent anywhere.
+- Interviewer clips are local files in `assets/interviewers/`. Use AI-generated people or footage you have the right to use. Do not use a real person's likeness without permission. Keep each clip small (under about 10 MB), because they are committed with the project if you add them.
 - Keep personal Q&A notes out of the repo. They are loaded in the browser and never need to be committed. A `my-notes/` folder is git-ignored for local use.
 - Voice input uses the browser's speech recognition. In Chrome this sends the audio to Google's speech service, which is outside this app's control. Typing sends nothing anywhere.
 - GitHub Pages on a **private** repo needs a paid GitHub plan. On a free plan, either make the repo public (safe, because it holds no keys or notes) or run the app locally with `python3 -m http.server`.
@@ -175,8 +188,9 @@ An answer is optional in Practice mode, because the interviewer only needs the q
 6. Mode picker, Settings (API key, model) and Claude client. (done)
 7. Coach mode: AI scoring and feedback for each answer (shown as text, spoken aloud with an off switch).
 8. Question sets with JSON export and import (added after step 7).
-9. Session summary and history (on hold until after real use).
-10. Mobile polish, README, GitHub Pages deployment.
+9. Realistic interviewer video clips and optional self-view (added after step 8). Clips are supplied by the user; the drawn face stays as the fallback.
+10. Session summary and history (on hold until after real use).
+11. Mobile polish, README, GitHub Pages deployment.
 
 ### Deferred to v2
 
@@ -198,4 +212,6 @@ Decided to keep these out of v1 and build them later (they were the planned "7b"
 - Keep three or four question sets, tick two of them, and run one session with questions from both.
 - Move a question to another set, and see that it is no longer in the old set. Loading a document that repeats an existing question skips it.
 - Export sets to a file, clear the browser data (or use a different browser), import the file, and get the same sets back.
+- With clips installed in `assets/interviewers/`, pick the interviewer on the setup screen and see the person listen while you answer and talk while the question is read. With no clips, the drawn face still works.
+- With self-view on, see your own mirrored camera picture. The camera light goes off when the session ends.
 - Everything works on Chrome on a laptop; typing works on a phone.

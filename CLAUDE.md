@@ -19,7 +19,9 @@ Build the app described in `docs/requirements.md`. Read that file first; it is t
 - Interviewer phrases and tone for each difficulty live in `src/phrases.js`, not scattered through the code.
 - Voice defaults to `en-IN`; fall back gracefully if that voice is missing.
 - Typing must always work, because speech recognition is unreliable on some browsers.
-- Respect `prefers-reduced-motion` in avatar animations.
+- Respect `prefers-reduced-motion` in avatar animations, including the video clips (show a still frame instead of playing).
+- Camera self-view stays on screen only. Never record, store, upload or analyse camera frames, never request the microphone for it, and stop the camera when the session ends.
+- Interviewer video clips are local files supplied by the user. No paid or third-party avatar service, and no uploading anything for the avatar.
 
 ## Modes
 
@@ -28,7 +30,7 @@ The app has two modes, described in full in `docs/requirements.md` (see "Modes" 
 - **Practice** (default, no AI): spoken questions with serial or random order, a question level filter, difficulty (timer, tone, speech rate, repeat and skip rules) and optional self-marking.
 - **Coach** (AI, needs an API key): everything in Practice plus AI scoring and feedback. Follow-ups, weak-area ordering and tidy-up are deferred to v2.
 
-The build order was updated: 4 parser and review screen, 5 Practice loop, 6 mode picker, settings and Claude client, 7 Coach scoring and feedback, 8 question sets with JSON export and import, 9 summary and history (on hold until after real use), 10 polish and deployment. Steps 1 to 6 are done, and step 7 is built and awaiting testing. Do not build the v2 items (see "Deferred to v2" in the requirements) unless asked. Keep to one step at a time and wait for my go-ahead after each.
+The build order was updated: 4 parser and review screen, 5 Practice loop, 6 mode picker, settings and Claude client, 7 Coach scoring and feedback, 8 question sets with JSON export and import, 9 realistic interviewer video clips and optional self-view, 10 summary and history (on hold until after real use), 11 polish and deployment. Steps 1 to 6 are done, and step 7 is built and awaiting testing. Do not build the v2 items (see "Deferred to v2" in the requirements) unless asked. Keep to one step at a time and wait for my go-ahead after each.
 
 ## First task (done)
 
