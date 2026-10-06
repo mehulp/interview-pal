@@ -8,6 +8,7 @@ A daily mock-interview practice tool. You load your own Q&A notes and an animate
 |---|---|
 | Modes | Practice (default, no AI, no API key) and Coach (AI, needs an API key) |
 | Document formats | .md, .txt, .docx, .pdf |
+| Question sets | Several named sets (for example Leadership, Technical). A question belongs to exactly one set. Sets are picked at the start of a session, so any combination can be practised. Sets can be exported and imported as a JSON file |
 | Repository | Private to start |
 | Main answer mode | Voice, with typing as fallback |
 | Language / accent | Default English (India), `en-IN`. Separate pickers for the interviewer voice and the user's speech: en-IN, en-US, en-GB |
@@ -71,16 +72,22 @@ Until an API key is saved in Settings, Coach mode is disabled in the mode picker
 
 ### Must have (v1)
 
-1. **Load documents.** Upload one or more .md, .txt, .docx or .pdf files, or paste text. In Practice mode the questions and answers are found by a **rule-based parser** (no AI). The user can review and edit the list before starting.
+1. **Load documents.** Upload one or more .md, .txt, .docx or .pdf files, or paste text. In Practice mode the questions and answers are found by a **rule-based parser** (no AI). The user can review and edit the list before starting. Loaded questions are added to the set that is open on the Questions screen.
 2. **Review screen.** Shows every extracted pair. The user can edit, add and delete pairs, set a question's level (easy or hard) and fix anything the parser did not recognise. Text the parser could not place is listed so nothing is silently lost.
-3. **Session setup.** Choose mode, number of questions, order, question level filter and difficulty.
+3. **Session setup.** Choose mode, which sets to draw from (one or several), number of questions, order, question level filter and difficulty.
 4. **Interviewer voice.** Questions are read aloud with browser text-to-speech, preferring a voice for the chosen accent and falling back to any English voice.
 5. **Voice answers.** Browser speech recognition with a live transcript the user can correct. A typing box is always available as a fallback.
 6. **Animated avatar.** A simple SVG interviewer with idle, talking and listening states. The mouth animates while speech plays.
 7. **Practice mode loop.** Spoken questions with difficulty, tone, timer, order, repeat and skip rules, and optional self-marking, as described above.
 8. **Coach mode.** AI scoring and feedback for each answer, as described above.
 9. **Session summary.** Practice: questions asked, time taken, and self-marks if used. Coach: scores per question, an overall score and topics to revisit.
-10. **Local storage.** Documents, settings, API key and session history are stored in the browser only.
+10. **Local storage.** Question sets, settings, API key and session history are stored in the browser only.
+11. **Question sets.** The user keeps several named sets of questions, for example "Leadership", "Technical" or "Behavioural".
+    - There is always at least one set. The default is called "My questions". Questions saved before sets existed are moved into it automatically.
+    - Sets can be created, renamed and deleted (deleting asks for confirmation). Set names are unique.
+    - **One question, one set.** A question is stored inside exactly one set. There is no copy. "Move to set" takes it out of one set and puts it into another. A question text (ignoring case and extra spaces) can exist only once across all sets, so loading a document or importing a file skips questions that already exist anywhere and reports how many were skipped and in which set they are.
+    - At session setup the user ticks one or more sets. The questions of all ticked sets form one pool, and order, question level, difficulty and count apply to that pool. The last choice is remembered.
+    - **Backup:** "Export sets" saves all sets to a `.json` file. "Import sets" reads such a file. Sets with a name that already exists are merged into it, new names create new sets, and duplicate questions are skipped. Files that are not valid InterviewPal exports are rejected with a clear message and change nothing.
 
 ### Should have (v2)
 
@@ -94,7 +101,7 @@ Until an API key is saved in Settings, Coach mode is disabled in the mode picker
 ### Later
 
 - Realistic video avatar through a third-party service.
-- Export and import of session history.
+- Export and import of session history (question sets already have export and import in v1).
 - Installable as a phone app (PWA).
 
 ## Non-functional requirements
@@ -137,10 +144,11 @@ An answer is optional in Practice mode, because the interviewer only needs the q
 | `src/claude.js` | API client, prompts (evaluate answer), JSON parsing and checking (Coach mode only) |
 | `src/parser.js` | File reading (md, txt, docx, pdf) and rule-based Q&A extraction |
 | `src/session.js` | Question ordering and filtering, session flow, timer, difficulty rules, scoring |
-| `src/storage.js` | localStorage for settings, notes and history |
+| `src/storage.js` | localStorage for settings, question sets, API key and history |
+| `src/sets.js` | Question set rules: duplicates, move, export and import checking (no page code) |
 | `src/settings.js` | Settings screen: API key, model, test connection |
 | `src/practice.js` | Practice screen: setup, interview loop, self-marking, end-of-session list |
-| `src/review.js` | Questions screen: load notes, review, edit, add and delete pairs |
+| `src/review.js` | Questions screen: set picker, load notes, review, edit, add, move and delete pairs, export and import |
 | `src/ui.js` | Screen switching and the interview, setup, summary and settings screens |
 
 ## Prompts (Coach mode, starting point)
@@ -166,8 +174,9 @@ An answer is optional in Practice mode, because the interviewer only needs the q
 5. Practice mode loop: difficulty, tone (`src/phrases.js`), timer, order, level filter, repeat and skip rules, optional self-marking. (done)
 6. Mode picker, Settings (API key, model) and Claude client. (done)
 7. Coach mode: AI scoring and feedback for each answer (shown as text, spoken aloud with an off switch).
-8. Session summary and history.
-9. Mobile polish, README, GitHub Pages deployment.
+8. Question sets with JSON export and import (added after step 7).
+9. Session summary and history (on hold until after real use).
+10. Mobile polish, README, GitHub Pages deployment.
 
 ### Deferred to v2
 
@@ -186,4 +195,7 @@ Decided to keep these out of v1 and build them later (they were the planned "7b"
 - Hear each question, answer by voice, and see the live transcript.
 - In Coach mode, receive a score and feedback per answer within a few seconds.
 - See a summary at the end, and find it in history after reloading the page.
+- Keep three or four question sets, tick two of them, and run one session with questions from both.
+- Move a question to another set, and see that it is no longer in the old set. Loading a document that repeats an existing question skips it.
+- Export sets to a file, clear the browser data (or use a different browser), import the file, and get the same sets back.
 - Everything works on Chrome on a laptop; typing works on a phone.

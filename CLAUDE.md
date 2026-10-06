@@ -28,7 +28,7 @@ The app has two modes, described in full in `docs/requirements.md` (see "Modes" 
 - **Practice** (default, no AI): spoken questions with serial or random order, a question level filter, difficulty (timer, tone, speech rate, repeat and skip rules) and optional self-marking.
 - **Coach** (AI, needs an API key): everything in Practice plus AI scoring and feedback. Follow-ups, weak-area ordering and tidy-up are deferred to v2.
 
-The build order was updated: 4 parser and review screen, 5 Practice loop, 6 mode picker, settings and Claude client, 7 Coach scoring and feedback, 8 summary and history, 9 polish and deployment. Steps 1 to 6 are done, and step 7 is built and awaiting testing. Do not build the v2 items (see "Deferred to v2" in the requirements) unless asked. Keep to one step at a time and wait for my go-ahead after each.
+The build order was updated: 4 parser and review screen, 5 Practice loop, 6 mode picker, settings and Claude client, 7 Coach scoring and feedback, 8 question sets with JSON export and import, 9 summary and history (on hold until after real use), 10 polish and deployment. Steps 1 to 6 are done, and step 7 is built and awaiting testing. Do not build the v2 items (see "Deferred to v2" in the requirements) unless asked. Keep to one step at a time and wait for my go-ahead after each.
 
 ## First task (done)
 

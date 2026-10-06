@@ -6,3 +6,6 @@ node_modules/
 
 # Windows download markers
 *:Zone.Identifier
+
+# Exported question sets contain personal notes
+interviewpal-sets-*.json
