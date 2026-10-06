@@ -1,8 +1,42 @@
-# Interviewer clips
+# Interviewer photos and clips
 
-Put short video clips of a realistic interviewer here. Until you do, the app uses its drawn face.
+Put photos or short video clips of a realistic interviewer here. If none are installed, the app uses its drawn face.
+Everything inside the interviewer folders is git-ignored, so your own images and clips are never committed or published.
+There are two ways to make an interviewer: photos (easy) or video clips.
 
-## Adding an interviewer
+## Option 1: photos (a few stills of one person)
+
+Use 4 to 6 photos of the same person with the same framing and background, for example a burst or a photo series:
+
+- `neutral`: closed mouth, looking at the camera
+- `neutral2` (optional): another closed-mouth look, for a small change of expression
+- `blink`: eyes closed
+- `talk` (one or more): mouth slightly open, as if speaking
+
+The app swaps between them: blinks and slow expression changes while you answer, and quick mouth-open and closed frames while the interviewer speaks. Put the photos in a folder (letters, numbers, `-` or `_` in the name) and list them in `interviewers.json`:
+
+```json
+{
+  "interviewers": [
+    {
+      "name": "Interviewer 1",
+      "folder": "interviewer-1",
+      "frames": {
+        "neutral": "neutral.webp",
+        "neutral2": "neutral2.webp",
+        "blink": "blink.webp",
+        "talk": ["talk1.webp", "talk2.webp"]
+      }
+    }
+  ]
+}
+```
+
+Any common image type works (`.webp`, `.jpg`, `.png`). The picture is cropped to a wide shape with the eyes in the upper third, so keep the face centred.
+
+## Option 2: video clips
+
+### Adding an interviewer with clips
 
 1. Make a folder named after the interviewer, using only letters, numbers, `-` or `_`:
    `assets/interviewers/priya/`
@@ -19,9 +53,11 @@ Put short video clips of a realistic interviewer here. Until you do, the app use
    ```
 4. Reload the app. On the Interview screen, choose the interviewer under "Interviewer face".
 
+For clips, leave out `frames` in `interviewers.json`.
+
 You can add several interviewers, for example a friendly one and a stern one.
 
-## What the clips should look like
+### What the clips should look like
 
 - MP4 (H.264), 720p or 1080p, muted or with the sound removed, 10 to 20 seconds each, under about 10 MB.
 - Same person, framing and lighting in both clips, so switching does not jump.
@@ -31,7 +67,7 @@ You can add several interviewers, for example a friendly one and a stern one.
 - `listening`: attentive, blinks, small slow nods, mouth closed.
 - `talking`: speaking calmly to the camera, natural lip movement.
 
-## Tips
+### Tips
 
 - Generate one portrait image first, then make both clips from it with an "image to video" tool, so it is the same face.
 - Use AI-generated people or footage you have the right to use. Do not use a real person's likeness without permission.

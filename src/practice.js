@@ -80,12 +80,13 @@ export function initPractice(avatar) {
   optSelfView.checked = settings.selfView;
 
   /* ---------- Interviewer face (clips you installed, or the drawn face) ---------- */
+  let interviewers = []; // installed interviewers, read from assets/interviewers/interviewers.json
   async function applyInterviewer() {
-    const folder = optInterviewer.value;
-    $('interviewer-status').textContent = folder ? 'Loading the interviewer…' : '';
-    const ok = await avatar.useInterviewer(folder);
+    const entry = interviewers.find((i) => i.folder === optInterviewer.value) || null;
+    $('interviewer-status').textContent = entry ? 'Loading the interviewer…' : '';
+    const ok = await avatar.useInterviewer(entry);
     $('interviewer-status').textContent = ok ? '' :
-      "Couldn't load that interviewer's clips, so the drawn face is used. See assets/interviewers/README.md.";
+      "Couldn't load that interviewer's files, so the drawn face is used. See assets/interviewers/README.md.";
   }
   optInterviewer.addEventListener('change', () => {
     saveSettings({ interviewer: optInterviewer.value });
@@ -94,7 +95,10 @@ export function initPractice(avatar) {
   loadInterviewers().then((list) => {
     if (!list.length) return; // none installed: keep the drawn face and hide the choice
     optInterviewer.replaceChildren(new Option('Drawn face (default)', ''), ...list.map((i) => new Option(i.name, i.folder)));
-    optInterviewer.value = list.some((i) => i.folder === settings.interviewer) ? settings.interviewer : '';
+    interviewers = list;
+    // Not chosen yet: use the first installed interviewer. You can pick the drawn face at any time.
+    const saved = settings.interviewer;
+    optInterviewer.value = saved === null ? list[0].folder : list.some((i) => i.folder === saved) ? saved : '';
     $('interviewer-row').hidden = false;
     applyInterviewer();
   });

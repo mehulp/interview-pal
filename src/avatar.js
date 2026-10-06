@@ -1,6 +1,8 @@
-// Avatar: the interviewer's face. It comes in two kinds:
+// Avatar: the interviewer's face. It comes in three kinds:
 //   1. A drawn SVG face. Always available, and the fallback.
-//   2. Real-looking video clips that you supply (see assets/interviewers/README.md).
+//   2. Photos of a real-looking person that you supply, swapped to blink and talk.
+//   3. Video clips that you supply.
+// See assets/interviewers/README.md for 2 and 3.
 // Either way, the rest of the app only calls setState('idle' | 'talking' | 'listening').
 import { CLIPS_DIR } from './interviewers.js';
 
@@ -148,6 +150,114 @@ function createVideoFace(folder) {
   };
 }
 
+/* ---------- Photo face (a few still photos of one person) ---------- */
+
+const BLINK_MS = 140;
+const rand = (min, max) => min + Math.random() * (max - min);
+
+// Swaps between your photos: slow expression changes and blinks while listening,
+// quick mouth-open and closed frames while talking. (Exported so it can be tested.)
+export function createPhotoFace(entry) {
+  const dir = `${CLIPS_DIR}/${entry.folder}`;
+  const f = entry.frames;
+  const files = [...new Set([f.neutral, f.neutral2, f.blink, ...f.talk].filter(Boolean))];
+
+  const element = document.createElement('div');
+  element.className = 'photo-face';
+  const images = {};
+  for (const file of files) {
+    const img = new Image();
+    img.className = 'photo-frame';
+    img.alt = '';
+    img.setAttribute('aria-hidden', 'true');
+    img.src = `${dir}/${file}`;
+    images[file] = img;
+    element.append(img);
+  }
+
+  let z = 0;
+  let current = null; // the frame on top right now
+  let wanted = f.neutral; // the frame the state wants (a blink returns to it)
+  let state = 'listening';
+  let stepTimer = null;
+  let blinkTimer = null;
+
+  // Put a frame on top of the others and fade it in. The frames underneath stay fully visible,
+  // so the picture never dips to the dark background in the middle of a fade.
+  function show(file, fadeMs = 90) {
+    if (current === file) return;
+    current = file;
+    const img = images[file];
+    const ms = reducedMotion() ? 0 : fadeMs;
+    img.style.transition = 'none';
+    img.style.opacity = '0';
+    img.style.zIndex = String(++z);
+    void img.offsetWidth; // make the browser notice the start point before fading
+    img.style.transition = `opacity ${ms}ms linear`;
+    img.style.opacity = '1';
+  }
+
+  function stopLoops() {
+    clearTimeout(stepTimer);
+    clearTimeout(blinkTimer);
+  }
+
+  // Blink now and then (not when reduced motion is on)
+  function scheduleBlink() {
+    blinkTimer = setTimeout(() => {
+      show(f.blink, 40);
+      setTimeout(() => show(wanted, 60), BLINK_MS);
+      scheduleBlink();
+    }, rand(2500, 6000));
+  }
+
+  // Listening: mostly the neutral frame, sometimes the second one for a small change of expression
+  function listenStep() {
+    wanted = wanted === f.neutral && f.neutral2 ? f.neutral2 : f.neutral;
+    show(wanted, 500);
+    stepTimer = setTimeout(listenStep, rand(3000, 7000));
+  }
+
+  // Talking: open-mouth frames mixed with the closed (neutral) one, never the same frame twice in a row
+  function talkStep() {
+    const pool = Math.random() < 0.3 ? [f.neutral] : f.talk;
+    const choices = pool.filter((file) => file !== wanted);
+    wanted = (choices.length ? choices : pool)[Math.floor(Math.random() * (choices.length || pool.length))];
+    show(wanted, 90);
+    stepTimer = setTimeout(talkStep, rand(110, 240));
+  }
+
+  return {
+    element,
+    async ready() {
+      await Promise.all(Object.values(images).map((img) => new Promise((resolve, reject) => {
+        if (img.complete && img.naturalWidth) return resolve();
+        img.addEventListener('load', resolve, { once: true });
+        img.addEventListener('error', () => reject(new Error('image error')), { once: true });
+        setTimeout(() => reject(new Error('timeout')), LOAD_TIMEOUT_MS);
+      })));
+    },
+    setState(next) {
+      const nextState = next === 'talking' ? 'talking' : 'listening';
+      if (nextState === state && current) return;
+      state = nextState;
+      stopLoops();
+      if (reducedMotion()) { // no movement: one still frame for each state
+        wanted = state === 'talking' ? f.talk[0] : f.neutral;
+        show(wanted, 0);
+        return;
+      }
+      if (state === 'talking') talkStep();
+      else { wanted = f.neutral; show(f.neutral, 200); stepTimer = setTimeout(listenStep, rand(3000, 7000)); }
+      scheduleBlink();
+    },
+    destroy() {
+      stopLoops();
+      Object.values(images).forEach((img) => img.removeAttribute('src'));
+    },
+  };
+}
+
 /* ---------- The avatar the page uses ---------- */
 
 // Put the avatar inside `container` and return a small controller.
@@ -175,14 +285,14 @@ export function createAvatar(container) {
     drawnBox.hidden = false;
   }
 
-  // Switch to an interviewer's clips (folder name), or back to the drawn face (empty folder).
-  // Returns true on success, false if the clips could not be loaded (the drawn face is used).
-  async function useInterviewer(folder) {
+  // Switch to an installed interviewer (photos or clips), or back to the drawn face (null).
+  // Returns true on success, false if the files could not be loaded (the drawn face is used).
+  async function useInterviewer(entry) {
     const mine = ++loadId;
     removeVideoFace();
-    if (!folder) return true;
+    if (!entry) return true;
 
-    const candidate = createVideoFace(folder);
+    const candidate = entry.frames ? createPhotoFace(entry) : createVideoFace(entry.folder);
     candidate.element.hidden = true; // loads in the background; shown when ready
     container.append(candidate.element);
     try {

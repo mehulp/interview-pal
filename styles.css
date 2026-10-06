@@ -224,3 +224,11 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 #selfview-btn[aria-pressed="true"] { background: var(--accent); color: #fff; }
 @media (prefers-reduced-motion: reduce) { .clip, .clip-video { transition: none; } }
+
+/* ---------- Photo face ---------- */
+.photo-face { position: relative; width: 100%; aspect-ratio: 5 / 4; overflow: hidden; border-radius: 12px; background: #1d2433; }
+.photo-frame {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: 50% 35%; /* keeps the eyes in the upper third */
+  opacity: 0;
+}

@@ -1,3 +1,14 @@
 {
-  "interviewers": []
+  "interviewers": [
+    {
+      "name": "Interviewer 1",
+      "folder": "interviewer-1",
+      "frames": {
+        "neutral": "neutral.webp",
+        "neutral2": "neutral2.webp",
+        "blink": "blink.webp",
+        "talk": ["talk1.webp", "talk2.webp"]
+      }
+    }
+  ]
 }
