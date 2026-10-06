@@ -63,7 +63,9 @@
         </label>
         <label class="field">Interviewer accent <select id="voice-lang"></select></label>
         <label class="field">My accent <select id="recognition-lang"></select></label>
+        <label class="field" id="interviewer-row" hidden>Interviewer face <select id="opt-interviewer"></select></label>
       </div>
+      <p class="status" id="interviewer-status" aria-live="polite"></p>
       <p class="hint" id="difficulty-note"></p>
       <label class="check" id="easy-timer-row">
         <input type="checkbox" id="opt-easy-timer"> Use a timer on Easy (about 5 minutes per answer)
@@ -77,13 +79,21 @@
       <p class="hint" id="coach-note" hidden>
         Coach mode sends each question, your reference answer and your answer to the Anthropic API for marking.
       </p>
+      <label class="check">
+        <input type="checkbox" id="opt-selfview"> Show my camera while I practise (only on your screen, never recorded or sent)
+      </label>
+      <p class="hint">Tip: place this window so the interviewer's eyes sit just below your webcam, and look at them while you answer.</p>
       <p class="status" id="setup-status" aria-live="polite"></p>
       <button type="button" class="big" id="start-btn">Start practice</button>
     </section>
 
     <div class="interview-layout" id="interview" hidden>
       <section class="avatar-panel" aria-label="Interviewer">
-        <div id="avatar"></div>
+        <div class="stage">
+          <div id="avatar"></div>
+          <video id="self-view" class="self-view" muted playsinline hidden aria-label="Your camera, shown only on this screen"></video>
+        </div>
+        <p class="hint" id="selfview-note" aria-live="polite"></p>
         <div class="caption" aria-live="polite">
           <p class="say" id="interviewer-line"></p>
           <p class="question" id="question-text"></p>
@@ -106,6 +116,7 @@
           <div class="buttons">
             <button type="button" class="small" id="repeat-btn">↻ Repeat question</button>
             <button type="button" class="small" id="skip-btn">Skip</button>
+            <button type="button" class="small" id="selfview-btn" aria-pressed="false">📷 Self-view</button>
             <button type="button" class="small danger" id="end-btn">End session</button>
           </div>
         </div>

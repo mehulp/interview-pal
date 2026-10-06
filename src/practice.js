@@ -11,6 +11,8 @@ import {
   DIFFICULTY, timerSecondsFor, describeDifficulty, usableQuestions, filterByLevel,
   buildQuestionList, createSession, createTimer, formatTime,
 } from './session.js';
+import { loadInterviewers } from './interviewers.js';
+import { createSelfView } from './selfview.js';
 import { loadSets, loadQuestions, loadSettings, saveSettings, getApiKey } from './storage.js';
 
 const $ = (id) => document.getElementById(id);
@@ -26,6 +28,10 @@ export function initPractice(avatar) {
   const optEasyTimer = $('opt-easy-timer');
   const optSelfMark = $('opt-selfmark');
   const optCoachSpeak = $('opt-coach-speak');
+  const optSelfView = $('opt-selfview');
+  const optInterviewer = $('opt-interviewer');
+  const selfView = createSelfView($('self-view'));
+  const selfViewBtn = $('selfview-btn');
   const startBtn = $('start-btn');
   const modeRadios = document.querySelectorAll('input[name="mode"]');
   const modeCoach = $('mode-coach');
@@ -71,6 +77,40 @@ export function initPractice(avatar) {
   optEasyTimer.checked = settings.practiceEasyTimer;
   optSelfMark.checked = settings.practiceSelfMark;
   optCoachSpeak.checked = settings.coachSpeak;
+  optSelfView.checked = settings.selfView;
+
+  /* ---------- Interviewer face (clips you installed, or the drawn face) ---------- */
+  async function applyInterviewer() {
+    const folder = optInterviewer.value;
+    $('interviewer-status').textContent = folder ? 'Loading the interviewer…' : '';
+    const ok = await avatar.useInterviewer(folder);
+    $('interviewer-status').textContent = ok ? '' :
+      "Couldn't load that interviewer's clips, so the drawn face is used. See assets/interviewers/README.md.";
+  }
+  optInterviewer.addEventListener('change', () => {
+    saveSettings({ interviewer: optInterviewer.value });
+    applyInterviewer();
+  });
+  loadInterviewers().then((list) => {
+    if (!list.length) return; // none installed: keep the drawn face and hide the choice
+    optInterviewer.replaceChildren(new Option('Drawn face (default)', ''), ...list.map((i) => new Option(i.name, i.folder)));
+    optInterviewer.value = list.some((i) => i.folder === settings.interviewer) ? settings.interviewer : '';
+    $('interviewer-row').hidden = false;
+    applyInterviewer();
+  });
+
+  /* ---------- Self-view (your camera, on screen only) ---------- */
+  async function setSelfView(on) {
+    $('selfview-note').textContent = '';
+    if (on) {
+      const result = await selfView.start();
+      if (!result.ok) $('selfview-note').textContent = result.message;
+    } else {
+      selfView.stop();
+    }
+    selfViewBtn.setAttribute('aria-pressed', String(selfView.isOn()));
+  }
+  selfViewBtn.addEventListener('click', () => setSelfView(!selfView.isOn()));
 
   // The sets you can tick for a session. The last choice is remembered (none saved = all ticked).
   const selectedSetIds = () => [...document.querySelectorAll('#set-choices input:checked')].map((i) => i.value);
@@ -105,6 +145,7 @@ export function initPractice(avatar) {
       easyTimer: optEasyTimer.checked,
       selfMark: optSelfMark.checked,
       coachSpeak: optCoachSpeak.checked,
+      selfView: optSelfView.checked,
     };
   }
 
@@ -141,6 +182,7 @@ export function initPractice(avatar) {
     control.addEventListener('change', refreshSetup));
 
   function showSetup() {
+    setSelfView(false); // the camera is off whenever you are on the setup screen
     $('setup').hidden = false;
     $('interview').hidden = true;
     phase = 'setup';
@@ -160,6 +202,7 @@ export function initPractice(avatar) {
       practiceSelfMark: options.selfMark,
       coachSpeak: options.coachSpeak,
       practiceSets: selectedSetIds(),
+      selfView: options.selfView,
     });
 
     if (options.mode === 'coach' && !getApiKey()) {
@@ -176,6 +219,7 @@ export function initPractice(avatar) {
     $('setup').hidden = true;
     $('interview').hidden = false;
     showAnswerArea();
+    if (options.selfView) setSelfView(true);
     askQuestion('opening');
   });
 
@@ -437,6 +481,7 @@ export function initPractice(avatar) {
     stopTimer();
     stopListening();
     hush();
+    setSelfView(false); // session over: switch the camera off
     phase = 'finished';
 
     const results = session.results;
