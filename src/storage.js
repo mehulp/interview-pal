@@ -22,3 +22,24 @@ export function saveSettings(settings) {
     // storage unavailable: the app still works, settings just won't be remembered
   }
 }
+
+/* ---------- Questions (your notes, as question/answer pairs) ---------- */
+
+const QUESTIONS_KEY = 'interviewpal.questions';
+
+export function loadQuestions() {
+  try {
+    const list = JSON.parse(localStorage.getItem(QUESTIONS_KEY));
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveQuestions(pairs) {
+  try {
+    localStorage.setItem(QUESTIONS_KEY, JSON.stringify(pairs));
+  } catch {
+    // storage unavailable: pairs stay on screen but won't be remembered
+  }
+}

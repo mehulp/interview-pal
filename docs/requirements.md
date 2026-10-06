@@ -129,7 +129,8 @@ An answer is optional in Practice mode, because the interviewer only needs the q
 | `src/parser.js` | File reading (md, txt, docx, pdf) and rule-based Q&A extraction |
 | `src/session.js` | Question ordering and filtering, session flow, timer, difficulty rules, scoring |
 | `src/storage.js` | localStorage for settings, notes and history |
-| `src/ui.js` | Screens: mode picker, setup, review, interview, summary, settings |
+| `src/review.js` | Questions screen: load notes, review, edit, add and delete pairs |
+| `src/ui.js` | Screen switching and the interview, setup, summary and settings screens |
 
 ## Prompts (Coach mode, starting point)
 

@@ -126,3 +126,37 @@ button.big:focus-visible { outline: 3px solid #ffb703; outline-offset: 2px; }
 .lang-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
 .lang-row label { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; flex: 1; min-width: 140px; }
 .lang-row select { font: inherit; padding: 6px; border: 1px solid #c5cad8; border-radius: 8px; background: #fff; }
+
+/* ---------- Screens and tabs ---------- */
+[hidden] { display: none !important; }
+.app-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.tabs { display: flex; gap: 8px; }
+.tabs button {
+  padding: 8px 14px; border: 1px solid #fff; border-radius: 8px;
+  background: transparent; color: #fff; font: inherit; cursor: pointer;
+}
+.tabs button[aria-pressed="true"] { background: #fff; color: var(--accent); }
+.tabs button:focus-visible { outline: 3px solid #ffb703; outline-offset: 2px; }
+
+/* One column for the questions screen */
+.app-main.single { grid-template-columns: 1fr; }
+.card { background: var(--card); border-radius: 12px; padding: 16px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1); }
+.card h2 { margin: 0 0 8px; font-size: 1.1rem; }
+.hint { color: #555; font-size: 0.9rem; margin: 0 0 12px; }
+#file-input { display: block; margin-bottom: 12px; max-width: 100%; }
+#paste-box { margin-bottom: 12px; }
+
+/* ---------- Review cards ---------- */
+.pair-card, .unplaced-card { border: 1px solid #d5d9e6; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+.pair-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+.field { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; margin-bottom: 8px; }
+.field input, .field select { font: inherit; padding: 8px; border: 1px solid #c5cad8; border-radius: 8px; background: #fff; }
+.pair-meta { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
+.unplaced-card pre { white-space: pre-wrap; margin: 0 0 8px; font: inherit; }
+button.small {
+  padding: 6px 12px; border: 1px solid var(--accent); border-radius: 8px;
+  background: #fff; color: var(--accent); font: inherit; cursor: pointer;
+}
+button.small.danger { border-color: #c92a2a; color: #c92a2a; }
+button.big.secondary { background: #fff; color: var(--accent); border: 1px solid var(--accent); }
+button.small:focus-visible, button.big:focus-visible { outline: 3px solid #ffb703; outline-offset: 2px; }

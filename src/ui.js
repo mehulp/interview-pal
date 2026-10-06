@@ -6,6 +6,7 @@ import {
   LANGUAGES, setVoiceLang, setRecognitionLang,
 } from './speech.js';
 import { loadSettings, saveSettings } from './storage.js';
+import './review.js'; // sets up the Questions screen
 
 const avatar = createAvatar(document.getElementById('avatar'));
 const caption = document.getElementById('caption');
@@ -95,3 +96,16 @@ if (!isRecognitionSupported()) {
   // If you start typing while listening, stop so the transcript doesn't overwrite your edits
   answerBox.addEventListener('input', stopListening);
 }
+
+/* ---------- Switching between screens ---------- */
+const tabs = document.querySelectorAll('.tabs button');
+tabs.forEach((tab) => {
+  tab.addEventListener('click', () => {
+    stopListening();
+    stopSpeaking();
+    setAvatar('idle');
+    document.getElementById('screen-interview').hidden = tab.dataset.screen !== 'interview';
+    document.getElementById('screen-questions').hidden = tab.dataset.screen !== 'questions';
+    tabs.forEach((t) => t.setAttribute('aria-pressed', String(t === tab)));
+  });
+});

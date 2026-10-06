@@ -9,9 +9,13 @@
 <body>
   <header class="app-header">
     <h1>InterviewPal</h1>
+    <nav class="tabs" aria-label="Screens">
+      <button type="button" data-screen="interview" aria-pressed="true">Interview</button>
+      <button type="button" data-screen="questions" aria-pressed="false">Questions</button>
+    </nav>
   </header>
 
-  <main class="app-main">
+  <main class="app-main" id="screen-interview">
     <section class="avatar-panel" aria-label="Interviewer">
       <div id="avatar"></div>
       <p class="caption" id="caption" aria-live="polite">Hello! Questions will appear here as captions.</p>
@@ -39,6 +43,33 @@
       <div class="buttons">
         <button type="button" class="big" id="mic-btn">🎤 Answer</button>
         <button type="button" class="big">Next</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Questions screen: load notes, then review and edit the pairs -->
+  <main class="app-main single" id="screen-questions" hidden>
+    <section class="card" aria-label="Load notes">
+      <h2>Load your notes</h2>
+      <p class="hint">Supports .md, .txt, .docx and .pdf. Files are read in your browser and never uploaded.</p>
+      <input type="file" id="file-input" multiple accept=".md,.txt,.docx,.pdf" aria-label="Choose note files">
+      <textarea id="paste-box" rows="4" placeholder="…or paste your notes here" aria-label="Paste notes"></textarea>
+      <button type="button" class="big" id="parse-btn">Find questions</button>
+      <p class="status" id="load-status" aria-live="polite"></p>
+    </section>
+
+    <section class="card" id="unplaced-section" aria-label="Text not recognised" hidden>
+      <h2>Not recognised</h2>
+      <p class="hint">The parser could not place this text. Turn it into a question, or delete it.</p>
+      <div id="unplaced-list"></div>
+    </section>
+
+    <section class="card" aria-label="Review questions">
+      <h2>Your questions <span id="pair-count"></span></h2>
+      <div id="pairs-list"></div>
+      <div class="buttons">
+        <button type="button" class="big" id="add-btn">+ Add question</button>
+        <button type="button" class="big secondary" id="clear-btn">Clear all</button>
       </div>
     </section>
   </main>
