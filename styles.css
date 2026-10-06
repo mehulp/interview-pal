@@ -160,3 +160,22 @@ button.small {
 button.small.danger { border-color: #c92a2a; color: #c92a2a; }
 button.big.secondary { background: #fff; color: var(--accent); border: 1px solid var(--accent); }
 button.small:focus-visible, button.big:focus-visible { outline: 3px solid #ffb703; outline-offset: 2px; }
+
+/* ---------- Practice screen ---------- */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
+@media (max-width: 520px) { .form-grid { grid-template-columns: 1fr; } }
+.check { display: flex; gap: 8px; align-items: flex-start; margin: 8px 0; }
+.check input { margin-top: 4px; width: 18px; height: 18px; }
+.interview-layout { display: grid; gap: 16px; }
+@media (min-width: 700px) { .interview-layout { grid-template-columns: 1fr 1fr; align-items: start; } }
+.caption .say { margin: 0 0 6px; font-style: italic; color: #555; }
+.caption .question { margin: 0; font-size: 1.15rem; font-weight: 600; }
+.progress-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: 600; }
+#timer { font-variant-numeric: tabular-nums; }
+#timer.low { color: #c92a2a; }
+#answer-area .buttons + .buttons { flex-wrap: wrap; margin-top: 8px; }
+#reveal pre { white-space: pre-wrap; font: inherit; background: #f0f3ff; border-radius: 8px; padding: 12px; margin: 0 0 12px; }
+#reveal h2, #finished h2 { margin: 0 0 8px; font-size: 1.1rem; }
+#finished-list { padding-left: 1.2em; }
+#finished-list li { margin-bottom: 6px; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }

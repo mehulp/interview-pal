@@ -5,6 +5,12 @@ const SETTINGS_KEY = 'interviewpal.settings';
 const DEFAULTS = {
   voiceLang: 'en-IN', // accent of the interviewer's voice
   recognitionLang: 'en-IN', // accent you speak in
+  practiceOrder: 'serial', // 'serial' or 'random'
+  practiceLevel: 'all', // 'all', 'easy' or 'hard' (question level)
+  practiceDifficulty: 'medium', // 'easy', 'medium' or 'hard'
+  practiceCount: 10,
+  practiceSelfMark: false,
+  practiceEasyTimer: false,
 };
 
 export function loadSettings() {

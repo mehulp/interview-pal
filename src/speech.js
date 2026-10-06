@@ -47,8 +47,8 @@ export function isSpeechSupported() {
 let speakToken = 0; // lets stopSpeaking() cancel a line that is in progress
 
 // Read `text` aloud. Resolves when finished (or stopped).
-// onStart / onEnd let the page animate the avatar.
-export async function speak(text, { onStart, onEnd } = {}) {
+// onStart / onEnd let the page animate the avatar. rate sets the speaking speed.
+export async function speak(text, { onStart, onEnd, rate = 1 } = {}) {
   if (!isSpeechSupported() || !text.trim()) return;
   const synth = window.speechSynthesis;
   const token = ++speakToken;
@@ -66,6 +66,7 @@ export async function speak(text, { onStart, onEnd } = {}) {
     await new Promise((resolve) => {
       const u = new SpeechSynthesisUtterance(chunk);
       u.lang = voice ? voice.lang : voiceLang;
+      u.rate = rate; // 1 is normal speed
       if (voice) u.voice = voice;
       u.onend = resolve;
       u.onerror = resolve;

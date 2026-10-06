@@ -10,41 +10,102 @@
   <header class="app-header">
     <h1>InterviewPal</h1>
     <nav class="tabs" aria-label="Screens">
-      <button type="button" data-screen="interview" aria-pressed="true">Interview</button>
+      <button type="button" data-screen="practice" aria-pressed="true">Practice</button>
       <button type="button" data-screen="questions" aria-pressed="false">Questions</button>
     </nav>
   </header>
 
-  <main class="app-main" id="screen-interview">
-    <section class="avatar-panel" aria-label="Interviewer">
-      <div id="avatar"></div>
-      <p class="caption" id="caption" aria-live="polite">Hello! Questions will appear here as captions.</p>
-
-      <!-- Demo (temporary): hear the interviewer voice -->
-      <div class="state-test">
-        <button type="button" id="speak-btn">🔊 Speak sample question</button>
+  <!-- Practice screen: setup, then the interview, then the end-of-session list -->
+  <main class="app-main single" id="screen-practice">
+    <section class="card" id="setup" aria-label="Practice setup">
+      <h2>Practice setup</h2>
+      <p class="hint" id="available"></p>
+      <div class="form-grid">
+        <label class="field">Order
+          <select id="opt-order">
+            <option value="serial">In order (serial)</option>
+            <option value="random">Random</option>
+          </select>
+        </label>
+        <label class="field">Question level
+          <select id="opt-level">
+            <option value="all">All questions</option>
+            <option value="easy">Easy ones only</option>
+            <option value="hard">Hard ones only</option>
+          </select>
+        </label>
+        <label class="field">Difficulty
+          <select id="opt-difficulty">
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </label>
+        <label class="field">Number of questions
+          <input type="number" id="opt-count" min="1" max="200">
+        </label>
+        <label class="field">Interviewer accent <select id="voice-lang"></select></label>
+        <label class="field">My accent <select id="recognition-lang"></select></label>
       </div>
-
-      <!-- Test control: switch the avatar state by hand (temporary, for development) -->
-      <div class="state-test" role="group" aria-label="Avatar state test">
-        <button type="button" data-state="idle" aria-pressed="true">Idle</button>
-        <button type="button" data-state="talking" aria-pressed="false">Talking</button>
-        <button type="button" data-state="listening" aria-pressed="false">Listening</button>
-      </div>
+      <p class="hint" id="difficulty-note"></p>
+      <label class="check" id="easy-timer-row">
+        <input type="checkbox" id="opt-easy-timer"> Use a timer on Easy (about 5 minutes per answer)
+      </label>
+      <label class="check">
+        <input type="checkbox" id="opt-selfmark"> After each answer, show my reference answer and let me mark myself
+      </label>
+      <p class="status" id="setup-status" aria-live="polite"></p>
+      <button type="button" class="big" id="start-btn">Start practice</button>
     </section>
 
-    <section class="controls" aria-label="Answer controls">
-      <div class="lang-row">
-        <label>Interviewer accent <select id="voice-lang"></select></label>
-        <label>My accent <select id="recognition-lang"></select></label>
-      </div>
-      <textarea id="answer" placeholder="Type your answer here (always available)" rows="4"></textarea>
-      <p class="status" id="status" aria-live="polite"></p>
-      <div class="buttons">
-        <button type="button" class="big" id="mic-btn">🎤 Answer</button>
-        <button type="button" class="big">Next</button>
-      </div>
-    </section>
+    <div class="interview-layout" id="interview" hidden>
+      <section class="avatar-panel" aria-label="Interviewer">
+        <div id="avatar"></div>
+        <div class="caption" aria-live="polite">
+          <p class="say" id="interviewer-line"></p>
+          <p class="question" id="question-text"></p>
+        </div>
+      </section>
+
+      <section class="controls" aria-label="Your answer">
+        <div class="progress-row">
+          <span id="progress"></span>
+          <span id="timer" hidden></span>
+        </div>
+
+        <div id="answer-area">
+          <textarea id="answer" placeholder="Speak with the mic, or type your answer here" rows="5" aria-label="Your answer"></textarea>
+          <p class="status" id="status" aria-live="polite"></p>
+          <div class="buttons">
+            <button type="button" class="big" id="mic-btn">🎤 Answer</button>
+            <button type="button" class="big" id="next-btn">Next</button>
+          </div>
+          <div class="buttons">
+            <button type="button" class="small" id="repeat-btn">↻ Repeat question</button>
+            <button type="button" class="small" id="skip-btn">Skip</button>
+            <button type="button" class="small danger" id="end-btn">End session</button>
+          </div>
+        </div>
+
+        <div id="reveal" hidden>
+          <h2>Your reference answer</h2>
+          <pre id="reference"></pre>
+          <p>How did you do?</p>
+          <div class="buttons">
+            <button type="button" class="big" data-mark="got">Got it</button>
+            <button type="button" class="big" data-mark="partly">Partly</button>
+            <button type="button" class="big" data-mark="missed">Missed</button>
+          </div>
+        </div>
+
+        <div id="finished" hidden>
+          <h2>Session finished</h2>
+          <p id="finished-summary"></p>
+          <ol id="finished-list"></ol>
+          <button type="button" class="big" id="again-btn">Practise again</button>
+        </div>
+      </section>
+    </div>
   </main>
 
   <!-- Questions screen: load notes, then review and edit the pairs -->
