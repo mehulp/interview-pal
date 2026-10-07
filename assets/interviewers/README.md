@@ -11,7 +11,7 @@ Use 4 to 6 photos of the same person with the same framing and background, for e
 - `neutral`: closed mouth, looking at the camera
 - `neutral2` (optional): another closed-mouth look, for a small change of expression
 - `blink`: eyes closed
-- `talk` (one or more): mouth slightly open, as if speaking
+- `talk` (one or more): mouth open in different shapes, as if speaking. More frames with different mouth shapes (for example a rounded "oo" and a wide "ee") make the talking look more natural
 
 The app swaps between them: blinks and slow expression changes while you answer, and quick mouth-open and closed frames while the interviewer speaks. Put the photos in a folder (letters, numbers, `-` or `_` in the name) and list them in `interviewers.json`:
 
@@ -25,7 +25,7 @@ The app swaps between them: blinks and slow expression changes while you answer,
         "neutral": "neutral.webp",
         "neutral2": "neutral2.webp",
         "blink": "blink.webp",
-        "talk": ["talk1.webp", "talk2.webp"]
+        "talk": ["talk1.webp", "talk2.webp", "talk3.webp", "talk4.webp"]
       }
     }
   ]

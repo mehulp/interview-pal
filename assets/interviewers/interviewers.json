@@ -7,7 +7,14 @@
         "neutral": "neutral.webp",
         "neutral2": "neutral2.webp",
         "blink": "blink.webp",
-        "talk": ["talk1.webp", "talk2.webp"]
+        "talk": [
+          "talk1.webp",
+          "talk2.webp",
+          "talk3.webp",
+          "talk4.webp",
+          "talk5.webp",
+          "talk6.webp"
+        ]
       }
     }
   ]
