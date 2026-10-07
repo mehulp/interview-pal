@@ -12,6 +12,7 @@
     <nav class="tabs" aria-label="Screens">
       <button type="button" data-screen="practice" aria-pressed="true">Interview</button>
       <button type="button" data-screen="questions" aria-pressed="false">Questions</button>
+      <button type="button" data-screen="history" aria-pressed="false">History</button>
       <button type="button" data-screen="settings" aria-pressed="false">Settings</button>
     </nav>
   </header>
@@ -159,9 +160,7 @@
         </div>
 
         <div id="finished" hidden>
-          <h2>Session finished</h2>
-          <p id="finished-summary"></p>
-          <ol id="finished-list"></ol>
+          <div id="finished-body"></div>
           <button type="button" class="big" id="again-btn">Practise again</button>
         </div>
       </section>
@@ -219,6 +218,28 @@
       <input type="file" id="import-input" accept=".json,application/json" aria-label="Choose a sets file to import">
       <button type="button" class="big secondary" id="import-btn">Import sets</button>
       <p class="status" id="backup-status" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <!-- History screen: past sessions -->
+  <main class="app-main single" id="screen-history" hidden>
+    <section class="card" id="history-list-card" aria-label="Past sessions">
+      <h2>History <span id="history-count"></span></h2>
+      <p class="hint">
+        Finished sessions are saved here, in this browser only. They include your answers,
+        so keep this computer private. The latest 200 sessions are kept.
+      </p>
+      <div id="history-list"></div>
+      <p class="status" id="history-status" aria-live="polite"></p>
+      <button type="button" class="big secondary" id="history-clear">Clear history</button>
+    </section>
+
+    <section class="card" id="history-detail" aria-label="Session details" hidden>
+      <div class="buttons">
+        <button type="button" class="small" id="history-back">← Back to history</button>
+        <button type="button" class="small danger" id="history-delete">Delete this session</button>
+      </div>
+      <div id="history-summary"></div>
     </section>
   </main>
 

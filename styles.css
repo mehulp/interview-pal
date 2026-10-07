@@ -232,3 +232,28 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   object-fit: cover; object-position: 50% 35%; /* keeps the eyes in the upper third */
   opacity: 0;
 }
+
+/* ---------- Session summary and History ---------- */
+.sum h2 { margin: 0 0 4px; font-size: 1.1rem; }
+.sum h3 { margin: 16px 0 6px; font-size: 0.95rem; }
+.sum .sum-when { color: #555; font-size: 0.9rem; margin: 0 0 8px; }
+.sum .sum-result { font-size: 1.4rem; font-weight: 700; margin: 8px 0; }
+.sum ul, .sum ol.sum-questions { margin: 0; padding-left: 1.2em; }
+.sum ol.sum-questions { padding-left: 0; list-style: none; }
+.sum-questions details { border: 1px solid #d5d9e6; border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; }
+.sum-questions summary { cursor: pointer; }
+.sum-questions summary:focus-visible { outline: 3px solid #ffb703; outline-offset: 2px; }
+.sum-questions .sum-note { color: #555; }
+.sum-questions summary .sum-note { white-space: nowrap; }
+.sum-body { margin-top: 8px; font-size: 0.95rem; }
+.sum-body p { margin: 4px 0; }
+.sum-body .sum-answer { white-space: pre-wrap; background: #f0f3ff; border-radius: 6px; padding: 8px; }
+.sum-weak li { margin-bottom: 6px; }
+.history-row {
+  display: block; width: 100%; text-align: left; margin-bottom: 8px; padding: 10px 12px;
+  border: 1px solid #d5d9e6; border-radius: 10px; background: #fff; font: inherit; cursor: pointer;
+}
+.history-row:hover { background: #f0f3ff; }
+.history-row:focus-visible { outline: 3px solid #ffb703; outline-offset: 2px; }
+.history-row .row-title { font-weight: 600; }
+.history-row .row-detail { color: #555; font-size: 0.9rem; }

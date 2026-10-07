@@ -1,5 +1,6 @@
 // Storage: settings, question sets and the API key, kept in this browser only (localStorage).
 import { createSet, DEFAULT_SET_NAME } from './sets.js';
+import { addSession } from './history.js';
 
 const SETTINGS_KEY = 'interviewpal.settings';
 
@@ -112,4 +113,32 @@ export function clearApiKey() {
   } catch {
     // nothing to remove
   }
+}
+
+/* ---------- History (finished sessions, newest first; contains your answers) ---------- */
+
+const HISTORY_KEY = 'interviewpal.history';
+
+export function loadHistory() {
+  try {
+    const list = JSON.parse(localStorage.getItem(HISTORY_KEY));
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+// Returns true if saved.
+export function saveHistory(list) {
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
+    return true;
+  } catch {
+    return false; // storage full or blocked
+  }
+}
+
+// Add one finished session at the top of the history. Returns true if saved.
+export function saveSession(record) {
+  return saveHistory(addSession(loadHistory(), record));
 }

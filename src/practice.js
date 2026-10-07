@@ -13,7 +13,9 @@ import {
 } from './session.js';
 import { loadInterviewers, pickInterviewer } from './interviewers.js';
 import { createSelfView } from './selfview.js';
-import { loadSets, loadQuestions, loadSettings, saveSettings, getApiKey } from './storage.js';
+import { loadSets, loadQuestions, loadSettings, saveSettings, getApiKey, saveSession } from './storage.js';
+import { buildSessionRecord } from './history.js';
+import { renderSummary } from './summary.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -53,6 +55,7 @@ export function initPractice(avatar) {
   let sayId = 0;
   let timer = null;
   let startedAt = 0;
+  let sessionStartedAt = 0; // when the whole session began (for the summary)
   let listening = false;
   let textBefore = '';
 
@@ -248,6 +251,7 @@ export function initPractice(avatar) {
       await showInterviewer(entry);
       startBtn.disabled = false;
     }
+    sessionStartedAt = Date.now();
     $('setup').hidden = true;
     $('interview').hidden = false;
     showAnswerArea();
@@ -506,9 +510,23 @@ export function initPractice(avatar) {
   });
 
   /* ---------- End of session ---------- */
-  const MARK_TEXT = { got: 'Got it', partly: 'Partly', missed: 'Missed' };
+
+  // Build the session record and save it to History (if at least one question was answered).
+  function recordSession(completed) {
+    const record = buildSessionRecord({
+      options,
+      results: session.results,
+      total: session.total,
+      startedAt: sessionStartedAt,
+      completed,
+    });
+    if (!record.results.length) return { record, note: 'Nothing was saved to History, because no question was answered.' };
+    const saved = saveSession(record);
+    return { record, note: saved ? 'Saved to History.' : 'Could not save to History. Your browser may be blocking storage, or it may be full.' };
+  }
 
   async function finishSession(completed) {
+    if (phase === 'finished') return; // already finished (for example a double click)
     runId++;
     stopTimer();
     stopListening();
@@ -516,25 +534,12 @@ export function initPractice(avatar) {
     setSelfView(false); // session over: switch the camera off
     phase = 'finished';
 
-    const results = session.results;
-    const skipped = results.filter((r) => r.skipped).length;
-    const timedOut = results.filter((r) => r.timedOut).length;
-    const scored = results.filter((r) => r.score != null);
     $('progress').textContent = '';
     $('question-text').textContent = '';
     $('interviewer-line').textContent = completed ? pickPhrase(options.difficulty, 'closing') : 'Session ended.';
 
-    $('finished-summary').textContent =
-      `${results.length} of ${session.total} question(s) asked. ${skipped} skipped, ${timedOut} ran out of time.` +
-      (scored.length ? ` Average score: ${(scored.reduce((sum, r) => sum + r.score, 0) / scored.length).toFixed(1)} / 10.` : '');
-    $('finished-list').replaceChildren(...results.map((r) => {
-      const note = r.skipped ? 'skipped'
-        : r.score != null ? `${r.score}/10${r.timedOut ? ', time up' : ''}`
-        : r.mark ? MARK_TEXT[r.mark] : r.timedOut ? 'time up' : 'answered';
-      const li = document.createElement('li');
-      li.textContent = `${r.question} (${note})`; // textContent: notes can't inject HTML
-      return li;
-    }));
+    const { record, note } = recordSession(completed);
+    renderSummary($('finished-body'), record, note);
     $('answer-area').hidden = true;
     $('reveal').hidden = true;
     $('feedback').hidden = true;
@@ -586,6 +591,8 @@ export function initPractice(avatar) {
     refreshSetup,
     // Called when you switch tabs: end any session quietly and go back to setup.
     leave() {
+      // Leaving in the middle of a session: keep what was answered so far in History
+      if (session && phase !== 'setup' && phase !== 'finished') recordSession(false);
       runId++;
       stopTimer();
       stopListening();
