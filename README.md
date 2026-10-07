@@ -19,7 +19,7 @@ It is a plain website (HTML, CSS and JavaScript). There is no server, no login a
 - [Privacy](#privacy)
 - [Troubleshooting](#troubleshooting)
 - [Publishing on GitHub Pages](#publishing-on-github-pages)
-- [Project layout](#project-layout)
+- [Project layout](#project-layout) (and [how it is built](docs/architecture.md))
 - [Known limitations](#known-limitations)
 - [License](#license)
 
@@ -258,6 +258,7 @@ src/
   storage.js           everything saved in the browser
 assets/interviewers/   your interviewer photos and clips (git-ignored) and their README
 docs/requirements.md   the full requirements and decisions
+docs/architecture.md   how it is built and why: diagrams, components, trade-offs
 CLAUDE.md              working notes for building with Claude Code
 my-notes/              your private notes (git-ignored)
 ```

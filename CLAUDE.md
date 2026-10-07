@@ -1,6 +1,6 @@
 # InterviewPal: brief for Claude Code
 
-Build and maintain the app described in `docs/requirements.md`. Read that file first; it is the source of truth. `README.md` is the user guide and has the project layout.
+Build and maintain the app described in `docs/requirements.md`. Read that file first; it is the source of truth. `README.md` is the user guide and has the project layout. `docs/architecture.md` explains how the app is built (layers, state machine, data model, trade-offs); keep it in step when the structure changes.
 
 ## Status
 
