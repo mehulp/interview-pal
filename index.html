@@ -80,6 +80,10 @@
       <p class="hint" id="coach-note" hidden>
         Coach mode sends each question, your reference answer and your answer to the Anthropic API for marking.
       </p>
+      <label class="check" id="ondevice-row">
+        <input type="checkbox" id="opt-ondevice"> Try the on-device speech recogniser with vocabulary hints (experimental, Chrome only)
+      </label>
+      <p class="status" id="ondevice-status" aria-live="polite"></p>
       <label class="check">
         <input type="checkbox" id="opt-selfview"> Show my camera while I practise (only on your screen, never recorded or sent)
       </label>
@@ -269,6 +273,16 @@
       <div class="buttons">
         <button type="button" class="small" id="model-reset">Use the default model</button>
       </div>
+
+      <h2 class="spaced">Microphone check</h2>
+      <p class="hint">
+        Speech recognition works best with a clear, steady voice level. Press the button and speak normally for a few seconds.
+        It shows which microphone is in use and how loud you are. Nothing is recorded.
+      </p>
+      <button type="button" class="big" id="mic-check-btn">Start microphone check</button>
+      <div class="meter" aria-hidden="true"><div class="meter-fill" id="mic-meter"></div></div>
+      <p class="status" id="mic-check-status" aria-live="polite"></p>
+      <ul id="mic-check-advice"></ul>
 
       <h2 class="spaced">Test it</h2>
       <p class="hint">Sends one tiny request to Anthropic to check that the key and model work. It costs a fraction of a cent.</p>

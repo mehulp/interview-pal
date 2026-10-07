@@ -136,6 +136,11 @@ export function isRecognitionSupported() {
   return Boolean(Recognition);
 }
 
+export const getRecognitionLang = () => recognitionLang;
+
+// Join pieces of text with single spaces, so words never run together.
+export const joinText = (...parts) => parts.map((p) => (p || '').trim()).filter(Boolean).join(' ');
+
 // Friendly messages for the errors the browser can report.
 const ERROR_TEXT = {
   'not-allowed': 'Microphone is blocked. Allow it in the browser address bar, or just type your answer.',
@@ -145,46 +150,180 @@ const ERROR_TEXT = {
   network: 'Speech recognition needs an internet connection. Please type your answer.',
 };
 
+const MAX_SILENT_RESTARTS = 6; // about a minute of silence before giving up
+const STOP_WAIT_MS = 1500; // how long stop() waits for the last words
+
+// Optional, experimental: check that the browser can recognise this language on the device itself
+// (this also lets us give it a list of expected words). Downloads the language pack once if needed.
+// Returns { ok, message }.
+export async function prepareOnDevice(lang) {
+  if (!Recognition || typeof Recognition.available !== 'function') {
+    return { ok: false, message: 'This browser does not support on-device recognition. The standard recogniser will be used.' };
+  }
+  const options = { langs: [lang], processLocally: true, quality: 'dictation' };
+  try {
+    let status = await Recognition.available(options);
+    if (status === 'unavailable') {
+      return { ok: false, message: `On-device recognition is not available for ${lang} in this browser. Try another accent, or use the standard recogniser.` };
+    }
+    if (status !== 'available') {
+      // Not on this device yet: ask the browser to download it (this can take a minute)
+      const installed = await Recognition.install(options);
+      if (!installed) return { ok: false, message: 'The on-device language pack could not be installed. The standard recogniser will be used.' };
+    }
+    return { ok: true, message: `On-device recognition is ready for ${lang}.` };
+  } catch {
+    return { ok: false, message: 'On-device recognition could not be checked. The standard recogniser will be used.' };
+  }
+}
+
 // Create a recognizer. Callbacks:
 //   onText(finalText, interimText)  live transcript so far
-//   onEnd()                         listening stopped (for any reason)
+//   onEnd()                         listening has really stopped (you stopped it, or it gave up)
 //   onError(message)                something to show the user
-export function createRecognizer({ onText, onEnd, onError }) {
+//   onNote(message)                 information, for example a switch back to the standard recogniser
+//
+// It keeps listening when the browser stops by itself (after a pause, for example), until you call
+// stop() or it gives up. start({ onDevice, phrases }) can use the on-device recogniser with a list of
+// expected words: phrases = [{ term, boost }].
+export function createRecognizer({ onText, onEnd, onError, onNote }) {
   if (!Recognition) return null;
 
   const rec = new Recognition();
   rec.continuous = true; // keep listening through short pauses
   rec.interimResults = true; // show words while you are still speaking
 
-  let finalText = '';
+  let active = false; // between start() and the real end
+  let wanted = false; // true while we should keep listening
+  let options = {};
+  let chunks = []; // the finished pieces of speech, in order
+  let interim = '';
+  let gotResult = false; // did this browser session produce anything?
+  let silentRestarts = 0;
+  let quickFails = 0;
+  let lastStart = 0;
+  let restartTimer = null;
+  let fellBack = false; // on-device mode did not work, so the standard recogniser is used
+  let sessionId = 0; // lets an old "stop waiting" timer know it belongs to an earlier session
+  const stopWaiters = [];
+
+  // Settings for the engine: on-device or standard, with or without expected words.
+  function applyEngineOptions() {
+    try {
+      const local = Boolean(options.onDevice) && !fellBack;
+      if ('processLocally' in rec) rec.processLocally = local;
+      if ('phrases' in rec) {
+        const usable = local && options.phrases?.length && typeof window.SpeechRecognitionPhrase === 'function';
+        rec.phrases = usable ? options.phrases.map(({ term, boost }) => new window.SpeechRecognitionPhrase(term, boost)) : [];
+      }
+    } catch {
+      // an older browser without these features: carry on with the standard recogniser
+    }
+  }
+
+  function begin() {
+    rec.lang = recognitionLang; // read now, so a changed setting applies
+    applyEngineOptions();
+    gotResult = false;
+    lastStart = Date.now();
+    try {
+      rec.start();
+    } catch {
+      // start() throws if already running; safe to ignore
+    }
+  }
+
+  function finish() {
+    if (!active) return;
+    active = false;
+    wanted = false;
+    clearTimeout(restartTimer);
+    restartTimer = null;
+    onEnd?.();
+    stopWaiters.splice(0).forEach((resolve) => resolve());
+  }
 
   rec.onresult = (event) => {
-    let interim = '';
+    gotResult = true;
+    silentRestarts = 0;
+    quickFails = 0;
+    interim = '';
     for (let i = event.resultIndex; i < event.results.length; i++) {
       const result = event.results[i];
-      if (result.isFinal) finalText += result[0].transcript;
+      if (result.isFinal) chunks.push(result[0].transcript.trim());
       else interim += result[0].transcript;
     }
-    onText?.(finalText, interim);
+    onText?.(joinText(...chunks), interim.trim());
   };
+
   rec.onerror = (e) => {
-    if (e.error === 'aborted') return; // we stopped it ourselves
+    if (e.error === 'aborted' || e.error === 'no-speech') return; // normal stops: onend decides what to do
+    if ((e.error === 'language-not-supported' || e.error === 'phrases-not-supported') && options.onDevice && !fellBack) {
+      fellBack = true; // switch to the standard recogniser; onend restarts it
+      onNote?.('The on-device recogniser could not be used here, so the standard one is being used.');
+      return;
+    }
+    wanted = false; // a real problem: give up (onend follows and finishes)
     onError?.(ERROR_TEXT[e.error] || `Speech recognition error: ${e.error}`);
   };
-  rec.onend = () => onEnd?.();
+
+  rec.onend = () => {
+    if (wanted) {
+      // The browser stopped by itself. Keep listening, unless it keeps failing.
+      if (gotResult) {
+        silentRestarts = 0;
+        quickFails = 0;
+      } else {
+        silentRestarts++;
+        if (Date.now() - lastStart < 500) quickFails++;
+      }
+      if (quickFails >= 3) {
+        wanted = false;
+        onError?.('Voice input stopped unexpectedly. Please type your answer, or press the mic to try again.');
+      } else if (silentRestarts >= MAX_SILENT_RESTARTS) {
+        wanted = false;
+        onError?.(ERROR_TEXT['no-speech']);
+      } else {
+        restartTimer = setTimeout(() => { restartTimer = null; if (wanted) begin(); }, 150);
+        return;
+      }
+    }
+    finish();
+  };
 
   return {
-    start() {
-      finalText = '';
-      rec.lang = recognitionLang; // read now, so a changed setting applies
-      try {
-        rec.start();
-      } catch {
-        // start() throws if already running; safe to ignore
-      }
+    isActive: () => active,
+
+    start(opts = {}) {
+      if (active) return;
+      sessionId++;
+      options = opts;
+      active = true;
+      wanted = true;
+      chunks = [];
+      interim = '';
+      silentRestarts = 0;
+      quickFails = 0;
+      fellBack = false;
+      begin();
     },
+
+    // Stop listening. The returned promise resolves once the last words have arrived (or after a
+    // short wait), so the caller can safely read the text.
     stop() {
-      rec.stop();
+      if (!active) return Promise.resolve();
+      wanted = false;
+      const mine = sessionId;
+      return new Promise((resolve) => {
+        stopWaiters.push(resolve);
+        if (restartTimer) { finish(); return; } // between two listening rounds: nothing is running
+        try {
+          rec.stop();
+        } catch {
+          finish();
+        }
+        setTimeout(() => { if (sessionId === mine) finish(); }, STOP_WAIT_MS); // do not wait forever
+      });
     },
   };
 }

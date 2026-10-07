@@ -22,6 +22,7 @@ const DEFAULTS = {
   activeSetId: '', // the set open on the Questions screen
   interviewer: 'auto', // 'auto' = picked by difficulty, '' = the drawn face, or a folder name
   selfView: false, // show your own camera during the interview
+  onDeviceSpeech: false, // try the on-device recogniser with vocabulary hints (experimental)
 };
 
 export function loadSettings() {

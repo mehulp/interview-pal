@@ -257,3 +257,10 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .history-row:focus-visible { outline: 3px solid #ffb703; outline-offset: 2px; }
 .history-row .row-title { font-weight: 600; }
 .history-row .row-detail { color: #555; font-size: 0.9rem; }
+
+/* ---------- Microphone check ---------- */
+.meter { height: 14px; background: #e3e7f3; border-radius: 7px; overflow: hidden; margin: 12px 0 4px; }
+.meter-fill { height: 100%; width: 0; background: var(--accent); }
+@media (prefers-reduced-motion: no-preference) { .meter-fill { transition: width 0.08s linear; } }
+#mic-check-advice { margin: 4px 0 12px; padding-left: 1.2em; }
+#mic-check-advice li { margin-bottom: 6px; }

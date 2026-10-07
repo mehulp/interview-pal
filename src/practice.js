@@ -5,7 +5,9 @@
 import {
   speak, stopSpeaking, createRecognizer, isRecognitionSupported,
   LANGUAGES, setVoiceLang, setRecognitionLang, setVoiceProfile, pickVoice, describeVoice,
+  joinText, prepareOnDevice, getRecognitionLang,
 } from './speech.js';
+import { keyTerms } from './vocabulary.js';
 import { pickPhrase } from './phrases.js';
 import {
   DIFFICULTY, timerSecondsFor, describeDifficulty, usableQuestions, filterByLevel,
@@ -31,6 +33,7 @@ export function initPractice(avatar) {
   const optSelfMark = $('opt-selfmark');
   const optCoachSpeak = $('opt-coach-speak');
   const optSelfView = $('opt-selfview');
+  const optOnDevice = $('opt-ondevice');
   const optInterviewer = $('opt-interviewer');
   const selfView = createSelfView($('self-view'));
   const selfViewBtn = $('selfview-btn');
@@ -57,6 +60,7 @@ export function initPractice(avatar) {
   let startedAt = 0;
   let sessionStartedAt = 0; // when the whole session began (for the summary)
   let listening = false;
+  let onDeviceReady = false; // the on-device recogniser is switched on and works here
   let textBefore = '';
 
   /* ---------- Accent pickers (saved in this browser) ---------- */
@@ -70,7 +74,10 @@ export function initPractice(avatar) {
     });
   }
   setupPicker($('voice-lang'), 'voiceLang', setVoiceLang);
-  setupPicker($('recognition-lang'), 'recognitionLang', setRecognitionLang);
+  setupPicker($('recognition-lang'), 'recognitionLang', (code) => {
+    setRecognitionLang(code);
+    if (optOnDevice.checked) checkOnDevice(); // the on-device pack depends on the accent
+  });
 
   /* ---------- Setup screen ---------- */
   optOrder.value = settings.practiceOrder;
@@ -364,9 +371,13 @@ export function initPractice(avatar) {
     if (phase !== 'asking' && phase !== 'answering') return;
     const run = ++runId;
     const q = session.current();
+    const wasAnswering = phase === 'answering';
+    phase = 'finishing'; // blocks double clicks while we wait for the last spoken words
+    setButtons();
     stopTimer();
-    stopListening();
     hush();
+    await stopListening(); // waits (briefly) for the last words, so nothing is cut off
+    if (run !== runId) return; // you ended the session during the wait
 
     const record = {
       question: q.question,
@@ -377,7 +388,7 @@ export function initPractice(avatar) {
       skipped: reason === 'skip',
       timedOut: reason === 'timeup',
       mark: null,
-      seconds: phase === 'answering' ? Math.round((Date.now() - startedAt) / 1000) : 0,
+      seconds: wasAnswering ? Math.round((Date.now() - startedAt) / 1000) : 0,
     };
     session.record(record);
 
@@ -557,7 +568,7 @@ export function initPractice(avatar) {
   const recognizer = createRecognizer({
     onText: (finalText, interim) => {
       // The live transcript goes straight into the box, so you can correct it
-      answerBox.value = (textBefore + ' ' + finalText + interim).trim();
+      answerBox.value = joinText(textBefore, finalText, interim);
     },
     onEnd: () => {
       listening = false;
@@ -565,6 +576,7 @@ export function initPractice(avatar) {
       if (avatar.getState() === 'listening') avatar.setState('idle');
     },
     onError: (message) => { status.textContent = message; },
+    onNote: (message) => { status.textContent = message; },
   });
 
   function startListening() {
@@ -575,12 +587,41 @@ export function initPractice(avatar) {
     micBtn.textContent = '⏹ Stop';
     status.textContent = 'Listening… speak your answer.';
     avatar.setState('listening');
-    recognizer.start();
+    // With the on-device recogniser, tell it which words to expect (from this question and its answer)
+    const q = session.current();
+    const phrases = onDeviceReady ? keyTerms(joinText(q.topic, q.question, q.answer)) : [];
+    recognizer.start({ onDevice: onDeviceReady, phrases });
   }
 
+  // Stop listening. The promise resolves once the last words have arrived.
   function stopListening() {
-    if (listening) recognizer?.stop();
+    return listening ? recognizer.stop() : Promise.resolve();
   }
+
+  /* ---------- On-device recognition (optional, experimental) ---------- */
+  async function checkOnDevice() {
+    const note = $('ondevice-status');
+    if (!optOnDevice.checked) {
+      onDeviceReady = false;
+      note.textContent = '';
+      return;
+    }
+    note.textContent = 'Checking on-device recognition… (a one-time download may take a minute)';
+    const result = await prepareOnDevice(getRecognitionLang());
+    onDeviceReady = result.ok;
+    note.textContent = result.message;
+    if (!result.ok) {
+      optOnDevice.checked = false; // keep it off, so the standard recogniser is used
+      saveSettings({ onDeviceSpeech: false });
+    }
+  }
+  optOnDevice.checked = settings.onDeviceSpeech;
+  $('ondevice-row').hidden = !isRecognitionSupported();
+  optOnDevice.addEventListener('change', () => {
+    saveSettings({ onDeviceSpeech: optOnDevice.checked });
+    checkOnDevice();
+  });
+  if (optOnDevice.checked) checkOnDevice();
 
   if (recognizer) {
     micBtn.addEventListener('click', () => (listening ? stopListening() : startListening()));

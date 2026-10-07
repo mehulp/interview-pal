@@ -3,6 +3,7 @@
 // and never written into code.
 import { getApiKey, saveApiKey, clearApiKey, loadSettings, saveSettings, DEFAULT_MODEL } from './storage.js';
 import { testConnection, ClaudeError } from './claude.js';
+import { startMicCheck } from './miccheck.js';
 
 const $ = (id) => document.getElementById(id);
 const keyInput = $('key-input');
@@ -73,3 +74,41 @@ testBtn.addEventListener('click', async () => {
 });
 
 showKeyStatus('');
+
+/* ---------- Microphone check ---------- */
+const micBtn = $('mic-check-btn');
+let micCheck = null; // the running check, if any
+
+// Map a level in dB (about -60 quiet ... 0 loudest) to a bar width.
+const meterWidth = (db) => `${Math.max(0, Math.min(100, ((db + 60) / 60) * 100))}%`;
+
+function endMicCheck() {
+  micCheck = null;
+  micBtn.textContent = 'Start microphone check';
+  $('mic-meter').style.width = '0';
+}
+
+micBtn.addEventListener('click', async () => {
+  if (micCheck) { micCheck.stop(); return; } // pressed again: stop early
+  $('mic-check-advice').replaceChildren();
+  $('mic-check-status').textContent = 'Opening the microphone…';
+  try {
+    micCheck = await startMicCheck({
+      onLevel: (db) => { $('mic-meter').style.width = meterWidth(db); },
+      onDone: ({ device, advice }) => {
+        endMicCheck();
+        $('mic-check-status').textContent = `Microphone: ${device || 'unknown'}.`;
+        $('mic-check-advice').replaceChildren(...advice.map((text) => {
+          const li = document.createElement('li');
+          li.textContent = text;
+          return li;
+        }));
+      },
+    });
+    micBtn.textContent = 'Stop check';
+    $('mic-check-status').textContent = 'Listening for 15 seconds… speak normally, as if answering a question.';
+  } catch {
+    endMicCheck();
+    $('mic-check-status').textContent = 'The microphone could not be opened. Allow it in the browser address bar and check that one is connected.';
+  }
+});
