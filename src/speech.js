@@ -184,8 +184,9 @@ export async function prepareOnDevice(lang) {
 //   onNote(message)                 information, for example a switch back to the standard recogniser
 //
 // It keeps listening when the browser stops by itself (after a pause, for example), until you call
-// stop() or it gives up. start({ onDevice, phrases }) can use the on-device recogniser with a list of
-// expected words: phrases = [{ term, boost }].
+// stop() or it gives up. start({ onDevice, phrases, deviceId }):
+//   onDevice + phrases  use the on-device recogniser with a list of expected words, phrases = [{ term, boost }]
+//   deviceId            listen to this microphone instead of the browser's default (needs a recent Chrome)
 export function createRecognizer({ onText, onEnd, onError, onNote }) {
   if (!Recognition) return null;
 
@@ -194,6 +195,8 @@ export function createRecognizer({ onText, onEnd, onError, onNote }) {
   rec.interimResults = true; // show words while you are still speaking
 
   let active = false; // between start() and the real end
+  let started = false; // has the browser's recogniser been started in this session?
+  let micStream = null; // the chosen microphone, when one was asked for
   let wanted = false; // true while we should keep listening
   let options = {};
   let chunks = []; // the finished pieces of speech, in order
@@ -226,10 +229,31 @@ export function createRecognizer({ onText, onEnd, onError, onNote }) {
     applyEngineOptions();
     gotResult = false;
     lastStart = Date.now();
+    started = true;
+    const track = micStream?.getAudioTracks()[0];
     try {
-      rec.start();
+      // With a chosen microphone, hand its audio to the recogniser. Browsers that do not know this
+      // option ignore it and use the default microphone.
+      if (track && track.readyState === 'live') rec.start(track);
+      else rec.start();
     } catch {
-      // start() throws if already running; safe to ignore
+      try { rec.start(); } catch { /* already running; safe to ignore */ }
+    }
+  }
+
+  function releaseMic() {
+    micStream?.getTracks().forEach((t) => t.stop()); // the microphone light goes off
+    micStream = null;
+  }
+
+  // Open a specific microphone. Returns the stream, or null if that did not work.
+  async function openMic(deviceId) {
+    try {
+      return await navigator.mediaDevices.getUserMedia({
+        audio: { deviceId: { exact: deviceId }, echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      });
+    } catch {
+      return null;
     }
   }
 
@@ -237,6 +261,8 @@ export function createRecognizer({ onText, onEnd, onError, onNote }) {
     if (!active) return;
     active = false;
     wanted = false;
+    started = false;
+    releaseMic();
     clearTimeout(restartTimer);
     restartTimer = null;
     onEnd?.();
@@ -305,7 +331,14 @@ export function createRecognizer({ onText, onEnd, onError, onNote }) {
       silentRestarts = 0;
       quickFails = 0;
       fellBack = false;
-      begin();
+      if (!opts.deviceId) { begin(); return; }
+      const mine = sessionId;
+      openMic(opts.deviceId).then((stream) => {
+        if (!active || sessionId !== mine) { stream?.getTracks().forEach((t) => t.stop()); return; } // stopped meanwhile
+        if (stream) micStream = stream;
+        else onNote?.('The chosen microphone could not be opened, so the default one is used.');
+        begin();
+      });
     },
 
     // Stop listening. The returned promise resolves once the last words have arrived (or after a
@@ -316,7 +349,7 @@ export function createRecognizer({ onText, onEnd, onError, onNote }) {
       const mine = sessionId;
       return new Promise((resolve) => {
         stopWaiters.push(resolve);
-        if (restartTimer) { finish(); return; } // between two listening rounds: nothing is running
+        if (restartTimer || !started) { finish(); return; } // nothing is running right now
         try {
           rec.stop();
         } catch {

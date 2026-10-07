@@ -94,6 +94,7 @@ micBtn.addEventListener('click', async () => {
   $('mic-check-status').textContent = 'Opening the microphone…';
   try {
     micCheck = await startMicCheck({
+      deviceId: loadSettings().micDeviceId, // the microphone chosen on the Interview screen
       onLevel: (db) => { $('mic-meter').style.width = meterWidth(db); },
       onDone: ({ device, advice }) => {
         endMicCheck();

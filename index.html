@@ -64,9 +64,11 @@
         </label>
         <label class="field">Interviewer accent <select id="voice-lang"></select></label>
         <label class="field">My accent <select id="recognition-lang"></select></label>
+        <label class="field" id="mic-row">Microphone <select id="opt-mic"></select></label>
         <label class="field" id="interviewer-row" hidden>Interviewer face <select id="opt-interviewer"></select></label>
       </div>
       <p class="status" id="interviewer-status" aria-live="polite"></p>
+      <p class="hint">Tip: speak into a microphone close to your mouth, such as a headset. The laptop's built-in microphone is usually further away and picks up more room noise, which makes recognition much worse.</p>
       <p class="hint" id="difficulty-note"></p>
       <label class="check" id="easy-timer-row">
         <input type="checkbox" id="opt-easy-timer"> Use a timer on Easy (about 5 minutes per answer)
@@ -278,6 +280,7 @@
       <p class="hint">
         Speech recognition works best with a clear, steady voice level. Press the button and speak normally for a few seconds.
         It shows which microphone is in use and how loud you are. Nothing is recorded.
+        It tests the microphone chosen on the Interview screen.
       </p>
       <button type="button" class="big" id="mic-check-btn">Start microphone check</button>
       <div class="meter" aria-hidden="true"><div class="meter-fill" id="mic-meter"></div></div>

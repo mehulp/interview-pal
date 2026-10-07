@@ -34,6 +34,7 @@ export function initPractice(avatar) {
   const optCoachSpeak = $('opt-coach-speak');
   const optSelfView = $('opt-selfview');
   const optOnDevice = $('opt-ondevice');
+  const optMic = $('opt-mic');
   const optInterviewer = $('opt-interviewer');
   const selfView = createSelfView($('self-view'));
   const selfViewBtn = $('selfview-btn');
@@ -220,6 +221,7 @@ export function initPractice(avatar) {
     $('setup').hidden = false;
     $('interview').hidden = true;
     phase = 'setup';
+    refreshMicList();
     renderSetChoices();
     refreshSetup();
   }
@@ -590,13 +592,30 @@ export function initPractice(avatar) {
     // With the on-device recogniser, tell it which words to expect (from this question and its answer)
     const q = session.current();
     const phrases = onDeviceReady ? keyTerms(joinText(q.topic, q.question, q.answer)) : [];
-    recognizer.start({ onDevice: onDeviceReady, phrases });
+    recognizer.start({ onDevice: onDeviceReady, phrases, deviceId: optMic.value });
   }
 
   // Stop listening. The promise resolves once the last words have arrived.
   function stopListening() {
     return listening ? recognizer.stop() : Promise.resolve();
   }
+
+  /* ---------- Microphone choice ---------- */
+  // List the computer's microphones. The names only appear once the browser has been allowed to use one.
+  async function refreshMicList() {
+    if (!navigator.mediaDevices?.enumerateDevices) { $('mic-row').hidden = true; return; }
+    const devices = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'audioinput');
+    const systemDefault = devices.find((d) => d.deviceId === 'default');
+    const real = devices.filter((d) => d.deviceId !== 'default' && d.deviceId !== 'communications');
+    optMic.replaceChildren(
+      new Option(systemDefault?.label ? `Browser default (${systemDefault.label.replace(/^Default - /, '')})` : 'Browser default', ''),
+      ...real.map((d, i) => new Option(d.label || `Microphone ${i + 1}`, d.deviceId)),
+    );
+    const saved = loadSettings().micDeviceId;
+    optMic.value = real.some((d) => d.deviceId === saved) ? saved : '';
+  }
+  optMic.addEventListener('change', () => saveSettings({ micDeviceId: optMic.value }));
+  navigator.mediaDevices?.addEventListener?.('devicechange', refreshMicList); // a headset was connected or removed
 
   /* ---------- On-device recognition (optional, experimental) ---------- */
   async function checkOnDevice() {

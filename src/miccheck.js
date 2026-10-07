@@ -33,8 +33,9 @@ export function adviseOnLevels(samples, device = '') {
 
 // Start a check. onLevel(db) is called about 10 times a second, onDone({ device, advice }) at the end.
 // Returns { stop }. Rejects (before returning) if the microphone cannot be opened.
-export async function startMicCheck({ onLevel, onDone, seconds = 15 }) {
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+export async function startMicCheck({ onLevel, onDone, seconds = 15, deviceId = '' }) {
+  const audio = deviceId ? { deviceId: { exact: deviceId } } : true; // a chosen microphone, or the default
+  const stream = await navigator.mediaDevices.getUserMedia({ audio });
   const device = stream.getAudioTracks()[0]?.label || '';
   const context = new AudioContext();
   const analyser = context.createAnalyser();
