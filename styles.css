@@ -210,13 +210,13 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 /* ---------- Realistic interviewer (video clips) and self-view ---------- */
 .stage { position: relative; width: 100%; max-width: 240px; margin: 0 auto; }
 .stage:has(.has-video) { max-width: 520px; }
-.video-face { position: relative; width: 100%; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 12px; background: #1d2433; }
+.video-face { position: relative; isolation: isolate; width: 100%; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 12px; background: #1d2433; }
 .clip { position: absolute; inset: 0; opacity: 0; transition: opacity 0.6s ease; }
 .clip.on { opacity: 1; }
 .clip-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.6s ease; }
 .clip-video.on { opacity: 1; }
 .self-view {
-  position: absolute; right: 8px; bottom: 8px; z-index: 2;
+  position: absolute; right: 8px; bottom: 8px; z-index: 10;
   width: max(28%, 90px); aspect-ratio: 4 / 3; object-fit: cover;
   transform: scaleX(-1); /* mirror, like a normal video call */
   border: 2px solid #fff; border-radius: 8px; background: #000;
@@ -226,7 +226,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 @media (prefers-reduced-motion: reduce) { .clip, .clip-video { transition: none; } }
 
 /* ---------- Photo face ---------- */
-.photo-face { position: relative; width: 100%; aspect-ratio: 5 / 4; overflow: hidden; border-radius: 12px; background: #1d2433; }
+.photo-face { position: relative; isolation: isolate; /* keeps the photo layers' z-index inside this box */ width: 100%; aspect-ratio: 5 / 4; overflow: hidden; border-radius: 12px; background: #1d2433; }
 .photo-frame {
   position: absolute; inset: 0; width: 100%; height: 100%;
   object-fit: cover; object-position: 50% 35%; /* keeps the eyes in the upper third */

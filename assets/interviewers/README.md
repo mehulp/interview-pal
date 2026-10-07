@@ -15,6 +15,8 @@ Use 4 to 6 photos of the same person with the same framing and background, for e
 
 If a set has no separate second neutral photo, leave `neutral2` out. To use an interviewer only for some rounds in Automatic mode, add `"difficulty": ["hard"]` to its entry. For example, a tough-looking interviewer can be used for Hard rounds, and the others are picked at random for Easy and Medium.
 
+To give an interviewer a matching voice, add `"voice": { "gender": "female" }` (or `"male"`) to its entry. You can also add `"name": "Heera"` to prefer a voice whose name contains that text, and `"pitch": 0.9` to make it a little lower or higher (between 0.5 and 1.5). The browser does not say whether a voice is male or female, so the app guesses from the voice's name. The Interview screen shows which voice was chosen. If no suitable voice is found on your device, the pitch is adjusted and the page says so.
+
 The app swaps between them: blinks and slow expression changes while you answer, and quick mouth-open and closed frames while the interviewer speaks. Put the photos in a folder (letters, numbers, `-` or `_` in the name) and list them in `interviewers.json`:
 
 ```json

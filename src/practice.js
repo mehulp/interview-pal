@@ -4,7 +4,7 @@
 //   -> Next (or time runs out) -> optional self-marking -> next question.
 import {
   speak, stopSpeaking, createRecognizer, isRecognitionSupported,
-  LANGUAGES, setVoiceLang, setRecognitionLang,
+  LANGUAGES, setVoiceLang, setRecognitionLang, setVoiceProfile, pickVoice, describeVoice,
 } from './speech.js';
 import { pickPhrase } from './phrases.js';
 import {
@@ -90,6 +90,7 @@ export function initPractice(avatar) {
   // Show an interviewer's face (entry), or the drawn face (null). Skips the work if it is already showing.
   async function showInterviewer(entry) {
     const folder = entry ? entry.folder : '';
+    setVoiceProfile(entry ? entry.voice : null); // the voice goes with the face (for example a woman's voice for her)
     if (folder === loadedFolder) return;
     loadedFolder = folder;
     $('interviewer-status').textContent = entry ? 'Loading the interviewer…' : '';
@@ -251,6 +252,8 @@ export function initPractice(avatar) {
       await showInterviewer(entry);
       startBtn.disabled = false;
     }
+    await pickVoice(); // choose the voice now, so the page can say which one it is
+    $('voice-note').textContent = describeVoice();
     sessionStartedAt = Date.now();
     $('setup').hidden = true;
     $('interview').hidden = false;

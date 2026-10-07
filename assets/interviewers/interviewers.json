@@ -15,6 +15,9 @@
           "talk5.webp",
           "talk6.webp"
         ]
+      },
+      "voice": {
+        "gender": "male"
       }
     },
     {
@@ -31,6 +34,9 @@
           "talk5.jpg",
           "talk6.jpg"
         ]
+      },
+      "voice": {
+        "gender": "female"
       }
     },
     {
@@ -50,6 +56,10 @@
           "talk5_small.jpg",
           "talk6_small.jpg"
         ]
+      },
+      "voice": {
+        "gender": "male",
+        "pitch": 0.9
       }
     }
   ]

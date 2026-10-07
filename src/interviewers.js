@@ -20,7 +20,16 @@ const LEVELS = ['easy', 'medium', 'hard'];
 // Optional "difficulty": ["hard"] means this interviewer is used for those rounds in Automatic mode.
 const readDifficulty = (d) => (Array.isArray(d) ? d.filter((x) => LEVELS.includes(x)) : []);
 
-// Returns [{ name, folder, frames, difficulty }]. `frames` is null for video-clip interviewers.
+// Optional "voice": { "gender": "female", "name": "Heera", "pitch": 0.9 }. All parts are optional.
+function readVoice(voice) {
+  if (!voice || typeof voice !== 'object') return null;
+  const gender = voice.gender === 'female' || voice.gender === 'male' ? voice.gender : '';
+  const name = typeof voice.name === 'string' ? voice.name.trim().slice(0, 40) : '';
+  const pitch = Number.isFinite(voice.pitch) ? Math.min(1.5, Math.max(0.5, voice.pitch)) : 1;
+  return gender || name || pitch !== 1 ? { gender, name, pitch } : null;
+}
+
+// Returns [{ name, folder, frames, difficulty, voice }]. `frames` is null for video-clip interviewers.
 // Any problem (no file, bad JSON) just means "none installed".
 export async function loadInterviewers() {
   try {
@@ -30,7 +39,7 @@ export async function loadInterviewers() {
     if (!Array.isArray(data?.interviewers)) return [];
     return data.interviewers
       .filter((i) => typeof i?.name === 'string' && i.name.trim() && /^[A-Za-z0-9_-]+$/.test(i?.folder || ''))
-      .map((i) => ({ name: i.name.trim(), folder: i.folder, frames: readFrames(i.frames), difficulty: readDifficulty(i.difficulty) }));
+      .map((i) => ({ name: i.name.trim(), folder: i.folder, frames: readFrames(i.frames), difficulty: readDifficulty(i.difficulty), voice: readVoice(i.voice) }));
   } catch {
     return [];
   }
