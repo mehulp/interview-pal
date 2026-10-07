@@ -77,7 +77,12 @@ Until an API key is saved in Settings, Coach mode is disabled in the mode picker
 2. **Review screen.** Shows every extracted pair. The user can edit, add and delete pairs, set a question's level (easy or hard) and fix anything the parser did not recognise. Text the parser could not place is listed so nothing is silently lost.
 3. **Session setup.** Choose mode, which sets to draw from (one or several), number of questions, order, question level filter and difficulty.
 4. **Interviewer voice.** Questions are read aloud with browser text-to-speech, preferring a voice for the chosen accent and falling back to any English voice.
-5. **Voice answers.** Browser speech recognition with a live transcript the user can correct. A typing box is always available as a fallback.
+5. **Voice answers.** Browser speech recognition with a live transcript the user can correct. A typing box is always available as a fallback. To get the most out of the browser's recogniser:
+    - Pieces of recognised speech are joined with spaces, so words never run together.
+    - The microphone stays open when the browser stops listening by itself (for example after a pause), until the user presses Stop or Next, or the time runs out. It gives up with a message only after a long silence or repeated failures.
+    - When the user presses Next, or time runs out, the app waits a moment (up to about 1.5 seconds) for the last words to arrive before it takes the answer.
+    - **On-device recognition with vocabulary hints (optional, experimental, off by default; Chrome only).** The user can switch on the browser's on-device recogniser, which can be given a list of expected words. The app builds the list from the current question, its topic and its reference answer: acronyms, technical terms and longer words, with the common words removed. If the browser, or the chosen accent, does not support it, the app says so and uses the standard recogniser. Nothing is sent anywhere by the app. The on-device language pack is downloaded by the browser once.
+    - **Microphone check (Settings).** A level meter that shows the microphone's name and how loud the user is, with advice (too quiet, too loud, or a headset that is in a low-quality call mode). It records and stores nothing.
 6. **Animated avatar.** A simple SVG interviewer with idle, talking and listening states. The mouth animates while speech plays. This drawn face is always available and is the fallback when no video clips are installed.
 12. **Realistic interviewer (video clips).** The user supplies short video clips of a realistic person, such as AI-generated clips or licensed stock footage. The app plays them locally. No paid service, and nothing is uploaded.
     - Each interviewer is a folder `assets/interviewers/<name>/` with `listening.mp4` (played while the user answers and when idle) and `talking.mp4` (played while the interviewer speaks). A small list file, `assets/interviewers/interviewers.json`, names the interviewers.
@@ -117,6 +122,7 @@ Until an API key is saved in Settings, Coach mode is disabled in the mode picker
 - A live, lip-synced avatar through a third-party service (v1 uses local video clips instead).
 - Export and import of session history (question sets already have export and import in v1).
 - Installable as a phone app (PWA).
+- A more accurate speech-to-text engine that runs in the browser (for example Whisper). It needs an extra library and a model download of tens to hundreds of MB, and the transcript would appear after the user stops speaking, not live. Not started; waiting for a decision.
 
 ## Non-functional requirements
 
@@ -155,7 +161,9 @@ An answer is optional in Practice mode, because the interviewer only needs the q
 | `src/avatar.js` | The interviewer's face: drawn SVG fallback and looping video clips, with idle, talking and listening states |
 | `src/interviewers.js` | Reads the list of installed interviewer clip folders |
 | `src/selfview.js` | Optional mirrored camera picture (stays on screen only) |
-| `src/speech.js` | Text-to-speech and speech recognition wrappers |
+| `src/speech.js` | Text-to-speech and speech recognition wrappers (keeps listening, joins text, optional on-device mode) |
+| `src/vocabulary.js` | Picks the key words from a question and its reference answer, to help the recogniser |
+| `src/miccheck.js` | Microphone level meter and advice (nothing is recorded) |
 | `src/phrases.js` | Interviewer phrases and tone per difficulty (easy, medium, hard) |
 | `src/claude.js` | API client, prompts (evaluate answer), JSON parsing and checking (Coach mode only) |
 | `src/parser.js` | File reading (md, txt, docx, pdf) and rule-based Q&A extraction |
