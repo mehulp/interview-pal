@@ -91,7 +91,10 @@ Until an API key is saved in Settings, Coach mode is disabled in the mode picker
 13. **Self-view (optional, off by default).** A small mirrored picture of the user's own camera in the corner of the interview screen, to help with eye contact and posture. It uses the camera only to show the picture on screen. It never records, saves, uploads or analyses anything, never uses the microphone, and switches off when the session ends or the tab is left. It can be turned on at setup or with a button during the interview.
 7. **Practice mode loop.** Spoken questions with difficulty, tone, timer, order, repeat and skip rules, and optional self-marking, as described above.
 8. **Coach mode.** AI scoring and feedback for each answer, as described above.
-9. **Session summary.** Practice: questions asked, time taken, and self-marks if used. Coach: scores per question, an overall score and topics to revisit.
+9. **Session summary and history (lean version).**
+    - **Summary.** Shown when a session ends. It has: questions asked out of the total, skipped, timed out, and time taken; the result (Coach: the average score; Practice with self-marking: how many Got it, Partly and Missed; Practice without marking: no result, because nothing is scored); **topics to revisit** (questions with a Coach score of 5 or less, or self-marked Partly or Missed, grouped by topic); and a question-by-question list where each question opens to show the user's answer and, in Coach mode, the feedback (covered, missed, tip) or the self-mark.
+    - **History.** Every session that has at least one recorded answer is saved automatically when it ends, including one that was ended early or left by switching tabs. A History tab lists past sessions, newest first, with date, mode, difficulty, how many questions and the result. Opening one shows the same summary. A single session can be deleted, and the whole history can be cleared, each after a confirmation. Only the latest 200 sessions are kept.
+    - History is stored in the browser only, and it contains the user's answers. It is not part of the sets export. Charts, trends and export of history are not in v1.
 10. **Local storage.** Question sets, settings, API key and session history are stored in the browser only.
 11. **Question sets.** The user keeps several named sets of questions, for example "Leadership", "Technical" or "Behavioural".
     - There is always at least one set. The default is called "My questions". Questions saved before sets existed are moved into it automatically.
@@ -160,7 +163,10 @@ An answer is optional in Practice mode, because the interviewer only needs the q
 | `src/storage.js` | localStorage for settings, question sets, API key and history |
 | `src/sets.js` | Question set rules: duplicates, move, export and import checking (no page code) |
 | `src/settings.js` | Settings screen: API key, model, test connection |
-| `src/practice.js` | Practice screen: setup, interview loop, self-marking, end-of-session list |
+| `src/practice.js` | Practice screen: setup, interview loop, self-marking, end-of-session summary |
+| `src/history.js` | Session records: building, summarising, topics to revisit, keeping the latest 200 (no page code) |
+| `src/summary.js` | Draws a session summary (used at the end of a session and on the History tab) |
+| `src/historyscreen.js` | History tab: list of past sessions, open, delete, clear |
 | `src/review.js` | Questions screen: set picker, load notes, review, edit, add, move and delete pairs, export and import |
 | `src/ui.js` | Screen switching and the interview, setup, summary and settings screens |
 
@@ -191,7 +197,7 @@ An answer is optional in Practice mode, because the interviewer only needs the q
 7. Coach mode: AI scoring and feedback for each answer (shown as text, spoken aloud with an off switch).
 8. Question sets with JSON export and import (added after step 7).
 9. Realistic interviewer video clips and optional self-view (added after step 8). Clips are supplied by the user; the drawn face stays as the fallback.
-10. Session summary and history (on hold until after real use).
+10. Session summary and history (lean version: summary, saved sessions, History tab; no charts or export).
 11. Mobile polish, README, GitHub Pages deployment.
 
 ### Deferred to v2
@@ -210,7 +216,7 @@ Decided to keep these out of v1 and build them later (they were the planned "7b"
 - Coach mode is disabled with a note until an API key is saved in Settings.
 - Hear each question, answer by voice, and see the live transcript.
 - In Coach mode, receive a score and feedback per answer within a few seconds.
-- See a summary at the end, and find it in history after reloading the page.
+- See a summary at the end, and find the session on the History tab after reloading the page. Open it to see the answers and feedback, delete one session, and clear the history.
 - Keep three or four question sets, tick two of them, and run one session with questions from both.
 - Move a question to another set, and see that it is no longer in the old set. Loading a document that repeats an existing question skips it.
 - Export sets to a file, clear the browser data (or use a different browser), import the file, and get the same sets back.
