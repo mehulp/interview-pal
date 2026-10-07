@@ -13,6 +13,8 @@ Use 4 to 6 photos of the same person with the same framing and background, for e
 - `blink`: eyes closed
 - `talk` (one or more): mouth open in different shapes, as if speaking. More frames with different mouth shapes (for example a rounded "oo" and a wide "ee") make the talking look more natural
 
+If a set has no separate second neutral photo, leave `neutral2` out. To use an interviewer only for some rounds in Automatic mode, add `"difficulty": ["hard"]` to its entry. For example, a tough-looking interviewer can be used for Hard rounds, and the others are picked at random for Easy and Medium.
+
 The app swaps between them: blinks and slow expression changes while you answer, and quick mouth-open and closed frames while the interviewer speaks. Put the photos in a folder (letters, numbers, `-` or `_` in the name) and list them in `interviewers.json`:
 
 ```json

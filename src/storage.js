@@ -19,7 +19,7 @@ const DEFAULTS = {
   coachSpeak: true, // speak the AI feedback aloud
   practiceSets: [], // ids of the sets ticked for a session (empty = all sets)
   activeSetId: '', // the set open on the Questions screen
-  interviewer: null, // folder of the chosen interviewer ('' = the drawn face, null = not chosen yet)
+  interviewer: 'auto', // 'auto' = picked by difficulty, '' = the drawn face, or a folder name
   selfView: false, // show your own camera during the interview
 };
 

@@ -16,6 +16,41 @@
           "talk6.webp"
         ]
       }
+    },
+    {
+      "name": "Interviewer 2",
+      "folder": "interviewer-2",
+      "frames": {
+        "neutral": "neutral2.jpg",
+        "blink": "blink.jpg",
+        "talk": [
+          "talk1.jpg",
+          "talk2.jpg",
+          "talk3.jpg",
+          "talk4.jpg",
+          "talk5.jpg",
+          "talk6.jpg"
+        ]
+      }
+    },
+    {
+      "name": "Interviewer 3 (tough)",
+      "folder": "interviewer-3",
+      "difficulty": [
+        "hard"
+      ],
+      "frames": {
+        "neutral": "neutral2_small.jpg",
+        "blink": "blink_small.jpg",
+        "talk": [
+          "talk1_small.jpg",
+          "talk2_small.jpg",
+          "talk3_small.jpg",
+          "talk4_small.jpg",
+          "talk5_small.jpg",
+          "talk6_small.jpg"
+        ]
+      }
     }
   ]
 }

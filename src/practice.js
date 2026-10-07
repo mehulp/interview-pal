@@ -11,7 +11,7 @@ import {
   DIFFICULTY, timerSecondsFor, describeDifficulty, usableQuestions, filterByLevel,
   buildQuestionList, createSession, createTimer, formatTime,
 } from './session.js';
-import { loadInterviewers } from './interviewers.js';
+import { loadInterviewers, pickInterviewer } from './interviewers.js';
 import { createSelfView } from './selfview.js';
 import { loadSets, loadQuestions, loadSettings, saveSettings, getApiKey } from './storage.js';
 
@@ -81,26 +81,45 @@ export function initPractice(avatar) {
 
   /* ---------- Interviewer face (clips you installed, or the drawn face) ---------- */
   let interviewers = []; // installed interviewers, read from assets/interviewers/interviewers.json
-  async function applyInterviewer() {
-    const entry = interviewers.find((i) => i.folder === optInterviewer.value) || null;
+  let loadedFolder = null; // the face now in use ('' = the drawn face, null = nothing loaded yet)
+  let lastAutoFolder = ''; // last Automatic pick, so the same face is not chosen twice in a row
+
+  // Show an interviewer's face (entry), or the drawn face (null). Skips the work if it is already showing.
+  async function showInterviewer(entry) {
+    const folder = entry ? entry.folder : '';
+    if (folder === loadedFolder) return;
+    loadedFolder = folder;
     $('interviewer-status').textContent = entry ? 'Loading the interviewer…' : '';
     const ok = await avatar.useInterviewer(entry);
+    if (!ok) loadedFolder = null; // try again next time
     $('interviewer-status').textContent = ok ? '' :
       "Couldn't load that interviewer's files, so the drawn face is used. See assets/interviewers/README.md.";
   }
+
+  // Who interviews this session: a fixed choice, or (Automatic) one picked by difficulty.
+  function chooseInterviewer(difficulty) {
+    const choice = optInterviewer.value;
+    if (choice === 'auto') return pickInterviewer(interviewers, difficulty, lastAutoFolder);
+    return interviewers.find((i) => i.folder === choice) || null;
+  }
+
   optInterviewer.addEventListener('change', () => {
     saveSettings({ interviewer: optInterviewer.value });
-    applyInterviewer();
+    if (optInterviewer.value !== 'auto') showInterviewer(chooseInterviewer(optDifficulty.value));
   });
   loadInterviewers().then((list) => {
     if (!list.length) return; // none installed: keep the drawn face and hide the choice
-    optInterviewer.replaceChildren(new Option('Drawn face (default)', ''), ...list.map((i) => new Option(i.name, i.folder)));
+    optInterviewer.replaceChildren(
+      new Option('Automatic (picked by difficulty)', 'auto'),
+      ...list.map((i) => new Option(i.name, i.folder)),
+      new Option('Drawn face', ''),
+    );
     interviewers = list;
-    // Not chosen yet: use the first installed interviewer. You can pick the drawn face at any time.
-    const saved = settings.interviewer;
-    optInterviewer.value = saved === null ? list[0].folder : list.some((i) => i.folder === saved) ? saved : '';
+    // Not chosen yet (or an interviewer that is no longer installed): Automatic
+    const saved = settings.interviewer ?? 'auto';
+    optInterviewer.value = saved === 'auto' || saved === '' || list.some((i) => i.folder === saved) ? saved : 'auto';
     $('interviewer-row').hidden = false;
-    applyInterviewer();
+    if (optInterviewer.value !== 'auto') showInterviewer(chooseInterviewer(optDifficulty.value));
   });
 
   /* ---------- Self-view (your camera, on screen only) ---------- */
@@ -194,7 +213,7 @@ export function initPractice(avatar) {
     refreshSetup();
   }
 
-  startBtn.addEventListener('click', () => {
+  startBtn.addEventListener('click', async () => {
     options = readOptions();
     saveSettings({
       mode: options.mode,
@@ -220,6 +239,15 @@ export function initPractice(avatar) {
       return;
     }
     session = createSession(questions);
+
+    // Pick the interviewer for this round (Automatic: the tough one for Hard, otherwise random)
+    if (interviewers.length) {
+      startBtn.disabled = true; // no double clicks while the face loads
+      const entry = chooseInterviewer(options.difficulty);
+      if (optInterviewer.value === 'auto') lastAutoFolder = entry ? entry.folder : '';
+      await showInterviewer(entry);
+      startBtn.disabled = false;
+    }
     $('setup').hidden = true;
     $('interview').hidden = false;
     showAnswerArea();

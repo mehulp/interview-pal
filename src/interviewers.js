@@ -15,7 +15,12 @@ function readFrames(frames) {
   return { neutral: frames.neutral, neutral2: isFile(frames.neutral2) ? frames.neutral2 : '', blink: frames.blink, talk };
 }
 
-// Returns [{ name, folder, frames }]. `frames` is null for video-clip interviewers.
+const LEVELS = ['easy', 'medium', 'hard'];
+
+// Optional "difficulty": ["hard"] means this interviewer is used for those rounds in Automatic mode.
+const readDifficulty = (d) => (Array.isArray(d) ? d.filter((x) => LEVELS.includes(x)) : []);
+
+// Returns [{ name, folder, frames, difficulty }]. `frames` is null for video-clip interviewers.
 // Any problem (no file, bad JSON) just means "none installed".
 export async function loadInterviewers() {
   try {
@@ -25,8 +30,21 @@ export async function loadInterviewers() {
     if (!Array.isArray(data?.interviewers)) return [];
     return data.interviewers
       .filter((i) => typeof i?.name === 'string' && i.name.trim() && /^[A-Za-z0-9_-]+$/.test(i?.folder || ''))
-      .map((i) => ({ name: i.name.trim(), folder: i.folder, frames: readFrames(i.frames) }));
+      .map((i) => ({ name: i.name.trim(), folder: i.folder, frames: readFrames(i.frames), difficulty: readDifficulty(i.difficulty) }));
   } catch {
     return [];
   }
+}
+
+// Automatic mode: choose who interviews you for this difficulty.
+//   - An interviewer that lists this difficulty is used (for example the tough one for "hard").
+//   - Otherwise one of the interviewers that list no difficulty is picked at random.
+//   - avoidFolder is last time's pick, so you do not get the same face twice in a row when there is a choice.
+export function pickInterviewer(list, difficulty, avoidFolder = '') {
+  const matched = list.filter((i) => i.difficulty.includes(difficulty));
+  const open = list.filter((i) => !i.difficulty.length);
+  const pool = matched.length ? matched : open.length ? open : list;
+  const fresh = pool.filter((i) => i.folder !== avoidFolder);
+  const choices = fresh.length ? fresh : pool;
+  return choices[Math.floor(Math.random() * choices.length)] || null;
 }
