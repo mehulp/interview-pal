@@ -264,3 +264,17 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 @media (prefers-reduced-motion: no-preference) { .meter-fill { transition: width 0.08s linear; } }
 #mic-check-advice { margin: 4px 0 12px; padding-left: 1.2em; }
 #mic-check-advice li { margin-bottom: 6px; }
+
+/* ---------- Phones ---------- */
+@media (max-width: 600px) {
+  .app-header { padding: 10px 12px; }
+  .app-header h1 { font-size: 1.1rem; }
+  .tabs { width: 100%; }
+  .tabs button { flex: 1; padding: 8px 4px; font-size: 0.9rem; }
+  .app-main { padding: 12px; gap: 12px; }
+  .card, .avatar-panel, .controls { padding: 12px; }
+  /* bigger tap targets */
+  .tabs button, button.small, .history-row, select, input[type="text"], input[type="number"] { min-height: 44px; }
+  .check input { width: 22px; height: 22px; }
+  .caption .question { font-size: 1.05rem; }
+}

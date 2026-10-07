@@ -1,11 +1,17 @@
 # InterviewPal: brief for Claude Code
 
-Build the app described in `docs/requirements.md`. Read that file first; it is the source of truth.
+Build and maintain the app described in `docs/requirements.md`. Read that file first; it is the source of truth. `README.md` is the user guide and has the project layout.
+
+## Status
+
+**v1 is complete.** All eleven build steps are done and the owner has tested the app in Chrome on a laptop. Not yet done: testing on a real phone, and publishing to GitHub Pages (the README has the steps; it needs the owner's GitHub account). Do not build the "Deferred to v2" or "Later" items in the requirements unless asked.
+
+For any new work: agree the change with the owner, update `docs/requirements.md` first (and `README.md` if users will notice it), then build it in small steps and commit after each one.
 
 ## Working style
 
 - The owner is semi-technical. Explain what you are doing in plain language, and keep the code simple and readable with short comments.
-- Build in the order listed under "Build order" in the requirements. After each step, tell me how to run and test it, then wait for my go-ahead.
+- Work one step at a time. After each step, tell me how to run and test it, then wait for my go-ahead.
 - Make a small git commit after each working step with a clear message.
 - Prefer plain HTML, CSS and JavaScript (ES modules), no build step. Ask before adding any dependency beyond `mammoth` and `pdf.js`.
 
@@ -30,20 +36,27 @@ The app has two modes, described in full in `docs/requirements.md` (see "Modes" 
 - **Practice** (default, no AI): spoken questions with serial or random order, a question level filter, difficulty (timer, tone, speech rate, repeat and skip rules) and optional self-marking.
 - **Coach** (AI, needs an API key): everything in Practice plus AI scoring and feedback. Follow-ups, weak-area ordering and tidy-up are deferred to v2.
 
-The build order was updated: 4 parser and review screen, 5 Practice loop, 6 mode picker, settings and Claude client, 7 Coach scoring and feedback, 8 question sets with JSON export and import, 9 realistic interviewer video clips and optional self-view, 10 summary and history (lean version), 11 polish and deployment. Steps 1 to 6 are done, and step 7 is built and awaiting testing. Do not build the v2 items (see "Deferred to v2" in the requirements) unless asked. Keep to one step at a time and wait for my go-ahead after each.
+Also built, beyond Practice and Coach: question sets with JSON export and import, realistic interviewers (photos or clips, a matching voice, picked by difficulty), optional camera self-view, a lean session summary and History tab, and a set of speech-recognition improvements (keep listening, microphone choice, microphone check, optional on-device recogniser).
 
-## First task (done)
+## How the code is organised
 
-1. Create the folder structure from the Modules table in the requirements, plus `.gitignore`, `README.md` and `LICENSE` (MIT).
-2. Create `index.html` with a basic responsive layout and a placeholder avatar.
-3. Show me how to run it locally with `python3 -m http.server`.
+- `index.html` holds all four screens (Interview, Questions, History, Settings); `src/ui.js` switches between them. `styles.css` holds all styles.
+- Logic that needs no page lives in small modules that can be tested on their own with Node: `parser.js` (the text rules), `sets.js`, `session.js`, `history.js`, `vocabulary.js`, `interviewers.js`, `phrases.js`.
+- Everything saved in the browser goes through `src/storage.js`. Settings are saved with `saveSettings({ key: value })`, which merges, so never save a whole copy of the settings object.
+- Anything a user's notes, answers or Claude's replies put on screen must be set with `textContent`, never as HTML.
+- `src/claude.js` is the only file that talks to the Anthropic API, and Practice mode never loads it (Coach loads it on demand).
 
-Stop there and wait for my feedback before step 2 of the build order.
+## Testing
+
+- There is no automated test suite in the repo. During the build, the pure modules and the speech recogniser (with a fake browser recogniser) were checked with throwaway Node scripts, and the screens were checked by the owner in Chrome. Adding a `tests/` folder with Node's built-in test runner would be a sensible next step if the code keeps growing.
+- Syntax check: `for f in src/*.js; do node --check $f; done`.
+- Voice, microphone and camera behaviour can only be checked in a real browser.
 
 ## Environment: Ubuntu on WSL
 
 - The project lives in the Linux filesystem (`~/interviewpal`), not under `/mnt/c`, for speed and reliable git.
 - Run the dev server inside WSL: `python3 -m http.server 8000`.
+- Choose the headset or microphone you actually use in the app's Microphone list (the Windows default may be the laptop microphone).
 - Test in **Google Chrome on the Windows side** at `http://localhost:8000`. WSL forwards localhost automatically, and the Windows microphone works there.
 - Do not test voice features by opening the WSL IP address. Microphone access needs `localhost` or HTTPS, so an IP address will block it.
 - Do not try to launch a browser from inside WSL. Tell me the URL and I will open it.

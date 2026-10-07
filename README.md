@@ -1,24 +1,279 @@
 # InterviewPal
 
-A daily mock-interview practice tool. Load your own Q&A notes, an animated interviewer asks the questions aloud, you answer by voice (or typing), and Claude gives short feedback compared with your notes.
+A daily mock-interview practice tool, built to get comfortable facing an interviewer.
 
-Status: early scaffold. See [docs/requirements.md](docs/requirements.md) for the full plan.
+You load your own questions and answers, a realistic interviewer asks them aloud, and you answer by voice or typing. You can practise with no AI at all, or switch on **Coach** mode, where Claude scores each answer against your own notes.
 
-## Run locally
+It is a plain website (HTML, CSS and JavaScript). There is no server, no login and no build step. Everything you enter stays in your browser.
 
-No build step is needed. From this folder:
+## Contents
+
+- [Quick start](#quick-start)
+- [What it does](#what-it-does)
+- [How to use it](#how-to-use-it)
+- [Writing your notes so they load well](#writing-your-notes-so-they-load-well)
+- [Practice and Coach modes](#practice-and-coach-modes)
+- [The interviewers](#the-interviewers)
+- [Voice, microphone and camera](#voice-microphone-and-camera)
+- [Your data and backups](#your-data-and-backups)
+- [Privacy](#privacy)
+- [Troubleshooting](#troubleshooting)
+- [Publishing on GitHub Pages](#publishing-on-github-pages)
+- [Project layout](#project-layout)
+- [Known limitations](#known-limitations)
+- [License](#license)
+
+## Quick start
+
+You need Python 3 (only to serve the files) and Google Chrome.
 
 ```bash
-python3 -m http.server
+cd interviewpal
+python3 -m http.server 8000
 ```
 
-Then open <http://localhost:8000> in Chrome. The microphone works on `localhost` and on HTTPS, but not on `file://` pages.
+Open <http://localhost:8000> in Chrome and allow the microphone when asked.
+
+- Use `localhost` (not an IP address, and not a `file://` page). The microphone and camera only work on `localhost` or on HTTPS.
+- Use the same address every time. Your saved questions and history belong to that address, so `localhost:8000` and `127.0.0.1:8000` do not share them.
+- On Windows with WSL, run the server inside WSL and open Chrome on the Windows side.
+
+## What it does
+
+- **Question sets.** Keep several named sets, for example Leadership and Technical, and mix them in one session.
+- **Load your own notes.** `.md`, `.txt`, `.docx` and `.pdf` files, or pasted text. A built-in reader finds the questions and answers, with no AI. You review and edit the list before using it.
+- **A realistic interviewer.** Photos or short clips of a real-looking person who blinks, listens and talks. Several interviewers can be installed, and a stern one can be used for hard rounds. The drawn face is the fallback.
+- **Spoken questions.** The browser reads each question aloud, in an Indian, US or UK English voice that matches the interviewer.
+- **Voice answers** with a live transcript you can correct, or just type.
+- **Difficulty.** Easy, medium or hard change the answer timer, the interviewer's tone, the speaking speed, and whether you can repeat or skip a question.
+- **Coach mode (optional).** Claude gives a score out of 10, what you covered, what you missed and one tip, compared with your reference answer, and can speak the feedback.
+- **Summary and History.** A summary after every session, with topics to revisit, and a History tab of past sessions.
+- **Eye-contact practice.** An optional mirrored picture of your own camera, shown only on your screen.
+
+## How to use it
+
+The four tabs at the top are **Interview**, **Questions**, **History** and **Settings**.
+
+1. **Questions tab: add your notes.**
+   - Open a set (the first one is called "My questions"). Use **New set** to create more, such as "Leadership" and "Technical".
+   - Choose a file or paste text, then click **Find questions**. They are added to the open set.
+   - Check each card. Fix the question or answer, add a topic, tag it **Easy** or **Hard**, or delete it. Text the reader could not place appears under "Not recognised".
+   - A question can live in only one set. Use **Move to set…** on a card to move it. A question that already exists in any set is skipped when you load a file, and you are told how many.
+2. **Interview tab: set up a session.**
+   - Pick a **mode**: Practice (the default) or Coach.
+   - Tick the **question sets** to draw from.
+   - Choose the **order** (in sequence or random), **question level** (all, only easy, or only hard), **difficulty** and **number of questions**.
+   - Pick the **accent** for the interviewer's voice and for your own speech, your **microphone**, and the **interviewer face** (Automatic is the default).
+   - Optional: self-marking (Practice), spoken feedback (Coach), self-view, and the on-device recogniser.
+   - Click **Start practice** (or **Start coaching**).
+3. **During the interview.**
+   - You get a short pause, then the interviewer asks the first question. The question also appears as a caption.
+   - Press **🎤 Answer** and speak, or just type. The words appear in the box, and you can correct them. Press **Stop** (or just **Next**) when you finish.
+   - **Repeat question** and **Skip** are available except on Hard. The timer counts down when the difficulty has one, and the interviewer moves on when it runs out.
+4. **After the session.** You see the summary straight away, and the session is saved to the **History** tab. Open any past session to read your answers and feedback, delete one, or clear the history.
+
+## Writing your notes so they load well
+
+The reader tries these layouts, in this order, and uses the first that fits:
+
+```text
+Q: What is a 1:1 meeting? [easy]
+A: A regular private meeting with a direct report to ...
+Q: How do you handle conflict in your team?
+Level: hard
+Topic: Leadership
+A: I listen to both sides first, then ...
+```
+
+```text
+## How do you delegate effectively?
+Match the task to the person, set a clear outcome, ...
+
+## Describe a time you gave difficult feedback?
+I used the SBI model ...
+```
+
+```text
+1. Why do you want to be an Engineering Manager?
+Because I enjoy growing people and ...
+2. How do you prioritise a roadmap?
+I score items by impact and effort ...
+```
+
+- `Question:` and `Answer:` work like `Q:` and `A:`. Bold markers and numbers such as `Q1.` are fine, and answers can run over several lines.
+- With headings, a heading that ends in `?` is the question. Other headings become the **topic**.
+- `[easy]` or `[hard]` at the end of a question, or a `Level:` line under it, sets the level. A `Topic:` line sets the topic.
+- The answer is optional. The interviewer only needs the question. Without an answer, Coach mode judges your reply on general merit, and self-marking has nothing to show.
+- Word and PDF files are turned into text first. Word headings and numbered lists work well. PDFs carry no heading information, so use `Q:`/`A:` or numbering there.
+- Anything that fits no layout is listed for you to fix by hand, so nothing is silently lost.
+
+## Practice and Coach modes
+
+| | Practice (default) | Coach |
+|---|---|---|
+| Needs an API key | No | Yes |
+| Network calls to an AI service | None | Yes, one per answer |
+| Scoring | None. Optional self-marking: Got it, Partly or Missed | Score out of 10, covered, missed and a tip, spoken or text |
+| Cost | Free | A few cents per 10-question session on a Sonnet model |
+
+**Difficulty settings**
+
+| | Easy | Medium | Hard |
+|---|---|---|---|
+| Answer timer | None (optional 5 minutes) | About 2 minutes | About 90 seconds |
+| Tone | Warm, encouraging | Neutral, professional | Brisk, challenging |
+| Speaking speed | Slower | Normal | Faster |
+| Repeat and skip | Allowed | Allowed | Not allowed |
+
+The interviewer's phrases are in `src/phrases.js`, and the rules above are in `src/session.js`. Both are short and easy to adjust.
+
+**Setting up Coach mode**
+
+1. Create an API key in the Anthropic Console. Setting a monthly spend limit for the key is a good idea.
+2. Open **Settings**, paste the key (it starts with `sk-ant-`) and click **Save key**.
+3. Click **Test connection**. It sends one tiny request and costs a fraction of a cent.
+4. On the Interview tab, **Coach** is now available. Without a key it stays greyed out, with a link to Settings.
+
+The model is `claude-sonnet-5-5` by default. You can change it in Settings.
+
+In Coach mode, only the question, your reference answer and your answer are sent to Anthropic. An empty answer scores 0 without a call. If a call fails, you can try again or skip the feedback.
+
+## The interviewers
+
+The face you see comes from `assets/interviewers/`. If nothing is installed, the drawn face is used.
+
+- **Photos.** A few photos of one person with the same framing: a neutral one, an eyes-closed one, and several with the mouth open. The app swaps between them to blink and talk.
+- **Video clips.** `listening.mp4` and `talking.mp4`, cross-faded and looped.
+- **Matching voice.** Each interviewer can have a voice profile, so a woman gets a female voice.
+- **Automatic choice.** An interviewer can be marked for a difficulty (for example the stern one for Hard). The others are picked at random for Easy and Medium.
+
+The full instructions, the file format and the settings are in [assets/interviewers/README.md](assets/interviewers/README.md).
+
+Your photos and clips are git-ignored on purpose, so they are never committed or published by accident. Use AI-generated people or images you have the right to use, and never someone's likeness without permission.
+
+## Voice, microphone and camera
+
+Speech recognition is the part that depends most on your setup. For the best results:
+
+- **Use a microphone close to your mouth.** A headset beats the laptop's built-in microphone by a wide margin. Pick it in the **Microphone** list on the Interview tab.
+- **Run the microphone check** in Settings. It shows which microphone is in use and how loud you are, with plain advice. Nothing is recorded.
+- **Bluetooth headsets** switch to a low-quality "Hands-Free" call mode when their microphone is used. If recognition is poor, compare it with a wired headset.
+- **Try the other accents.** English (India), (US) and (UK) can behave quite differently for the same voice.
+- **Speak at your normal pace.** The microphone stays open through pauses and waits for your last words when you press Next.
+- **Optional on-device recogniser** (experimental, Chrome only). A tick box on the Interview tab. It runs on your computer and is given the key terms from each question and answer. If your Chrome or accent does not support it, you are told and the standard recogniser is used.
+- **Typing always works**, so you are never stuck.
+
+**Camera self-view** is off by default. Turn it on to see a small mirrored picture of yourself in the corner, which helps you check where you are looking. The camera is used only to show the picture. It never records, saves or sends anything, never uses the microphone, and switches off when the session ends.
+
+**Eye contact tip:** place the window so the interviewer's eyes sit just below your webcam, and look at them while you answer.
+
+**Reduce motion:** if your system has "reduce motion" switched on, the faces stay still and show one picture per state.
+
+## Your data and backups
+
+Everything is stored in this browser, at this address only:
+
+| What | Where it lives | Backed up by Export? |
+|---|---|---|
+| Question sets | This browser | **Yes**, on the Questions tab |
+| Session history | This browser | No |
+| Settings | This browser | No |
+| API key | This browser | No |
+
+- **Export sets** (Questions tab, Backup) saves all sets to `interviewpal-sets-<date>.json`. **Import sets** reads such a file: sets with the same name are merged, new names create new sets, duplicate questions are skipped, and an invalid file changes nothing.
+- Clearing the browser's site data deletes everything above. Export your sets first, and keep your original notes in `my-notes/` (git-ignored).
+- The export file contains your notes. Keep it private and out of git (`interviewpal-sets-*.json` is already git-ignored).
+- History keeps the latest 200 sessions. It contains your answers, so keep the computer private.
 
 ## Privacy
 
-- Your API key is entered in Settings and stored only in your browser (localStorage). It is never committed.
-- Documents and answers are sent only to the Anthropic API. No analytics, no other servers.
-- Put personal notes in `my-notes/`, which is git-ignored.
+| What | Where it goes |
+|---|---|
+| Your notes and sets | Nowhere. They stay in your browser. |
+| Your answers and history | Nowhere. They stay in your browser. |
+| Coach mode feedback | The question, your reference answer and your answer go to the Anthropic API, and only in Coach mode |
+| Your API key | Stored in your browser, and sent only to Anthropic with your requests |
+| Voice answers | The browser's speech recogniser. **In Chrome this sends your audio to Google's speech service**, which is outside this app. Typing sends nothing. The on-device option avoids this where available. |
+| Spoken questions | Read by your browser's voices. |
+| Camera self-view | Shown on your screen only. Never recorded or sent. |
+| Word and PDF reading | Two libraries (`mammoth`, `pdf.js`) are downloaded from a public CDN when you first load such a file. Your file is not uploaded. |
+| Analytics | None. |
+
+## Troubleshooting
+
+- **The microphone does not work.** Use `http://localhost:8000` (not an IP address or a file), allow the microphone in the address bar, and pick the right one in the Microphone list. Voice input needs an internet connection in Chrome.
+- **Words are missed or wrong.** Run the microphone check, use a headset close to your mouth, try another accent, and avoid Bluetooth call mode.
+- **The interviewer has the wrong voice.** The Interview tab shows which voice was chosen. The match is guessed from the voice's name. Set a name hint in `assets/interviewers/interviewers.json`, as described in its README, or install more voices in your system.
+- **Start is greyed out.** No saved question matches your choices. Check the sets you ticked, the question level, and that you have questions on the Questions tab.
+- **Coach is greyed out.** Save an API key in Settings.
+- **A test of the key fails.** A "rejected" message means a wrong key. "Model not found" means the model name in Settings is wrong. "Too many requests" means a rate or spending limit.
+- **The faces do not appear.** The photos or clips must be in `assets/interviewers/<folder>/` and listed in `interviewers.json`. Names are case-sensitive.
+- **My questions disappeared.** You may have opened a different address (for example `127.0.0.1` instead of `localhost`), or cleared the browser data. Import your last export.
+- **After an update, the page looks old.** Hard refresh with Ctrl+Shift+R.
+
+## Publishing on GitHub Pages
+
+This is optional. It lets you use the app on your phone, over HTTPS. This has **not** been done yet, because it needs your GitHub account.
+
+1. Create a new repository on GitHub and push this project to it:
+   ```bash
+   git remote add origin https://github.com/<you>/interviewpal.git
+   git push -u origin main
+   ```
+2. In the repository, open **Settings → Pages**, choose **Deploy from a branch**, then the `main` branch and the `/ (root)` folder, and save. After a minute the site appears at `https://<you>.github.io/interviewpal/`.
+
+Things to know before you publish:
+
+- **A Pages site is public.** Anyone with the link can open the app. It contains no keys and no notes, so that is safe. Each visitor's data stays in their own browser.
+- **A private repository needs a paid GitHub plan for Pages.** On a free plan, make the repository public (safe, for the reason above) or keep running it locally.
+- **Your interviewer photos and clips are git-ignored,** so the published site shows the drawn face (with a harmless "couldn't load that interviewer's files" note on the setup screen, because `interviewers.json` still lists them). To publish them, you would have to remove the ignore rule and commit the files, which makes them public. Only do that for images you have the right to publish.
+- **Your sets will not be there.** Browser storage is separate for each address. Export your sets here and import them on the published site.
+- **On the phone,** use the published address (HTTPS). The microphone works there, and typing always works. The layout stacks into one column on small screens. It has not been tested on a real phone yet.
+- Enter your API key on the phone separately, in Settings. Think twice before saving a key on a device you share.
+
+## Project layout
+
+```text
+index.html             the page (all four screens)
+styles.css             all styles, including the avatar animations
+src/
+  ui.js                app shell: tabs, avatar
+  practice.js          Interview tab: setup, interview loop, summary
+  review.js            Questions tab: sets, loading notes, editing, backup
+  historyscreen.js     History tab
+  settings.js          Settings tab: API key, model, microphone check
+  parser.js            reads files and finds the questions (no AI)
+  sets.js              question set rules (no duplicates, move, import)
+  session.js           question order, difficulty rules, timer
+  phrases.js           what the interviewer says, per difficulty
+  history.js           session records and the numbers for the summary
+  summary.js           draws a session summary
+  claude.js            Anthropic API client and the marking prompt (Coach only)
+  speech.js            voices and speech recognition
+  vocabulary.js        key words that help the recogniser
+  miccheck.js          microphone level meter
+  selfview.js          the optional camera picture
+  avatar.js            the interviewer's face (drawn, photos or clips)
+  interviewers.js      reads the installed interviewers
+  storage.js           everything saved in the browser
+assets/interviewers/   your interviewer photos and clips (git-ignored) and their README
+docs/requirements.md   the full requirements and decisions
+CLAUDE.md              working notes for building with Claude Code
+my-notes/              your private notes (git-ignored)
+```
+
+There is no build step. The code is plain JavaScript modules, loaded directly by the page. The only outside code is `mammoth` and `pdf.js`, loaded from a CDN when a Word or PDF file is read.
+
+## Known limitations
+
+- Voice recognition accuracy depends on your microphone, room and accent. A stronger in-browser engine (for example Whisper) is a possible later addition.
+- Choosing a microphone for recognition, and the on-device recogniser, need a recent Chrome.
+- Whether a voice is male or female is guessed from its name.
+- The interviewer's mouth moves in a generic pattern, not in step with the exact words.
+- You can edit a question by hand into a duplicate of another set's question. The one-question-one-set rule is enforced when loading and importing.
+- History and the API key are not part of any export.
+- Not yet tested on a real phone or in Safari.
+- Planned for a later version: follow-up questions, weak-area-first ordering, "tidy up with AI" for messy files, a hint button, a panel of interviewers and a daily streak. See [docs/requirements.md](docs/requirements.md).
 
 ## License
 
