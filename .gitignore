@@ -12,3 +12,6 @@ interviewpal-sets-*.json
 
 # Your own interviewer clips and photos (private)
 assets/interviewers/*/
+
+# Demo recordings (large, and they show the interviewer photos)
+demo-videos/
