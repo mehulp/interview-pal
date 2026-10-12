@@ -1,0 +1,586 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>InterviewPal Architecture</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  /* Layout concept: an engineer's reference sheet. One column, figures first, prose second.
+     Blue marks things inside the browser, amber marks anything that leaves it. */
+  :root {
+    --bg: #f6f7f9;
+    --card: #ffffff;
+    --fg: #17202b;
+    --fg-soft: #3c4856;
+    --muted: #5c6877;
+    --line: #ccd3dc;
+    --accent: #2c52d4;
+    --tint: #eaf0ff;
+    --ext: #b05e00;
+    --ext-tint: #fff3e0;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #11151c; --card: #181e27; --fg: #e7ebf1; --fg-soft: #aeb8c6; --muted: #8d99aa;
+      --line: #2e3745; --accent: #8aa8ff; --tint: #1c2740; --ext: #f2a950; --ext-tint: #33281a;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #11151c; --card: #181e27; --fg: #e7ebf1; --fg-soft: #aeb8c6; --muted: #8d99aa;
+    --line: #2e3745; --accent: #8aa8ff; --tint: #1c2740; --ext: #f2a950; --ext-tint: #33281a;
+    color-scheme: dark;
+  }
+
+  body { background: var(--bg); color: var(--fg); font: 16px/1.6 var(--font-body); padding-inline: 16px; padding-block: 28px 72px; }
+  main { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
+  h1 { font-size: clamp(1.8rem, 4vw, 2.5rem); line-height: 1.15; margin: 0 0 12px; font-weight: 600; text-wrap: balance; }
+  h2 { font-size: 1.35rem; margin: 0 0 6px; font-weight: 600; text-wrap: balance; }
+  h3 { font-size: 1rem; margin: 18px 0 6px; font-weight: 600; }
+  p { margin: 0 0 12px; max-width: 70ch; }
+  code, .mono { font-family: var(--font-mono); font-size: 0.88em; }
+  a { color: var(--accent); }
+  section { display: flex; flex-direction: column; gap: 14px; }
+  .lede { color: var(--fg-soft); font-size: 1.08rem; }
+  .kicker { font: 500 0.78rem/1 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+
+  nav.toc { display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 18px; }
+  nav.toc a { font-size: 0.88rem; text-decoration: none; border-bottom: 1px solid var(--line); color: var(--fg-soft); padding-bottom: 1px; }
+  nav.toc a:hover, nav.toc a:focus-visible { color: var(--accent); border-color: var(--accent); outline: none; }
+
+  figure { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+  figcaption { color: var(--muted); font-size: 0.9rem; max-width: 72ch; }
+  .fig-scroll { overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 8px; }
+  .fig-scroll > svg, .fig-scroll > div > svg { display: block; width: 100%; min-width: 760px; height: auto; }
+
+  /* SVG vocabulary: shapes and text take their colours from the tokens */
+  svg text { font-family: var(--font-body); font-size: 13px; fill: var(--fg); }
+  svg .t-b { font-weight: 600; }
+  svg .t-mono text { font-family: var(--font-mono); font-size: 11.5px; }
+  svg .t-mono { font-family: var(--font-mono); font-size: 11.5px; }
+  svg .t-mut { fill: var(--muted); font-size: 11.5px; }
+  svg .t-acc { fill: var(--accent); font-size: 11.5px; font-weight: 600; }
+  svg .halo { paint-order: stroke; stroke: var(--card); stroke-width: 4px; stroke-linejoin: round; }
+  svg .box { fill: var(--card); stroke: var(--line); stroke-width: 1.25; }
+  svg .box-in { fill: var(--tint); stroke: var(--accent); stroke-width: 1.25; }
+  svg .box-ext { fill: var(--ext-tint); stroke: var(--ext); stroke-width: 1.25; }
+  svg .box-add { fill: var(--tint); stroke: var(--accent); stroke-width: 2; stroke-dasharray: 6 4; }
+  svg .band { fill: none; stroke: var(--line); stroke-width: 1.25; }
+  svg .zone { fill: none; stroke: var(--accent); stroke-width: 1.75; }
+  svg .note { fill: var(--tint); stroke: var(--accent); stroke-dasharray: 4 3; stroke-width: 1; }
+  svg .edge { fill: none; stroke: var(--fg-soft); stroke-width: 1.4; }
+  svg .edge-ext { stroke: var(--ext); }
+  svg .dash { stroke-dasharray: 5 4; }
+  svg .life { stroke: var(--line); stroke-width: 1; stroke-dasharray: 3 4; }
+  svg .mk-ext { fill: var(--ext); }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+  table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 0.92rem; }
+  th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+  th { font: 500 0.78rem/1.3 var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); background: var(--tint); }
+  tr:last-child td { border-bottom: 0; }
+  td:first-child { font-weight: 500; }
+
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+  .cols > * { min-width: 0; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .card h3 { margin-top: 0; }
+  .card p { margin: 0; font-size: 0.93rem; }
+  ol.steps { margin: 0; padding-left: 1.3em; max-width: 70ch; }
+  ol.steps li { margin-bottom: 8px; }
+
+  details { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+  details + details { margin-top: 8px; }
+  summary { cursor: pointer; font-weight: 500; }
+  summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+  details p { margin: 8px 0 0; font-size: 0.93rem; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.85rem; color: var(--muted); }
+  .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; border: 1.5px solid; }
+  .sw.in { background: var(--tint); border-color: var(--accent); }
+  .sw.ext { background: var(--ext-tint); border-color: var(--ext); }
+</style>
+
+<main>
+  <header>
+    <div class="kicker">System design notes</div>
+    <h1>InterviewPal architecture</h1>
+    <p class="lede">A mock-interview app that runs entirely in the browser. This page shows how it is put together, what talks to what, where it can fail, and what would change if it had to serve many people.</p>
+    <p class="lede">This is the visual version of <a href="https://github.com/mehulp/interview-pal/blob/main/docs/architecture.md">docs/architecture.md</a>, updated for v1.1. If the two ever differ, the Markdown file is the one to trust.</p>
+    <div class="legend" aria-label="Colour key">
+      <span><span class="sw in"></span>inside the browser</span>
+      <span><span class="sw ext"></span>leaves the browser, or holds a secret</span>
+    </div>
+    <nav class="toc" aria-label="Sections">
+      <a href="#context">Context</a><a href="#layers">Layers</a><a href="#states">Interview states</a><a href="#answer">One Coach answer</a>
+      <a href="#data">Data</a><a href="#patterns">Patterns</a><a href="#tradeoffs">Trade-offs</a><a href="#growth">If it grew</a>
+      <a href="#failures">Failures</a><a href="#interview">In an interview</a><a href="#quiz">Test yourself</a>
+    </nav>
+  </header>
+
+  <!-- 1. CONTEXT -->
+  <section id="context">
+    <h2>Who talks to whom</h2>
+    <p>There is no backend. The browser holds the app, the data and the interface, and reaches outside only when a feature needs it. About 4,200 lines of plain HTML, CSS and JavaScript, with no framework and no build step, plus unit tests for the pure logic.</p>
+    <figure>
+      <div class="fig-scroll">
+        <svg viewBox="0 0 900 440" role="img" aria-label="The browser contains the app, local storage, the Web Speech API and the camera and microphone. Only the Anthropic API and Google's speech service sit outside it, and the app is delivered once from a static host." style="color: var(--fg-soft)">
+          <defs>
+            <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker>
+            <marker id="e1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-ext" d="M0 0L10 5L0 10z"/></marker>
+          </defs>
+
+          <rect class="zone" x="170" y="60" width="470" height="370" rx="14"/>
+          <text class="t-b" x="186" y="410">Your browser (Chrome)</text>
+          <text class="t-mut" x="186" y="424">Trust boundary: notes, answers and history stay inside</text>
+
+          <rect class="box" x="15" y="200" width="120" height="70" rx="8"/>
+          <text class="t-b" x="75" y="225" text-anchor="middle">You</text>
+          <text class="t-mut" x="75" y="243" text-anchor="middle">voice, typing,</text>
+          <text class="t-mut" x="75" y="257" text-anchor="middle">camera</text>
+          <line class="edge" x1="135" y1="235" x2="200" y2="235" marker-end="url(#a1)"/>
+
+          <rect class="box-in" x="200" y="180" width="170" height="110" rx="8"/>
+          <text class="t-b" x="285" y="222" text-anchor="middle">InterviewPal</text>
+          <text class="t-mut" x="285" y="240" text-anchor="middle">HTML + CSS + JS</text>
+          <text class="t-mut" x="285" y="256" text-anchor="middle">ES modules, no build</text>
+
+          <rect class="box" x="440" y="90" width="170" height="70" rx="8"/>
+          <text class="t-b" x="525" y="120" text-anchor="middle">localStorage</text>
+          <text class="t-mut" x="525" y="138" text-anchor="middle">sets, history, settings, key</text>
+          <rect class="box" x="440" y="195" width="170" height="70" rx="8"/>
+          <text class="t-b" x="525" y="225" text-anchor="middle">Web Speech API</text>
+          <text class="t-mut" x="525" y="243" text-anchor="middle">speak and listen</text>
+          <rect class="box" x="440" y="300" width="170" height="70" rx="8"/>
+          <text class="t-b" x="525" y="330" text-anchor="middle">Camera and microphone</text>
+          <text class="t-mut" x="525" y="348" text-anchor="middle">self-view, level meter</text>
+
+          <line class="edge" x1="370" y1="200" x2="440" y2="130" marker-start="url(#a1)" marker-end="url(#a1)"/>
+          <text class="t-mut" x="398" y="158" text-anchor="end">read / write</text>
+          <line class="edge" x1="370" y1="235" x2="440" y2="230" marker-start="url(#a1)" marker-end="url(#a1)"/>
+          <line class="edge" x1="370" y1="270" x2="440" y2="330" marker-start="url(#a1)" marker-end="url(#a1)"/>
+          <text class="t-mut" x="396" y="320" text-anchor="end">camera, mic</text>
+
+          <rect class="box-ext" x="700" y="90" width="180" height="80" rx="8"/>
+          <text class="t-b" x="790" y="122" text-anchor="middle">Anthropic API</text>
+          <text class="t-mut" x="790" y="140" text-anchor="middle">Coach mode only</text>
+          <polyline class="edge edge-ext" points="285,180 285,34 790,34 790,90" marker-end="url(#e1)"/>
+          <text class="t-mut" x="298" y="26">Coach mode only: question, reference answer, your answer</text>
+
+          <rect class="box-ext" x="700" y="195" width="180" height="70" rx="8"/>
+          <text class="t-b" x="790" y="225" text-anchor="middle">Google speech service</text>
+          <text class="t-mut" x="790" y="243" text-anchor="middle">Chrome's recogniser</text>
+          <line class="edge edge-ext dash" x1="610" y1="230" x2="700" y2="230" marker-end="url(#e1)"/>
+          <text class="t-mut" x="655" y="222" text-anchor="middle">audio</text>
+
+          <rect class="box" x="700" y="300" width="180" height="50" rx="8"/>
+          <text class="t-b" x="790" y="322" text-anchor="middle">Static host</text>
+          <text class="t-mut" x="790" y="339" text-anchor="middle">python or GitHub Pages</text>
+          <line class="edge" x1="700" y1="325" x2="640" y2="325" marker-end="url(#a1)"/>
+          <rect class="box" x="700" y="365" width="180" height="50" rx="8"/>
+          <text class="t-b" x="790" y="387" text-anchor="middle">CDN</text>
+          <text class="t-mut" x="790" y="404" text-anchor="middle">mammoth, pdf.js (on demand)</text>
+          <line class="edge dash" x1="700" y1="390" x2="640" y2="390" marker-end="url(#a1)"/>
+
+          <text class="t-mut" x="15" y="330">Amber: outside services</text>
+          <text class="t-mut" x="15" y="346">Dashed: only when used</text>
+        </svg>
+      </div>
+      <figcaption>Everything you type or say stays inside the blue border. Two arrows cross it with your content: your answer to Anthropic in Coach mode, and your voice to Google through Chrome's recogniser. The host and the CDN only send files in.</figcaption>
+    </figure>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Layer</th><th>Choice</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>Language and UI</td><td>Plain JavaScript modules, one HTML file, one CSS file</td><td>No build step, so the code can be read and run as it is</td></tr>
+          <tr><td>Speech</td><td>Web Speech API: <code>speechSynthesis</code>, <code>SpeechRecognition</code></td><td>Free and built in. Typing stays as the fallback</td></tr>
+          <tr><td>Face</td><td>Inline SVG, photo frames or video clips</td><td>Three interchangeable ways to show the interviewer. The three shipped interviewers are AI-generated photo frames, committed to the repo</td></tr>
+          <tr><td>Storage</td><td><code>localStorage</code></td><td>Simple, enough for text data</td></tr>
+          <tr><td>AI</td><td>Anthropic Messages API from <code>fetch</code></td><td>No server of our own to run or secure</td></tr>
+          <tr><td>Documents</td><td><code>mammoth</code> (.docx), <code>pdf.js</code> (.pdf) from a CDN</td><td>Loaded only when such a file is used</td></tr>
+          <tr><td>Hosting</td><td>Local Python server, or GitHub Pages</td><td>Static files, so any web server works</td></tr>
+          <tr><td>Tests</td><td>Node's built-in test runner, run by a GitHub Action on every push</td><td>The pure modules need no browser and no installed packages</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 2. LAYERS -->
+  <section id="layers">
+    <h2>Three layers of code</h2>
+    <p>The rules that matter live in small pure modules. The messy browser and network work sits behind adapters. The screens call both.</p>
+    <figure>
+      <div class="fig-scroll">
+        <svg viewBox="0 0 900 690" role="img" aria-label="Three stacked layers. Presentation modules call the domain logic and the adapters. Domain logic is pure and testable in Node." style="color: var(--fg-soft)">
+          <defs>
+            <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker>
+          </defs>
+
+          <rect class="band" x="10" y="10" width="850" height="194" rx="10"/>
+          <text class="t-b" x="26" y="34">Presentation</text><text class="t-mut" x="118" y="34">touches the page</text>
+          <g class="t-mono">
+            <rect class="box-in" x="26" y="54" width="124" height="32" rx="6"/><text x="88" y="74" text-anchor="middle">index.html</text>
+            <rect class="box-in" x="162" y="54" width="124" height="32" rx="6"/><text x="224" y="74" text-anchor="middle">styles.css</text>
+            <rect class="box-in" x="298" y="54" width="124" height="32" rx="6"/><text x="360" y="74" text-anchor="middle">ui.js</text>
+            <rect class="box-in" x="434" y="54" width="124" height="32" rx="6"/><text x="496" y="74" text-anchor="middle">practice.js</text>
+            <rect class="box-in" x="26" y="100" width="124" height="32" rx="6"/><text x="88" y="120" text-anchor="middle">review.js</text>
+            <rect class="box-in" x="162" y="100" width="124" height="32" rx="6"/><text x="224" y="120" text-anchor="middle">historyscreen.js</text>
+            <rect class="box-in" x="298" y="100" width="124" height="32" rx="6"/><text x="360" y="120" text-anchor="middle">settings.js</text>
+            <rect class="box-in" x="434" y="100" width="124" height="32" rx="6"/><text x="496" y="120" text-anchor="middle">summary.js</text>
+            <rect class="box-add" x="26" y="146" width="124" height="32" rx="6"/><text x="88" y="166" text-anchor="middle">progressview.js</text>
+          </g>
+          <text class="t-mut" x="590" y="64">Screens, buttons and what you see.</text>
+          <text class="t-mut" x="590" y="82">practice.js runs the interview loop</text>
+          <text class="t-mut" x="590" y="100">and connects everything else.</text>
+          <text class="t-mut" x="590" y="118">progressview.js draws the charts.</text>
+
+          <rect class="band" x="10" y="254" width="850" height="194" rx="10"/>
+          <text class="t-b" x="26" y="278">Domain logic</text><text class="t-mut" x="132" y="278">pure: no page, no browser APIs, testable in Node</text>
+          <g class="t-mono">
+            <rect class="box" x="26" y="298" width="124" height="32" rx="6"/><text x="88" y="318" text-anchor="middle">parser.js</text>
+            <rect class="box" x="162" y="298" width="124" height="32" rx="6"/><text x="224" y="318" text-anchor="middle">sets.js</text>
+            <rect class="box" x="298" y="298" width="124" height="32" rx="6"/><text x="360" y="318" text-anchor="middle">session.js</text>
+            <rect class="box" x="434" y="298" width="124" height="32" rx="6"/><text x="496" y="318" text-anchor="middle">history.js</text>
+            <rect class="box" x="26" y="344" width="124" height="32" rx="6"/><text x="88" y="364" text-anchor="middle">phrases.js</text>
+            <rect class="box" x="162" y="344" width="124" height="32" rx="6"/><text x="224" y="364" text-anchor="middle">vocabulary.js</text>
+            <rect class="box" x="298" y="344" width="124" height="32" rx="6"/><text x="360" y="364" text-anchor="middle">interviewers.js</text>
+            <rect class="box-add" x="434" y="344" width="124" height="32" rx="6"/><text x="496" y="364" text-anchor="middle">delivery.js</text>
+            <rect class="box-add" x="26" y="390" width="124" height="32" rx="6"/><text x="88" y="410" text-anchor="middle">progress.js</text>
+            <rect class="box-add" x="162" y="390" width="124" height="32" rx="6"/><text x="224" y="410" text-anchor="middle">demoset.js</text>
+          </g>
+          <text class="t-mut" x="590" y="308">Decides things: what counts as a</text>
+          <text class="t-mut" x="590" y="326">question, no duplicates, who</text>
+          <text class="t-mut" x="590" y="344">interviews you, how a score adds up,</text>
+          <text class="t-mut" x="590" y="362">filler words and pace, your streak.</text>
+          <text class="t-mut" x="590" y="388">Covered by 62 unit tests (npm test).</text>
+
+          <rect class="band" x="10" y="498" width="850" height="148" rx="10"/>
+          <text class="t-b" x="26" y="522">Adapters</text><text class="t-mut" x="100" y="522">wrap the browser and outside services</text>
+          <g class="t-mono">
+            <rect class="box-ext" x="26" y="540" width="124" height="32" rx="6"/><text x="88" y="560" text-anchor="middle">storage.js</text>
+            <rect class="box-ext" x="162" y="540" width="124" height="32" rx="6"/><text x="224" y="560" text-anchor="middle">speech.js</text>
+            <rect class="box-ext" x="298" y="540" width="124" height="32" rx="6"/><text x="360" y="560" text-anchor="middle">claude.js</text>
+            <rect class="box-ext" x="434" y="540" width="124" height="32" rx="6"/><text x="496" y="560" text-anchor="middle">avatar.js</text>
+            <rect class="box-ext" x="26" y="586" width="124" height="32" rx="6"/><text x="88" y="606" text-anchor="middle">selfview.js</text>
+            <rect class="box-ext" x="162" y="586" width="124" height="32" rx="6"/><text x="224" y="606" text-anchor="middle">miccheck.js</text>
+          </g>
+          <text class="t-mut" x="590" y="552">The only files that touch</text>
+          <text class="t-mut" x="590" y="570">localStorage, voices, the API,</text>
+          <text class="t-mut" x="590" y="588">the camera and the network.</text>
+
+          <line class="edge" x1="700" y1="204" x2="700" y2="254" marker-end="url(#a2)"/>
+          <text class="t-mut" x="708" y="234">calls</text>
+          <polyline class="edge" points="860,85 884,85 884,570 860,570" marker-end="url(#a2)"/>
+          <text class="t-mut" transform="translate(874,330) rotate(-90)" text-anchor="middle">calls</text>
+          <line class="edge" x1="700" y1="498" x2="700" y2="448" marker-end="url(#a2)"/>
+          <text class="t-mut" x="708" y="478">reuse small helpers</text>
+
+          <rect class="box-add" x="26" y="660" width="26" height="16" rx="4"/>
+          <text class="t-mut" x="60" y="672">dashed: added in v1.1</text>
+        </svg>
+      </div>
+      <figcaption>Presentation calls down into both lower layers. Adapters may reuse a small helper from the domain layer, such as the shape of a question set. Domain modules never reach back up.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 3. STATES -->
+  <section id="states">
+    <h2>The interview is a small state machine</h2>
+    <p>Each question moves through the same few phases. Two details keep it safe: a short <code>finishing</code> phase while the app waits for the last spoken words, and a token that makes late timers and late speech results harmless.</p>
+    <figure>
+      <div class="fig-scroll">
+        <svg viewBox="0 0 880 350" role="img" aria-label="Phases of one question: setup, asking, answering, finishing, then marking or feedback, then back to asking, or finished." style="color: var(--fg-soft)">
+          <defs>
+            <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker>
+          </defs>
+          <rect class="box" x="20" y="40" width="140" height="56" rx="8"/>
+          <text class="t-b" x="90" y="64" text-anchor="middle">setup</text><text class="t-mut" x="90" y="82" text-anchor="middle">your choices</text>
+          <rect class="box-in" x="210" y="40" width="140" height="56" rx="8"/>
+          <text class="t-b" x="280" y="64" text-anchor="middle">asking</text><text class="t-mut" x="280" y="82" text-anchor="middle">interviewer speaks</text>
+          <rect class="box-in" x="400" y="40" width="140" height="56" rx="8"/>
+          <text class="t-b" x="470" y="64" text-anchor="middle">answering</text><text class="t-mut" x="470" y="82" text-anchor="middle">you speak or type</text>
+          <rect class="box-in" x="590" y="40" width="140" height="56" rx="8"/>
+          <text class="t-b" x="660" y="64" text-anchor="middle">finishing</text><text class="t-mut" x="660" y="82" text-anchor="middle">waits for last words</text>
+          <rect class="box-in" x="590" y="170" width="140" height="64" rx="8"/>
+          <text class="t-b" x="660" y="192" text-anchor="middle">marking</text>
+          <text class="t-mut" x="660" y="210" text-anchor="middle">Practice: self-mark</text><text class="t-mut" x="660" y="224" text-anchor="middle">Coach: AI feedback</text>
+          <rect class="box" x="590" y="280" width="140" height="56" rx="8"/>
+          <text class="t-b" x="660" y="304" text-anchor="middle">finished</text><text class="t-mut" x="660" y="322" text-anchor="middle">summary + History</text>
+
+          <line class="edge" x1="160" y1="68" x2="210" y2="68" marker-end="url(#a3)"/><text class="t-mut" x="185" y="60" text-anchor="middle">Start</text>
+          <line class="edge" x1="350" y1="68" x2="400" y2="68" marker-end="url(#a3)"/><text class="t-mut" x="375" y="60" text-anchor="middle">spoken</text>
+          <line class="edge" x1="540" y1="68" x2="590" y2="68" marker-end="url(#a3)"/><text class="t-mut" x="565" y="60" text-anchor="middle">Next</text>
+          <path class="edge" d="M280 40 V14 H660 V40" marker-end="url(#a3)"/><text class="t-mut" x="470" y="10" text-anchor="middle">Skip (not on Hard)</text>
+          <line class="edge" x1="660" y1="96" x2="660" y2="170" marker-end="url(#a3)"/><text class="t-mut" x="668" y="138">Practice self-mark, or Coach</text>
+          <path class="edge" d="M620 96 V124 H290 V96" marker-end="url(#a3)"/><text class="t-mut" x="455" y="118" text-anchor="middle">next question (no marking)</text>
+          <path class="edge" d="M590 202 H250 V96" marker-end="url(#a3)"/><text class="t-mut" x="420" y="196" text-anchor="middle">next question</text>
+          <line class="edge" x1="660" y1="234" x2="660" y2="280" marker-end="url(#a3)"/><text class="t-mut" x="668" y="262">last question</text>
+          <path class="edge dash" d="M730 68 H796 V308 H730" marker-end="url(#a3)"/>
+          <text class="t-mut" x="804" y="184">End session</text><text class="t-mut" x="804" y="198">(any phase)</text>
+          <path class="edge" d="M590 308 H90 V96" marker-end="url(#a3)"/><text class="t-mut" x="340" y="302" text-anchor="middle">Practise again, or leave the tab</text>
+        </svg>
+      </div>
+      <figcaption>The timer ending and the Next button both move answering to finishing. Without self-marking, Practice mode goes straight from finishing back to asking. Leaving the tab mid-session saves what was answered and returns to setup.</figcaption>
+    </figure>
+    <div class="cols">
+      <div class="card"><h3>The finishing phase</h3><p>Chrome delivers the last words a moment after you stop. Next waits up to about 1.5 seconds so nothing is cut off, and blocks double clicks while it waits.</p></div>
+      <div class="card"><h3>The epoch token</h3><p>Every question run gets an id. If you skip, end the session or the timer fires, older waiting code sees a stale id and quietly stops. The recogniser uses the same idea, so an old timeout cannot end a newer listening session.</p></div>
+    </div>
+  </section>
+
+  <!-- 4. COACH ANSWER -->
+  <section id="answer">
+    <h2>One Coach answer, end to end</h2>
+    <p>What happens between pressing Next and seeing feedback, including the error path.</p>
+    <figure>
+      <div class="fig-scroll"><div id="seq-wrap"></div></div>
+      <figcaption>Only the question, your reference answer and your answer are sent. An empty answer scores 0 without a call. Claude's reply is checked before it is used: the score must be a number and is clamped to 0 to 10. At the end of the session the app builds one history record and saves it.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 5. DATA -->
+  <section id="data">
+    <h2>Data model and storage</h2>
+    <p>Two shapes of data, kept apart on purpose. A history record is a copy of what happened, so editing or deleting a question later never rewrites the past.</p>
+    <figure>
+      <div class="fig-scroll">
+        <svg viewBox="0 0 900 330" role="img" aria-label="Question sets contain questions, and each question belongs to exactly one set. History sessions contain results, which are copies made at the end of a session. Four localStorage keys hold it all." style="color: var(--fg-soft)">
+          <defs>
+            <marker id="a4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker>
+          </defs>
+          <rect class="band" x="10" y="10" width="380" height="190" rx="10"/>
+          <text class="t-b" x="26" y="34">Question sets</text>
+          <rect class="box-in" x="30" y="48" width="340" height="40" rx="8"/>
+          <text class="t-mono" x="200" y="73" text-anchor="middle">Set: id, name</text>
+          <line class="edge" x1="200" y1="88" x2="200" y2="112" marker-end="url(#a4)"/>
+          <text class="t-mut" x="210" y="104">contains many</text>
+          <rect class="box" x="58" y="124" width="300" height="62" rx="8"/>
+          <rect class="box" x="52" y="118" width="300" height="62" rx="8"/>
+          <rect class="box" x="46" y="112" width="300" height="62" rx="8" transform="translate(0,0)"/>
+          <text class="t-b" x="196" y="138" text-anchor="middle">Question</text>
+          <text class="t-mono" x="196" y="158" text-anchor="middle">id, question, answer, topic, level</text>
+
+          <rect class="band" x="510" y="10" width="380" height="190" rx="10"/>
+          <text class="t-b" x="526" y="34">History</text>
+          <rect class="box-in" x="530" y="48" width="340" height="40" rx="8"/>
+          <text class="t-mono" x="700" y="73" text-anchor="middle">Session: id, startedAt, mode, total</text>
+          <line class="edge" x1="700" y1="88" x2="700" y2="112" marker-end="url(#a4)"/>
+          <text class="t-mut" x="710" y="104">records many</text>
+          <rect class="box" x="558" y="124" width="300" height="62" rx="8"/>
+          <rect class="box" x="552" y="118" width="300" height="62" rx="8"/>
+          <rect class="box" x="546" y="112" width="300" height="62" rx="8"/>
+          <text class="t-b" x="696" y="132" text-anchor="middle">Result</text>
+          <text class="t-mono" x="696" y="149" text-anchor="middle">question, answer, score, mark,</text>
+          <text class="t-mono" x="696" y="164" text-anchor="middle">skipped, timedOut, feedback, delivery</text>
+
+          <line class="edge dash" x1="352" y1="143" x2="544" y2="143" marker-end="url(#a4)"/>
+          <text class="t-mut" x="448" y="120" text-anchor="middle">copied at the end</text>
+          <text class="t-mut" x="448" y="134" text-anchor="middle">of a session</text>
+          <text class="t-mut" x="448" y="162" text-anchor="middle">a snapshot, not a link</text>
+          <text class="t-mut" x="30" y="218">One question, one set: loading and importing skip a question that exists anywhere.</text>
+          <text class="t-mut" x="510" y="218">delivery: filler words, pace, timer use (numbers only, no audio).</text>
+
+          <text class="t-b" x="10" y="248">Four localStorage keys, for this browser and this address only</text>
+          <rect class="box" x="10" y="258" width="205" height="62" rx="8"/>
+          <text class="t-mono" x="112" y="280" text-anchor="middle">interviewpal.sets</text><text class="t-mut" x="112" y="300" text-anchor="middle">question sets</text>
+          <rect class="box" x="235" y="258" width="205" height="62" rx="8"/>
+          <text class="t-mono" x="337" y="280" text-anchor="middle">interviewpal.history</text><text class="t-mut" x="337" y="300" text-anchor="middle">sessions, latest 200</text>
+          <rect class="box" x="460" y="258" width="205" height="62" rx="8"/>
+          <text class="t-mono" x="562" y="280" text-anchor="middle">interviewpal.settings</text><text class="t-mut" x="562" y="300" text-anchor="middle">modes, accents, mic, model</text>
+          <rect class="box-ext" x="685" y="258" width="205" height="62" rx="8"/>
+          <text class="t-mono" x="787" y="280" text-anchor="middle">interviewpal.apiKey</text><text class="t-mut" x="787" y="300" text-anchor="middle">the only secret, if saved</text>
+        </svg>
+      </div>
+      <figcaption>Clearing the browser's site data deletes all four. Question sets can be exported to a file as a backup. History and the API key are not exported.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 6. PATTERNS -->
+  <section id="patterns">
+    <h2>Patterns worth knowing the names of</h2>
+    <div class="cols">
+      <div class="card"><h3>Strategy</h3><p><code>avatar.js</code> draws the face as an SVG, photo frames or video clips behind one interface, <code>setState</code>. New kinds of face need no change elsewhere.</p></div>
+      <div class="card"><h3>Adapter with graceful degradation</h3><p><code>speech.js</code>, <code>storage.js</code> and <code>claude.js</code> hide browser quirks and fall back (typing, defaults, the drawn face) when something is missing.</p></div>
+      <div class="card"><h3>State machine plus epoch token</h3><p>Phases are explicit, and a run id lets late async work detect that it is out of date.</p></div>
+      <div class="card"><h3>Pure core, thin shell</h3><p>Rules live in modules with no page code, so they can be tested in Node without a browser. <code>npm test</code> runs 62 tests, and a GitHub Action runs them on every push.</p></div>
+      <div class="card"><h3>Lazy loading</h3><p>The Claude client loads by dynamic import, and the Word and PDF libraries load on demand. Practice mode never loads the API code.</p></div>
+      <div class="card"><h3>Migrate on read</h3><p>The old single question list becomes a set the first time the new version runs. No separate migration step.</p></div>
+      <div class="card"><h3>Validate before mutating</h3><p>An import is parsed and checked completely, then merged. A bad file cannot damage saved data.</p></div>
+      <div class="card"><h3>Snapshot</h3><p>A session record copies what it needs, so history stays correct when questions change.</p></div>
+      <div class="card"><h3>Derive, do not store twice</h3><p>The progress view (trend, streak, weak topics) is worked out from the saved history each time it is opened. There is no second copy to keep in step.</p></div>
+      <div class="card"><h3>Safe output</h3><p>Anything from your notes or from the AI is set as text, never as HTML, so it cannot inject markup.</p></div>
+    </div>
+  </section>
+
+  <!-- 7. TRADE-OFFS -->
+  <section id="tradeoffs">
+    <h2>Trade-offs</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Decision</th><th>Benefit</th><th>Cost or risk</th><th>If it grew</th></tr></thead>
+        <tbody>
+          <tr><td>No backend</td><td>No servers, no running cost, strong privacy</td><td>No sync between devices. Clearing browser data deletes everything</td><td>Accounts and a database</td></tr>
+          <tr><td>API key in the browser</td><td>Simple, fine for one person</td><td>Anyone with the browser profile can read it</td><td>A proxy server holds the key and adds rate limits</td></tr>
+          <tr><td>Browser speech recognition</td><td>Free, live, no setup</td><td>Accuracy depends on microphone and accent. Audio goes to Google</td><td>Whisper in the browser, or a server-side service</td></tr>
+          <tr><td><code>localStorage</code></td><td>Easy</td><td>About 5 MB, text only, synchronous</td><td>IndexedDB, or a server</td></tr>
+          <tr><td>Vanilla JS, no framework</td><td>Nothing to install, easy to read</td><td><code>practice.js</code> has grown large. DOM updates are manual</td><td>Split it up, or adopt a small framework</td></tr>
+          <tr><td>Photos committed to the repo</td><td>Free, and the published site shows them</td><td>About 2 MB in the repo. AI-generated, so not MIT-licensed (see <code>NOTICE.md</code>). The mouth does not follow the words</td><td>A live avatar service (paid)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Scaling is not a concern, because each user runs their own copy. What grows with use is Anthropic token cost (a few cents per Coach session) and, if images were hosted, bandwidth.</p>
+  </section>
+
+  <!-- 8. GROWTH -->
+  <section id="growth">
+    <h2>What changes if many people used it</h2>
+    <figure>
+      <div class="fig-scroll">
+        <svg viewBox="0 0 900 350" role="img" aria-label="Today the browser holds the API key and calls Anthropic directly. With many users, a server with login and rate limits holds the key, and a database stores data so it follows the user." style="color: var(--fg-soft)">
+          <defs>
+            <marker id="a5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker>
+          </defs>
+          <rect class="band" x="10" y="10" width="430" height="330" rx="10"/>
+          <text class="t-b" x="26" y="36">Today: one person</text>
+          <rect class="box-ext" x="40" y="100" width="150" height="80" rx="8"/>
+          <text class="t-b" x="115" y="132" text-anchor="middle">Browser</text><text class="t-mut" x="115" y="150" text-anchor="middle">holds the API key</text><text class="t-mut" x="115" y="165" text-anchor="middle">and all the data</text>
+          <rect class="box" x="270" y="100" width="150" height="80" rx="8"/>
+          <text class="t-b" x="345" y="145" text-anchor="middle">Anthropic API</text>
+          <line class="edge edge-ext" x1="190" y1="140" x2="270" y2="140" marker-end="url(#a5)"/>
+          <text class="t-mut" x="230" y="132" text-anchor="middle">request + key</text>
+          <text class="t-mut" x="26" y="250">Fine for one person: the key never leaves</text>
+          <text class="t-mut" x="26" y="268">their own browser, and there is nothing to run.</text>
+
+          <rect class="band" x="460" y="10" width="430" height="330" rx="10"/>
+          <text class="t-b" x="476" y="36">If many people used it</text>
+          <rect class="box-in" x="475" y="100" width="100" height="80" rx="8"/>
+          <text class="t-b" x="525" y="135" text-anchor="middle">Browser</text><text class="t-mut" x="525" y="153" text-anchor="middle">no key</text>
+          <rect class="box-add" x="615" y="100" width="110" height="80" rx="8"/>
+          <text class="t-b" x="670" y="128" text-anchor="middle">Your server</text><text class="t-mut" x="670" y="146" text-anchor="middle">login, limits,</text><text class="t-mut" x="670" y="160" text-anchor="middle">holds the key</text>
+          <text class="t-acc" x="670" y="94" text-anchor="middle">added</text>
+          <rect class="box" x="765" y="100" width="110" height="80" rx="8"/>
+          <text class="t-b" x="820" y="145" text-anchor="middle">Anthropic API</text>
+          <line class="edge" x1="575" y1="140" x2="615" y2="140" marker-end="url(#a5)"/><text class="t-mut" x="595" y="132" text-anchor="middle">login</text>
+          <line class="edge edge-ext" x1="725" y1="140" x2="765" y2="140" marker-end="url(#a5)"/><text class="t-mut" x="745" y="132" text-anchor="middle">key</text>
+          <rect class="box-add" x="615" y="240" width="110" height="64" rx="8"/>
+          <text class="t-b" x="670" y="268" text-anchor="middle">Database</text><text class="t-mut" x="670" y="286" text-anchor="middle">sets, history</text>
+          <text class="t-acc" x="670" y="234" text-anchor="middle">added</text>
+          <line class="edge" x1="670" y1="180" x2="670" y2="240" marker-start="url(#a5)" marker-end="url(#a5)"/><text class="t-mut" x="680" y="216">sync</text>
+          <text class="t-mut" x="476" y="324">Needed once people share it: accounts, a hidden key, shared storage.</text>
+        </svg>
+      </div>
+      <figcaption>Two things are added: a server that holds the key, so the browser never does, and a database, so data follows the person between devices. The browser to Anthropic edge disappears.</figcaption>
+    </figure>
+  </section>
+
+  <!-- 9. FAILURES -->
+  <section id="failures">
+    <h2>When something goes wrong</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>What fails</th><th>What the app does</th></tr></thead>
+        <tbody>
+          <tr><td>The browser stops listening (a pause)</td><td>Keeps listening. Gives up with a message only after about a minute of silence or repeated quick failures</td></tr>
+          <tr><td>Microphone blocked or missing</td><td>A plain message. Typing always works</td></tr>
+          <tr><td>The matching voice is missing</td><td>Uses another English voice, or adjusts the pitch, and says so</td></tr>
+          <tr><td>Anthropic errors, times out or refuses</td><td>A plain message with Try again or Skip feedback. The session carries on</td></tr>
+          <tr><td>Interviewer photos or clips are missing or fail to load</td><td>Shows the drawn face, with a note</td></tr>
+          <tr><td>Storage is blocked or full</td><td>The app keeps working and says it could not save. Unreadable saved data is never overwritten</td></tr>
+          <tr><td>A bad import file</td><td>Rejected with a message. Nothing is changed</td></tr>
+          <tr><td>You skip or end while something is pending</td><td>Late results are ignored by the epoch token</td></tr>
+          <tr><td>You leave the tab mid-session</td><td>The session ends, and what was answered is saved to History</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 10. INTERVIEW -->
+  <section id="interview">
+    <h2>Describing it in a system design interview</h2>
+    <ol class="steps">
+      <li><strong>Requirements.</strong> Practise interviews daily, private, cheap, laptop and phone, and typing must always work.</li>
+      <li><strong>Key constraint.</strong> A single user, so no backend is needed. That removes authentication, scaling and data protection as problems.</li>
+      <li><strong>Boundaries.</strong> Say exactly what leaves the device (Coach requests, voice audio) and why.</li>
+      <li><strong>Failure handling.</strong> For each outside dependency (speech, the API, media, storage), say what the fallback is.</li>
+      <li><strong>Evolution.</strong> Name the first thing that breaks with growth (the key in the browser, no device sync) and the fix (a proxy and a database).</li>
+    </ol>
+  </section>
+
+  <!-- 11. QUIZ -->
+  <section id="quiz">
+    <h2>Test yourself</h2>
+    <p>Answer out loud first, then open the answer.</p>
+    <div>
+      <details><summary>Where is the trust boundary, and what crosses it?</summary><p>The browser. Your notes, answers and history stay inside. Two things cross: your answer to Anthropic in Coach mode, and your voice to Google through Chrome's recogniser.</p></details>
+      <details><summary>Why is the parsing and set logic free of browser code?</summary><p>So it can be tested with plain Node scripts, and so the rules are in one place that the screens call. Browser quirks stay in the adapters.</p></details>
+      <details><summary>What problem does the run id token solve?</summary><p>Late async results. If you skip, end the session or a timer fires, older waiting code sees a stale id and stops, so it cannot change the screen or save an old answer.</p></details>
+      <details><summary>Why does a history record copy the question text?</summary><p>History must show what happened, not what the question says today. A copy is unaffected when you edit, move or delete the question.</p></details>
+      <details><summary>What two things must change before many people could use this?</summary><p>The API key must move to a server, with login and rate limits, and the data needs a database so it follows people between devices.</p></details>
+      <details><summary>Why does Next wait up to 1.5 seconds?</summary><p>The recogniser delivers the last words after you stop talking. Reading the answer box immediately would cut them off. The wait is capped so it can never hang.</p></details>
+    </div>
+  </section>
+</main>
+
+<script>
+  // Figure: one Coach answer as a sequence diagram. Drawn from a list so the spacing stays even.
+  (function () {
+    var lanes = ['You', 'practice.js', 'speech.js', 'claude.js', 'Anthropic API'];
+    var X = [95, 272, 450, 628, 805];
+    var LH = 14;
+    var rows = [
+      { m: [0, 1, 'press Next'] },
+      { m: [1, 2, 'stop(), wait up to 1.5 s'] },
+      { m: [2, 1, 'last words delivered'], d: 1 },
+      { s: [1, 'record the answer'] },
+      { n: [1, 3, 'Answer box empty?\nScore 0, and no API call.'] },
+      { m: [1, 3, 'evaluateAnswer(question, reference, answer)'] },
+      { m: [3, 4, 'POST /v1/messages\nkey from localStorage'], e: 1 },
+      { m: [4, 3, 'JSON text, or an error'], d: 1, e: 1 },
+      { n: [1, 4, 'Error path: HTTP error, timeout, no network or refusal.\nA plain message with Try again or Skip feedback. The session carries on.'] },
+      { s: [3, 'strip fences, parse, check,\nclamp score 0 to 10'] },
+      { m: [3, 1, 'score, covered, missed, tip, spoken line'] },
+      { m: [1, 0, 'feedback shown, spoken if switched on'] },
+      { m: [0, 1, 'Next question (or Finish)'] }
+    ];
+    var y = 76, parts = [];
+    rows.forEach(function (r) {
+      if (r.m) {
+        var ls = r.m[2].split('\n'), ay = y + ls.length * LH + 6;
+        var dir = r.m[1] > r.m[0] ? 1 : -1;
+        var x1 = X[r.m[0]] + 6 * dir, x2 = X[r.m[1]] - 6 * dir;
+        var cls = 'edge' + (r.d ? ' dash' : '') + (r.e ? ' edge-ext' : '');
+        parts.push('<line class="' + cls + '" x1="' + x1 + '" y1="' + ay + '" x2="' + x2 + '" y2="' + ay + '" marker-end="url(#' + (r.e ? 'se' : 'sa') + ')"/>');
+        ls.forEach(function (t, i) {
+          parts.push('<text class="t-mut halo" x="' + (x1 + x2) / 2 + '" y="' + (ay - 6 - (ls.length - 1 - i) * LH) + '" text-anchor="middle">' + t + '</text>');
+        });
+        y = ay + 20;
+      } else if (r.s) {
+        var sl = r.s[1].split('\n'), sx = X[r.s[0]];
+        parts.push('<path class="edge" d="M' + (sx + 6) + ' ' + (y + 6) + ' h30 v18 h-30" marker-end="url(#sa)"/>');
+        sl.forEach(function (t, i) {
+          parts.push('<text class="t-mut halo" x="' + (sx + 44) + '" y="' + (y + 16 + i * LH) + '">' + t + '</text>');
+        });
+        y += 22 + Math.max(sl.length, 1) * LH;
+      } else if (r.n) {
+        var nl = r.n[2].split('\n'), h = nl.length * LH + 14;
+        var nx = X[r.n[0]] - 70, nw = X[r.n[1]] - X[r.n[0]] + 140;
+        parts.push('<rect class="note" x="' + nx + '" y="' + y + '" width="' + nw + '" height="' + h + '" rx="6"/>');
+        nl.forEach(function (t, i) {
+          parts.push('<text class="t-mut" x="' + (nx + nw / 2) + '" y="' + (y + 18 + i * LH) + '" text-anchor="middle">' + t + '</text>');
+        });
+        y += h + 14;
+      }
+    });
+    var H = y + 12;
+    var head = ['<svg viewBox="0 0 900 ' + H + '" role="img" aria-label="Sequence of one Coach answer: press Next, wait for the last words, send the question, reference answer and answer to Anthropic, check the reply, then show feedback. An error path shows a plain message with Try again or Skip feedback." style="color: var(--fg-soft)">',
+      '<defs><marker id="sa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker>',
+      '<marker id="se" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mk-ext" d="M0 0L10 5L0 10z"/></marker></defs>'];
+    lanes.forEach(function (name, i) {
+      var ext = i === 4;
+      head.push('<line class="life" x1="' + X[i] + '" y1="44" x2="' + X[i] + '" y2="' + (H - 6) + '"/>');
+      head.push('<rect class="' + (ext ? 'box-ext' : 'box-in') + '" x="' + (X[i] - 64) + '" y="8" width="128" height="34" rx="6"/>');
+      head.push('<text class="' + (i === 0 ? 't-b' : 't-b t-mono') + '" x="' + X[i] + '" y="30" text-anchor="middle">' + name + '</text>');
+    });
+    document.getElementById('seq-wrap').innerHTML = head.join('') + parts.join('') + '</svg>';
+  })();
+</script>
+
+</body></html>

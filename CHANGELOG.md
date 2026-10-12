@@ -13,6 +13,7 @@ Make it publishable.
 - Unit tests with Node's built-in test runner, and a GitHub Action that runs the syntax check and the tests on every push.
 - README opening, changelog and a pre-publish checklist.
 - Published on GitHub Pages and checked on a real phone.
+- README screenshots, and a styled architecture page (`docs/architecture.html`) alongside the Markdown one.
 
 ## v1.0.0 (2026-10)
 

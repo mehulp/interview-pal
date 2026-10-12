@@ -2,7 +2,7 @@
 
 This document explains how InterviewPal is built, why, and what the trade-offs are. For what the app should do, see [requirements.md](requirements.md). For how to use it, see the [README](../README.md).
 
-The diagrams are written in Mermaid, which GitHub draws automatically.
+The diagrams are written in Mermaid, which GitHub draws automatically. A styled, hand-drawn version of the same material is on the [live site](https://mehulp.github.io/interview-pal/docs/architecture.html) (`docs/architecture.html`). If the two differ, this file is the one to trust, and both should be updated together.
 
 ## 1. The one-sentence architecture
 
