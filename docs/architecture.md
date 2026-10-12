@@ -86,7 +86,7 @@ flowchart TB
     P -->|calls| A
 ```
 
-This is a "pure core, thin shell" design. The rules that matter (parsing, no duplicate questions, scoring numbers, difficulty rules, who gets picked) sit in small pure modules that can be tested with plain Node scripts and no browser. Everything messy (speech, camera, API, storage) sits behind adapters, so a failure or a missing feature is handled in one place. Domain modules never touch the page or browser APIs. Adapters may reuse small domain helpers, such as the shape of a question set.
+This is a "pure core, thin shell" design. The rules that matter (parsing, no duplicate questions, scoring numbers, difficulty rules, who gets picked) sit in small pure modules that can be tested with plain Node scripts and no browser. Everything messy (speech, camera, API, storage) sits behind adapters, so a failure or a missing feature is handled in one place. Domain modules never touch the page or browser APIs, which is what lets `tests/` run them under plain Node (`npm test`, also run by a GitHub Action on every push). Adapters may reuse small domain helpers, such as the shape of a question set.
 
 ## 5. The major components
 

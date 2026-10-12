@@ -6,7 +6,7 @@ Build and maintain the app described in `docs/requirements.md`. Read that file f
 
 **v1 is complete.** All eleven build steps are done and the owner has tested the app in Chrome on a laptop. Not yet done: testing on a real phone, and publishing to GitHub Pages (the README has the steps; it needs the owner's GitHub account). Do not build the "Deferred to v2" or "Later" items in the requirements unless asked.
 
-**v1.1 ("make it publishable") is agreed and documented in `docs/requirements.md`, but not started.** Its five steps (12 to 16) are done in order, one at a time, with a commit after each and the owner's go-ahead between them: publish the interviewers, the demo set, delivery analytics, the progress view and streak, repo polish. The v1 state is to be tagged `v1.0.0` at commit `7417913`.
+**v1.1 ("make it publishable") is complete** (steps 12 to 16 in `docs/requirements.md`): published interviewers with a NOTICE, the demo set, delivery analytics, the progress view and streak, and repo polish (tests, GitHub Action, README opening, changelog, pre-publish checklist). Tags `v1.0.0` (commit `7417913`) and `v1.1.0` exist locally and have not been pushed. Still to do, by the owner: run `docs/pre-publish-checklist.md`, publish to GitHub Pages, then fill in the live demo link and the screenshot and GIF placeholders in the README.
 
 For any new work: agree the change with the owner, update `docs/requirements.md` first (and `README.md` if users will notice it), then build it in small steps and commit after each one.
 
@@ -51,8 +51,8 @@ Also built, beyond Practice and Coach: question sets with JSON export and import
 
 ## Testing
 
-- Today there is no automated test suite in the repo. During the build, the pure modules and the speech recogniser (with a fake browser recogniser) were checked with throwaway Node scripts, and the screens were checked by the owner in Chrome. v1.1 step 16 adds a `tests/` folder (Node's built-in test runner, run with `node --test tests/`), a minimal `package.json` with `"type": "module"` and no dependencies, and a GitHub Action that runs the syntax check and the tests on every push.
-- Syntax check: `for f in src/*.js; do node --check $f; done`.
+- Unit tests are in `tests/` (Node's built-in test runner) for the pure modules: parser, sets, session, history, vocabulary, delivery and progress. Run `npm test` (same as `node --test tests/*.test.js`) and `npm run check`. `package.json` has no dependencies; it only sets `"type": "module"` and the two scripts. A GitHub Action runs both on every push. Add or update tests whenever a pure module changes. The speech recogniser and the screens are checked by hand in Chrome.
+- Syntax check: `npm run check` (or `for f in src/*.js; do node --check $f; done`).
 - Voice, microphone and camera behaviour can only be checked in a real browser.
 
 ## Environment: Ubuntu on WSL

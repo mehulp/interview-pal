@@ -1,10 +1,15 @@
 # InterviewPal
 
-A daily mock-interview practice tool, built to get comfortable facing an interviewer.
+**InterviewPal is a mock-interview practice tool that you run in your browser.** Load your own questions and model answers (or try the built-in Engineering Manager demo), and a realistic AI-generated interviewer asks them aloud while you answer by voice or typing. Practise with no AI and no account at all, or switch on Coach mode to have Claude score each answer against your own notes. It tracks your pace and filler words, your progress and your weak topics, and everything stays in your browser.
 
-> **Planned for v1.1** (see [docs/requirements.md](docs/requirements.md)): a one-paragraph pitch with a live demo link and screenshots, a "Try the demo" question set, delivery analytics (filler words and pace for voice answers), a progress view with a daily streak, tests and a changelog.
+**Live demo:** _coming soon (link to be added after publishing on GitHub Pages)_
 
-You load your own questions and answers, a realistic interviewer asks them aloud, and you answer by voice or typing. You can practise with no AI at all, or switch on **Coach** mode, where Claude scores each answer against your own notes.
+<!-- Replace these placeholders with real images in docs/images/ -->
+| Interview | Summary and delivery | Progress |
+|---|---|---|
+| _screenshot: docs/images/interview.png_ | _screenshot: docs/images/summary.png_ | _screenshot: docs/images/progress.png_ |
+
+_GIF: a short screen recording of one question and answer, to be added as docs/images/demo.gif._
 
 **AI-generated interviewers:** the interviewer pictures are AI-generated, show no real people, and are not covered by the MIT licence. See [assets/interviewers/NOTICE.md](assets/interviewers/NOTICE.md).
 
@@ -25,6 +30,8 @@ It is a plain website (HTML, CSS and JavaScript). There is no server, no login a
 - [Publishing on GitHub Pages](#publishing-on-github-pages)
 - [Project layout](#project-layout) (and [how it is built](docs/architecture.md))
 - [Known limitations](#known-limitations)
+- [Tests](#tests)
+- [Changelog and publishing](#changelog-and-publishing)
 - [License](#license)
 
 ## Quick start
@@ -268,6 +275,9 @@ src/
   avatar.js            the interviewer's face (drawn, photos or clips)
   interviewers.js      reads the installed interviewers
   storage.js           everything saved in the browser
+tests/                 unit tests (Node's built-in test runner)
+.github/workflows/     the GitHub Action that runs the checks
+CHANGELOG.md           what changed in each version
 assets/interviewers/   the AI-generated interviewer photos and clips, their README and NOTICE.md
 docs/requirements.md   the full requirements and decisions
 docs/architecture.md   how it is built and why: diagrams, components, trade-offs
@@ -288,6 +298,21 @@ There is no build step. The code is plain JavaScript modules, loaded directly by
 - Not yet tested on a real phone or in Safari.
 - Planned for a later version: follow-up questions, weak-area-first ordering, "tidy up with AI" for messy files, a hint button and a panel of interviewers. Weak-area-first ordering is planned together with spaced repetition. See [docs/requirements.md](docs/requirements.md).
 
+## Tests
+
+The pure logic (reader, sets, sessions, history, vocabulary, delivery, progress) has unit tests that need only Node 20 or newer, no install:
+
+```bash
+npm run check   # syntax check of every source file
+npm test        # the unit tests (node --test tests/*.test.js)
+```
+
+A GitHub Action runs both on every push. Voice, microphone and camera behaviour can only be checked in a real browser.
+
+## Changelog and publishing
+
+See [CHANGELOG.md](CHANGELOG.md). Before the first push to GitHub, run through the [pre-publish checklist](docs/pre-publish-checklist.md).
+
 ## License
 
-MIT, see [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE). The interviewer images are not covered by it; see [assets/interviewers/NOTICE.md](assets/interviewers/NOTICE.md).
