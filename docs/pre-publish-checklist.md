@@ -9,6 +9,8 @@ Run this before the first push to GitHub, and again before making a repository p
 git log --all -p --no-color | grep -n -i -E "sk-ant-[A-Za-z0-9_-]{10,}|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{30,}|github_pat_|xox[bp]-|-----BEGIN [A-Z ]*PRIVATE KEY|api[_-]?key['\"]?\s*[:=]\s*['\"][A-Za-z0-9_-]{16,}"
 ```
 
+The only match you should see is this checklist's own command line (the scan finds the text of the scan). Anything else needs a look.
+
 ## 2. Scan the history for private files
 
 ```bash
