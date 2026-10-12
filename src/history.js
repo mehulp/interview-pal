@@ -23,6 +23,7 @@ function cleanResult(r) {
     skipped: Boolean(r.skipped),
     timedOut: Boolean(r.timedOut),
     seconds: r.seconds || 0,
+    delivery: r.delivery || null, // v1.1: filler words, pace, timer use (older records have none)
     mark: r.mark || '', // Practice self-mark: 'got' | 'partly' | 'missed'
     score: r.score ?? null, // Coach score out of 10
     covered: r.covered || [],

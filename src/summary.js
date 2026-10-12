@@ -1,6 +1,7 @@
 // Summary: draws one session's summary. Used at the end of a session and on the History tab.
 // All text is set with textContent, so answers and feedback can't inject HTML.
 import { summarize, weakSpots, formatDuration, formatDate, MARK_TEXT } from './history.js';
+import { summarizeDelivery, describeDelivery, paceLabel, listFillers } from './delivery.js';
 
 // Small helper to build an element.
 function el(tag, props = {}, children = []) {
@@ -40,6 +41,9 @@ function questionDetails(r, index) {
     if (r.covered.length) body.append(el('p', {}, [el('strong', { textContent: 'You covered' })]), list(r.covered));
     if (r.missed.length) body.append(el('p', {}, [el('strong', { textContent: 'You missed' })]), list(r.missed));
     if (r.tip) body.append(el('p', {}, [el('strong', { textContent: 'Tip: ' }), r.tip]));
+  }
+  if (r.delivery && !r.skipped) {
+    body.append(el('p', {}, [el('strong', { textContent: 'Delivery' })]), list(describeDelivery(r.delivery)));
   }
   const detail = [r.set && `Set: ${r.set}`, r.topic && `Topic: ${r.topic}`, r.level && `Level: ${r.level}`].filter(Boolean).join(' · ');
   if (detail) body.append(el('p', { className: 'sum-note', textContent: detail }));
@@ -82,6 +86,20 @@ export function renderSummary(container, record, note = '') {
         list(w.questions),
       ]))));
     }
+  }
+
+  // Delivery totals (Records from before v1.1 have none, so nothing is shown for them)
+  const delivery = summarizeDelivery(record.results);
+  if (delivery) {
+    const lines = [];
+    lines.push(delivery.wpm !== null
+      ? `Pace: ${delivery.wpm} words per minute, ${paceLabel(delivery.wpm)} (spoken answers only)`
+      : 'Pace: not enough spoken words to measure');
+    lines.push(`Filler words: ${delivery.fillers} in ${delivery.words} words (${delivery.fillersPer100} per 100 words)`
+      + (delivery.fillers ? `: ${listFillers(delivery.fillerWords)}` : ''));
+    if (delivery.timerUsed !== null) lines.push(`On average you used ${delivery.timerUsed}% of the timer`);
+    parts.push(el('h3', { textContent: 'Delivery' }), list(lines));
+    parts.push(el('p', { className: 'hint', textContent: 'Worked out on this device from your words and timings. Nothing is recorded or sent. Some browsers leave "um" and "uh" out of voice transcripts, so the filler count can be low.' }));
   }
 
   parts.push(el('h3', { textContent: 'Question by question' }));

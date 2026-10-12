@@ -17,6 +17,7 @@ import { loadInterviewers, pickInterviewer } from './interviewers.js';
 import { createSelfView } from './selfview.js';
 import { loadSets, loadQuestions, loadSettings, saveSettings, getApiKey, saveSession } from './storage.js';
 import { buildSessionRecord } from './history.js';
+import { analyzeAnswer } from './delivery.js';
 import { renderSummary } from './summary.js';
 
 const $ = (id) => document.getElementById(id);
@@ -59,6 +60,7 @@ export function initPractice(avatar) {
   let sayId = 0;
   let timer = null;
   let startedAt = 0;
+  let voice = { chunks: [], live: '', ms: 0, since: 0 }; // speech heard during the current answer
   let sessionStartedAt = 0; // when the whole session began (for the summary)
   let listening = false;
   let onDeviceReady = false; // the on-device recogniser is switched on and works here
@@ -321,6 +323,7 @@ export function initPractice(avatar) {
     showAnswerArea();
     $('progress').textContent = `Question ${session.position()} of ${session.total}`;
     answerBox.value = '';
+    voice = { chunks: [], live: '', ms: 0, since: 0 }; // what the speech recogniser heard for this answer
     status.textContent = '';
     timerEl.hidden = true;
     setButtons();
@@ -392,6 +395,14 @@ export function initPractice(avatar) {
       mark: null,
       seconds: wasAnswering ? Math.round((Date.now() - startedAt) / 1000) : 0,
     };
+    // Delivery numbers come from the text and the timings only. No audio is kept.
+    record.delivery = reason === 'skip' ? null : analyzeAnswer({
+      answer: record.answer,
+      spokenText: voice.chunks.join(' '),
+      spokenSeconds: voice.ms / 1000,
+      seconds: record.seconds,
+      timerSeconds: timerSecondsFor(options.difficulty, options.easyTimer),
+    });
     session.record(record);
 
     const wantsMark = options.selfMark && reason !== 'skip' && q.answer;
@@ -571,8 +582,15 @@ export function initPractice(avatar) {
     onText: (finalText, interim) => {
       // The live transcript goes straight into the box, so you can correct it
       answerBox.value = joinText(textBefore, finalText, interim);
+      voice.live = joinText(finalText, interim);
     },
     onEnd: () => {
+      if (voice.since) { // keep what was heard, and how long the microphone was on
+        voice.ms += Date.now() - voice.since;
+        voice.chunks.push(voice.live);
+      }
+      voice.since = 0;
+      voice.live = '';
       listening = false;
       micBtn.textContent = '🎤 Answer';
       if (avatar.getState() === 'listening') avatar.setState('idle');
@@ -585,6 +603,8 @@ export function initPractice(avatar) {
     if (phase !== 'answering') return;
     hush(); // the mic should not hear the interviewer
     textBefore = answerBox.value;
+    voice.since = Date.now();
+    voice.live = '';
     listening = true;
     micBtn.textContent = '⏹ Stop';
     status.textContent = 'Listening… speak your answer.';

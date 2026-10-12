@@ -52,6 +52,7 @@ Open <http://localhost:8000> in Chrome and allow the microphone when asked.
 - **Difficulty.** Easy, medium or hard change the answer timer, the interviewer's tone, the speaking speed, and whether you can repeat or skip a question.
 - **Coach mode (optional).** Claude gives a score out of 10, what you covered, what you missed and one tip, compared with your reference answer, and can speak the feedback.
 - **Summary and History.** A summary after every session, with topics to revisit, and a History tab of past sessions.
+- **Delivery figures (voice answers).** Filler words, words per minute and how much of the timer you used, per answer and for the whole session. Worked out on your device from the words and timings; nothing is recorded.
 - **Eye-contact practice.** An optional mirrored picture of your own camera, shown only on your screen.
 
 ## How to use it
@@ -201,6 +202,7 @@ Everything is stored in this browser, at this address only:
 | Voice answers | The browser's speech recogniser. **In Chrome this sends your audio to Google's speech service**, which is outside this app. Typing sends nothing. The on-device option avoids this where available. |
 | Spoken questions | Read by your browser's voices. |
 | Camera self-view | Shown on your screen only. Never recorded or sent. |
+| Delivery figures | Counted on your device from the words and timings, and saved in History. No audio is kept. |
 | Word and PDF reading | Two libraries (`mammoth`, `pdf.js`) are downloaded from a public CDN when you first load such a file. Your file is not uploaded. |
 | Analytics | None. |
 
