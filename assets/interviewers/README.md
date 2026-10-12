@@ -1,7 +1,7 @@
 # Interviewer photos and clips
 
 Put photos or short video clips of a realistic interviewer here. If none are installed, the app uses its drawn face.
-The interviewers that come with the app are AI-generated and are committed; see [NOTICE.md](NOTICE.md) (added in v1.1). If you add your own, they must be AI-generated or otherwise rights-cleared, must never use a real person's likeness, and must be listed in NOTICE.md before you commit them. Keep clips small.
+The interviewers that come with the app are AI-generated and are committed; see [NOTICE.md](NOTICE.md). If you add your own, they must be AI-generated or otherwise rights-cleared, must never use a real person's likeness, and must be listed in NOTICE.md before you commit them. Keep clips small.
 There are two ways to make an interviewer: photos (easy) or video clips.
 
 ## Option 1: photos (a few stills of one person)

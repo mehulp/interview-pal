@@ -223,7 +223,6 @@ An answer is optional in Practice mode, because the interviewer only needs the q
 
 - The camera (self-view) is used only to show a picture on your own screen. Frames are never recorded, stored or sent anywhere.
 - Interviewer photos and clips live in `assets/interviewers/`. **From v1.1 they are committed and published.** The rule for committed media: it must be AI-generated or otherwise rights-cleared, it must be listed in `assets/interviewers/NOTICE.md`, and it must never use a real person's likeness. Keep clips small (under about 10 MB each). No paid or third-party avatar service. The shipped ones are AI-generated and are not covered by the MIT licence (see the NOTICE file).
-- Until v1.1 step 12 is done, the folders inside `assets/interviewers/` are still git-ignored.
 - `demo-videos/` (screen recordings) stays git-ignored.
 - Keep personal Q&A notes out of the repo. They are loaded in the browser and never need to be committed. A `my-notes/` folder is git-ignored for local use, and so are exported sets (`interviewpal-sets-*.json`).
 - Voice input uses the browser's speech recognition. In Chrome this sends the audio to Google's speech service, which is outside this app's control. Typing sends nothing anywhere.

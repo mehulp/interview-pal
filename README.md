@@ -2,9 +2,11 @@
 
 A daily mock-interview practice tool, built to get comfortable facing an interviewer.
 
-> **Planned for v1.1** (see [docs/requirements.md](docs/requirements.md)): a one-paragraph pitch with a live demo link and screenshots, a "Try the demo" question set, delivery analytics (filler words and pace for voice answers), a progress view with a daily streak, tests and a changelog. The interviewers will also be published; they are AI-generated, see the notice in `assets/interviewers/NOTICE.md` once it is added.
+> **Planned for v1.1** (see [docs/requirements.md](docs/requirements.md)): a one-paragraph pitch with a live demo link and screenshots, a "Try the demo" question set, delivery analytics (filler words and pace for voice answers), a progress view with a daily streak, tests and a changelog.
 
 You load your own questions and answers, a realistic interviewer asks them aloud, and you answer by voice or typing. You can practise with no AI at all, or switch on **Coach** mode, where Claude scores each answer against your own notes.
+
+**AI-generated interviewers:** the interviewer pictures are AI-generated, show no real people, and are not covered by the MIT licence. See [assets/interviewers/NOTICE.md](assets/interviewers/NOTICE.md).
 
 It is a plain website (HTML, CSS and JavaScript). There is no server, no login and no build step. Everything you enter stays in your browser.
 
