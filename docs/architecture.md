@@ -69,6 +69,8 @@ flowchart TB
         D5["phrases.js"]
         D6["vocabulary.js"]
         D7["interviewers.js"]
+        D8["delivery.js (v1.1)"]
+        D9["progress.js (v1.1)"]
     end
     subgraph A["Adapters: wrap the browser and outside services"]
         direction LR
@@ -96,6 +98,9 @@ This is a "pure core, thin shell" design. The rules that matter (parsing, no dup
 | `avatar.js` | One interface, `setState('idle' \| 'talking' \| 'listening')`, with three ways to draw the face: photo frames, video clips or an SVG. It falls back to the SVG if files fail to load |
 | `claude.js` | The API client. It builds the marking prompt (question, reference answer and answer inside tags, JSON-only reply), validates the reply, and turns HTTP errors into plain messages |
 | `history.js`, `summary.js` | At the end of a session `buildSessionRecord` takes a snapshot of the results, and `renderSummary` draws it, right after the session and on the History tab |
+| `delivery.js` (v1.1) | Pure. From an answer's text, its duration, whether it was spoken or typed, and the timer, works out filler words, words per minute (spoken only) and length against the timer. The numbers are stored in the history snapshot. No audio is kept |
+| `progress.js` and a progress view (v1.1) | `progress.js` is pure: it turns stored history into the score trend, sessions per day, a weak-topics heat map and the daily streak. A page module draws them as plain SVG or CSS on the History tab |
+| `demoset.js` (v1.1) | The "Try the demo" questions, held as data in the code and loaded through the same import path as a file, so the duplicate rules apply and no network call is made |
 
 ## 6. The interview as a state machine
 
@@ -193,6 +198,8 @@ erDiagram
     }
 ```
 
+From v1.1 a result also stores `spoken` (true or false), the answer's duration and a `delivery` object (filler count, words per minute, length against the timer). Records saved before v1.1 have none of these and still display.
+
 A session result is a **copy** of what happened (a snapshot), not a link to the question. Editing or deleting a question later does not rewrite history.
 
 Everything is stored in `localStorage` under four keys, for this browser and this address only:
@@ -201,7 +208,7 @@ Everything is stored in `localStorage` under four keys, for this browser and thi
 |---|---|
 | `interviewpal.settings` | Choices such as mode, difficulty, accents, microphone, interviewer, model name |
 | `interviewpal.sets` | The question sets and their questions |
-| `interviewpal.history` | Finished sessions, including your answers (latest 200) |
+| `interviewpal.history` | Finished sessions, including your answers (latest 200). From v1.1 each result also carries delivery numbers and whether it was spoken or typed |
 | `interviewpal.apiKey` | The Anthropic API key, if one was saved |
 
 ## 9. Design patterns used
@@ -227,7 +234,7 @@ Everything is stored in `localStorage` under four keys, for this browser and thi
 | Browser speech recognition | Free, live, no setup | Accuracy depends on microphone and accent. Audio goes to Google | Whisper in the browser, or a server-side service |
 | `localStorage` | Easy | About 5 MB, text only, synchronous | IndexedDB, or a server |
 | Vanilla JS, no framework | Nothing to install, easy to read | `practice.js` has grown large, and DOM updates are manual | Split it up, or adopt a small framework |
-| Local photos and clips | Free and private | You must make them yourself, and the mouth doesn't follow the words | A live avatar service (paid) |
+| Local photos and clips, committed to the repo (v1.1) | Free, private, and the published site shows them | The repo is a little bigger (about 2 MB), the files are AI-generated and not MIT-licensed (hence `NOTICE.md`), and the mouth doesn't follow the words | A live avatar service (paid) |
 
 Scaling is not a concern, because each user runs their own copy. The costs that grow with use are Anthropic tokens (a few cents per Coach session) and, if images were hosted, bandwidth.
 
@@ -251,7 +258,7 @@ flowchart LR
 | Microphone blocked or missing | A plain message. Typing always works |
 | The matching voice is missing | Uses another English voice, or adjusts the pitch, and says so |
 | Anthropic returns an error, times out or refuses | A plain message with Try again or Skip feedback. The session carries on |
-| Interviewer photos or clips are missing | Shows the drawn face, with a note |
+| Interviewer photos or clips are missing or fail to load | Shows the drawn face, with a note |
 | Storage is blocked or full | The app keeps working and says it could not save. Unreadable saved data is never overwritten |
 | A bad import file | Rejected with a message. Nothing is changed |
 | The user skips or ends while something is pending | Late results are ignored (epoch token) |

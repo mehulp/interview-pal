@@ -2,6 +2,8 @@
 
 A daily mock-interview practice tool, built to get comfortable facing an interviewer.
 
+> **Planned for v1.1** (see [docs/requirements.md](docs/requirements.md)): a one-paragraph pitch with a live demo link and screenshots, a "Try the demo" question set, delivery analytics (filler words and pace for voice answers), a progress view with a daily streak, tests and a changelog. The interviewers will also be published; they are AI-generated, see the notice in `assets/interviewers/NOTICE.md` once it is added.
+
 You load your own questions and answers, a realistic interviewer asks them aloud, and you answer by voice or typing. You can practise with no AI at all, or switch on **Coach** mode, where Claude scores each answer against your own notes.
 
 It is a plain website (HTML, CSS and JavaScript). There is no server, no login and no build step. Everything you enter stays in your browser.
@@ -149,7 +151,7 @@ The face you see comes from `assets/interviewers/`. If nothing is installed, the
 
 The full instructions, the file format and the settings are in [assets/interviewers/README.md](assets/interviewers/README.md).
 
-Your photos and clips are git-ignored on purpose, so they are never committed or published by accident. Use AI-generated people or images you have the right to use, and never someone's likeness without permission.
+The three interviewers that come with the app are AI-generated and are committed to the repository (see [assets/interviewers/NOTICE.md](assets/interviewers/NOTICE.md)). If you add your own, use AI-generated people or images you have the right to use, never someone's likeness without permission, and list them in the NOTICE file before you commit them.
 
 ## Voice, microphone and camera
 
@@ -207,7 +209,7 @@ Everything is stored in this browser, at this address only:
 - **Start is greyed out.** No saved question matches your choices. Check the sets you ticked, the question level, and that you have questions on the Questions tab.
 - **Coach is greyed out.** Save an API key in Settings.
 - **A test of the key fails.** A "rejected" message means a wrong key. "Model not found" means the model name in Settings is wrong. "Too many requests" means a rate or spending limit.
-- **The faces do not appear.** The photos or clips must be in `assets/interviewers/<folder>/` and listed in `interviewers.json`. Names are case-sensitive.
+- **The faces do not appear.** The photos or clips must be in `assets/interviewers/<folder>/` and listed in `interviewers.json`. Names are case-sensitive. If the files fail to load, the app shows the drawn face and says so.
 - **My questions disappeared.** You may have opened a different address (for example `127.0.0.1` instead of `localhost`), or cleared the browser data. Import your last export.
 - **After an update, the page looks old.** Hard refresh with Ctrl+Shift+R.
 
@@ -226,7 +228,7 @@ Things to know before you publish:
 
 - **A Pages site is public.** Anyone with the link can open the app. It contains no keys and no notes, so that is safe. Each visitor's data stays in their own browser.
 - **A private repository needs a paid GitHub plan for Pages.** On a free plan, make the repository public (safe, for the reason above) or keep running it locally.
-- **Your interviewer photos and clips are git-ignored,** so the published site shows the drawn face (with a harmless "couldn't load that interviewer's files" note on the setup screen, because `interviewers.json` still lists them). To publish them, you would have to remove the ignore rule and commit the files, which makes them public. Only do that for images you have the right to publish.
+- **The interviewer photos and clips are published too.** They are committed to the repository, so anyone can see and download them. They are AI-generated and are described in [assets/interviewers/NOTICE.md](assets/interviewers/NOTICE.md). If you add your own, only commit images you have the right to publish, and list them in the NOTICE file.
 - **Your sets will not be there.** Browser storage is separate for each address. Export your sets here and import them on the published site.
 - **On the phone,** use the published address (HTTPS). The microphone works there, and typing always works. The layout stacks into one column on small screens. It has not been tested on a real phone yet.
 - Enter your API key on the phone separately, in Settings. Think twice before saving a key on a device you share.
@@ -256,7 +258,7 @@ src/
   avatar.js            the interviewer's face (drawn, photos or clips)
   interviewers.js      reads the installed interviewers
   storage.js           everything saved in the browser
-assets/interviewers/   your interviewer photos and clips (git-ignored) and their README
+assets/interviewers/   the AI-generated interviewer photos and clips, their README and NOTICE.md
 docs/requirements.md   the full requirements and decisions
 docs/architecture.md   how it is built and why: diagrams, components, trade-offs
 CLAUDE.md              working notes for building with Claude Code
@@ -274,7 +276,7 @@ There is no build step. The code is plain JavaScript modules, loaded directly by
 - You can edit a question by hand into a duplicate of another set's question. The one-question-one-set rule is enforced when loading and importing.
 - History and the API key are not part of any export.
 - Not yet tested on a real phone or in Safari.
-- Planned for a later version: follow-up questions, weak-area-first ordering, "tidy up with AI" for messy files, a hint button, a panel of interviewers and a daily streak. See [docs/requirements.md](docs/requirements.md).
+- Planned for a later version: follow-up questions, weak-area-first ordering, "tidy up with AI" for messy files, a hint button and a panel of interviewers. Weak-area-first ordering is planned together with spaced repetition. See [docs/requirements.md](docs/requirements.md).
 
 ## License
 

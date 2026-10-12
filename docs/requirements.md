@@ -4,7 +4,7 @@ A daily mock-interview practice tool. You load your own Q&A notes and an animate
 
 ## Status
 
-**v1 is complete.** All eleven build steps are done (see "Build order"). The owner tested the app in Chrome on a laptop (Practice and Coach modes, question sets, History, the interviewer faces, self-view and voice answers). Not yet verified: the layout on a real phone, and publishing to GitHub Pages. Both are covered in the README. Items in "Deferred to v2" and "Later" are not built.
+**v1 is complete.** All eleven build steps are done (see "Build order"). The owner tested the app in Chrome on a laptop (Practice and Coach modes, question sets, History, the interviewer faces, self-view and voice answers). Not yet verified: the layout on a real phone, and publishing to GitHub Pages. Both are covered in the README. Items in "Deferred to v2" and "Later" are not built. **v1.1 ("make it publishable") is planned and agreed but not started**; see the section of that name below. The v1 state is to be tagged `v1.0.0` (commit `7417913`).
 
 ## Decisions (defaults confirmed)
 
@@ -89,13 +89,13 @@ Until an API key is saved in Settings, Coach mode is disabled in the mode picker
     - **Microphone choice.** A "Microphone" picker on the setup screen lists the computer's microphones (for example a laptop microphone and a Bluetooth headset). The chosen one is used for voice answers and for the microphone check. The default is the browser's default microphone, whose name is shown. If a browser does not support choosing a microphone, the default one is used, and the page says how to change the default in the system sound settings.
     - **Microphone check (Settings).** A level meter that shows the microphone's name and how loud the user is, with advice (too quiet, too loud, or a headset that is in a low-quality call mode). It records and stores nothing.
 6. **Animated avatar.** A simple SVG interviewer with idle, talking and listening states. The mouth animates while speech plays. This drawn face is always available and is the fallback when no photos or clips are installed.
-7. **Realistic interviewer (photos or video clips).** The user supplies photos or short video clips of a realistic person, such as AI-generated images or clips, or material they have the right to use. The app uses them locally. No paid service, and nothing is uploaded.
+7. **Realistic interviewer (photos or video clips).** The interviewers are photos or short video clips of a realistic person: AI-generated images and clips, or material the owner has the right to use. The three interviewers that ship with the app are AI-generated and are committed to the repo (from v1.1; see "v1.1: make it publishable"). Someone running their own copy can add or replace interviewers. The app uses the files locally. No paid service, and nothing is uploaded.
     - Each interviewer is a folder `assets/interviewers/<name>/` with `listening.mp4` (played while the user answers and when idle) and `talking.mp4` (played while the interviewer speaks). A small list file, `assets/interviewers/interviewers.json`, names the interviewers.
     - Clips loop smoothly: two copies of a clip take turns and cross-fade at the seam, so a clip does not need to be a perfect loop. Switching between listening and talking also cross-fades.
     - **Photo frames (alternative to clips).** An interviewer can instead be a small set of still photos of the same person with the same framing: a neutral frame, an optional second neutral frame, an eyes-closed frame for blinking, and one or more mouth-open frames for talking. The app swaps between them with short fades: blinks and slow expression changes while listening, and quick mouth-open and closed frames while the interviewer speaks. Which photo plays which role is set in `interviewers.json`.
     - The clips are muted. The voice is the browser's text-to-speech, so the mouth does not match the exact words. This is accepted.
     - **A matching voice.** Each interviewer can have a voice profile in `interviewers.json` (female or male, optionally a voice-name hint and a pitch). The browser does not say whether a voice is male or female, so the app guesses from the voice's name (for example Heera is female, Ravi is male), preferring the chosen accent and then any English voice. The page shows which voice was chosen. If no suitable voice exists on the device, the pitch is adjusted and the page says so.
-    - The user can choose the interviewer on the setup screen, and several interviewers can be installed (for example a friendly one and a stern one). If no photos or clips exist, or they fail to load, the drawn face is used and a message says so.
+    - The user can choose the interviewer on the setup screen, and several interviewers can be installed (for example a friendly one and a stern one). If no photos or clips exist, or they fail to load, the drawn face is used and a message says so. This fallback stays in v1.1.
     - **Automatic (the default choice):** the interviewer is picked when a session starts. An interviewer marked for a difficulty in `interviewers.json` (for example `"difficulty": ["hard"]` for a tough-looking interviewer) is used for that difficulty. Otherwise one of the unmarked interviewers is picked at random, avoiding the same face twice in a row when there is a choice. The user can still pick one interviewer, or the drawn face, by hand.
     - With "reduce motion" switched on, nothing moves. A still frame is shown for each state.
     - The face is shown large and centred, so the eyes are near the top of the picture and close to the webcam.
@@ -105,7 +105,7 @@ Until an API key is saved in Settings, Coach mode is disabled in the mode picker
 11. **Session summary and history (lean version).**
     - **Summary.** Shown when a session ends. It has: questions asked out of the total, skipped, timed out, and time taken; the result (Coach: the average score; Practice with self-marking: how many Got it, Partly and Missed; Practice without marking: no result, because nothing is scored); **topics to revisit** (questions with a Coach score of 5 or less, or self-marked Partly or Missed, grouped by topic); and a question-by-question list where each question opens to show the user's answer and, in Coach mode, the feedback (covered, missed, tip) or the self-mark.
     - **History.** Every session that has at least one recorded answer is saved automatically when it ends, including one that was ended early or left by switching tabs. A History tab lists past sessions, newest first, with date, mode, difficulty, how many questions and the result. Opening one shows the same summary. A single session can be deleted, and the whole history can be cleared, each after a confirmation. Only the latest 200 sessions are kept.
-    - History is stored in the browser only, and it contains the user's answers. It is not part of the sets export. Charts, trends and export of history are not in v1.
+    - History is stored in the browser only, and it contains the user's answers. It is not part of the sets export. Charts, trends and export of history are not in v1. A progress view with trends comes in v1.1, and export of history stays under "Later".
 12. **Local storage.** Question sets, settings, API key and session history are stored in the browser only.
 13. **Question sets.** The user keeps several named sets of questions, for example "Leadership", "Technical" or "Behavioural".
     - There is always at least one set. The default is called "My questions". Questions saved before sets existed are moved into it automatically.
@@ -117,14 +117,16 @@ Until an API key is saved in Settings, Coach mode is disabled in the mode picker
 ### Should have (v2)
 
 - Follow-up questions generated from the user's answer (Coach mode).
-- Weak-area-first ordering, based on past scores and self-marks, as a third order option (Coach mode).
 - An optional "Tidy up with AI" button on the review screen, for messy files that the rule-based parser cannot read (Coach mode).
 - A "give me a hint" control.
 - Panel-style interviewer persona (friendly and tough are covered by difficulty tone).
-- Daily streak.
+
+(The daily streak moved to v1.1, under the progress view. Weak-area-first ordering moved to "Later", merged with spaced repetition.)
 
 ### Later
 
+- **Weak-area-first ordering and spaced repetition** (one feature). Uses past scores and self-marks from History as a third order option, and brings missed questions back sooner than ones answered well. Needs the history from step 10, which exists.
+- **STAR check** (Coach mode). Checks whether an answer covered Situation, Task, Action and Result, and says which part was weak.
 - A live, lip-synced avatar through a third-party service (v1 uses local photos or video clips instead).
 - Export and import of session history (question sets already have export and import in v1).
 - Installable as a phone app (PWA).
@@ -202,7 +204,10 @@ An answer is optional in Practice mode, because the interviewer only needs the q
 | `src/practice.js` | Practice screen: setup, interview loop, self-marking, end-of-session summary |
 | `src/history.js` | Session records: building, summarising, topics to revisit, keeping the latest 200 (no page code) |
 | `src/summary.js` | Draws a session summary (used at the end of a session and on the History tab) |
-| `src/historyscreen.js` | History tab: list of past sessions, open, delete, clear |
+| `src/historyscreen.js` | History tab: list of past sessions, open, delete, clear (v1.1: also the progress view) |
+| `src/delivery.js` (v1.1) | Filler words, words per minute and length against the timer for voice answers (pure) |
+| `src/progress.js` (v1.1) | Score and self-mark trend, sessions per day, weak-topics heat map and daily streak from stored history (pure) |
+| `src/demoset.js` (v1.1) | The generic Engineering Manager demo questions, loaded by "Try the demo" |
 | `src/review.js` | Questions screen: set picker, load notes, review, edit, add, move and delete pairs, export and import |
 | `src/ui.js` | The app shell: creates the avatar and switches between the Interview, Questions, History and Settings tabs |
 
@@ -217,8 +222,10 @@ An answer is optional in Practice mode, because the interviewer only needs the q
 ## Privacy and GitHub notes
 
 - The camera (self-view) is used only to show a picture on your own screen. Frames are never recorded, stored or sent anywhere.
-- Interviewer clips and photos are local files in `assets/interviewers/`. Use AI-generated people or images you have the right to use, and do not use a real person's likeness without permission. The folders inside `assets/interviewers/` are git-ignored, so your own images and clips are not committed or published by accident; only the README and `interviewers.json` are tracked. Keep clips small (under about 10 MB each).
-- Keep personal Q&A notes out of the repo. They are loaded in the browser and never need to be committed. A `my-notes/` folder is git-ignored for local use.
+- Interviewer photos and clips live in `assets/interviewers/`. **From v1.1 they are committed and published.** The rule for committed media: it must be AI-generated or otherwise rights-cleared, it must be listed in `assets/interviewers/NOTICE.md`, and it must never use a real person's likeness. Keep clips small (under about 10 MB each). No paid or third-party avatar service. The shipped ones are AI-generated and are not covered by the MIT licence (see the NOTICE file).
+- Until v1.1 step 12 is done, the folders inside `assets/interviewers/` are still git-ignored.
+- `demo-videos/` (screen recordings) stays git-ignored.
+- Keep personal Q&A notes out of the repo. They are loaded in the browser and never need to be committed. A `my-notes/` folder is git-ignored for local use, and so are exported sets (`interviewpal-sets-*.json`).
 - Voice input uses the browser's speech recognition. In Chrome this sends the audio to Google's speech service, which is outside this app's control. Typing sends nothing anywhere.
 - GitHub Pages on a **private** repo needs a paid GitHub plan. On a free plan, either make the repo public (safe, because it holds no keys or notes) or run the app locally with `python3 -m http.server`.
 
@@ -243,9 +250,45 @@ Also added after the first test round, outside the original plan: better speech 
 Decided to keep these out of v1 and build them later (they were the planned "7b"):
 
 - Follow-up questions generated from the answer.
-- Weak-area-first ordering using past scores and self-marks (needs the history from step 8).
+- Weak-area-first ordering using past scores and self-marks (needs the history from step 10; now merged with spaced repetition under "Later").
 - "Tidy up with AI" on the review screen.
-- From the earlier v2 list: a "give me a hint" control, a panel-style persona and a daily streak.
+- From the earlier v2 list: a "give me a hint" control, a panel-style persona. (The daily streak moved to v1.1.)
+
+## v1.1: make it publishable
+
+Goal: make the project ready to publish on GitHub Pages and to show to others. Agreed with the owner. Each item is its own build step, done in this order, with a small commit per step. Nothing here adds a dependency, a server or a network call.
+
+12. **Publish all interviewers.** The owner has decided to publish all interviewer photos and clips. They are AI-generated: the images were made with ChatGPT (plan and month: to be confirmed by the owner, not guessed), and the videos were made from those images with a script. No real person's photo was used.
+    - Remove the ignore rule for `assets/interviewers/*/` in `.gitignore`, so the folders, `interviewers.json` and the media files are tracked.
+    - Before committing, report the size of each file and the folder total (currently about 2.2 MB in total). If any file is over about 10 MB, tell the owner before committing it.
+    - Add `assets/interviewers/NOTICE.md`. It says: the images are AI-generated with ChatGPT (plan and month from the owner); the videos were produced from those images with a script; the people shown are not real and no real person's photo was used; the files are not covered by the MIT licence; and they are included for demonstration only and are not licensed for reuse or redistribution.
+    - Add a one-line "AI-generated" disclosure to the README, linking to the NOTICE file.
+    - Replace every statement that the images are git-ignored or must never be committed: README (The interviewers, Publishing on GitHub Pages, Troubleshooting, Project layout), this file (the realistic interviewer item and "Privacy and GitHub notes", done as part of this planning), `CLAUDE.md` (Rules), `assets/interviewers/README.md` and `docs/architecture.md`. Remove the README note saying the published site shows only the drawn face.
+    - The drawn face stays as the fallback if the files fail to load.
+13. **Demo set.** A "Try the demo" button on the Questions tab loads about 20 generic Engineering Manager questions with model answers, topics and easy/hard levels. It goes through the existing import path, so the duplicate rules apply and nothing is loaded twice. The questions are generic, nothing employer-specific, and the data is part of the app's code (`src/demoset.js`), so there is no network call. The owner reviews the wording before it is committed.
+14. **Delivery analytics (no AI, local only).** For voice answers: count filler words, measure words per minute, and compare the length of the answer with the timer.
+    - The logic is in a pure module, `src/delivery.js`, testable in Node. It works on the answer text and timings only.
+    - Shown per answer in the session summary, with session totals, and saved in the history record. Older records without it still display.
+    - Typed answers are excluded from the pace figure (a typing speed says nothing about speaking pace). Each recorded answer therefore needs to say whether it was spoken or typed, and how long the answer took.
+    - Nothing is recorded or sent anywhere. No audio is kept; only numbers.
+15. **Progress view and daily streak** on the History tab, built from stored history only. It shows the score and self-mark trend over time, sessions per day, a weak-topics heat map, and the daily streak (moved here from the v2 list). Plain SVG or CSS, no chart library. The calculations are in a pure module, `src/progress.js` (testable in Node, and added to the tests); the drawing is in a page module.
+16. **Repo polish.**
+    - Unit tests with Node's built-in test runner in `tests/` for `parser.js`, `sets.js`, `session.js`, `history.js`, `vocabulary.js` and `delivery.js` (and `progress.js`, which is new). This needs a small `package.json` containing only `"type": "module"` and a test script, with no dependencies, so Node reads the modules as ES modules.
+    - A GitHub Action that runs the syntax check and the tests on every push.
+    - A README that opens with a one-paragraph pitch, a live demo link placeholder, and screenshot and GIF placeholders.
+    - A `CHANGELOG.md`.
+    - **Pre-publish checklist** (in the README or `docs/`): scan the whole git history for API keys and personal notes; confirm that `my-notes/` and `interviewpal-sets-*.json` are still ignored.
+    - Tag commit `7417913` (the end of v1) as `v1.0.0`, and the finished v1.1 work as `v1.1.0`. Tags stay local until the owner pushes them.
+
+### Acceptance criteria for v1.1
+
+- A fresh clone, opened from GitHub Pages, shows the interviewers (not only the drawn face). With the files removed, the drawn face still works.
+- `assets/interviewers/NOTICE.md` exists, lists every committed file, and the README links to it.
+- "Try the demo" adds the demo questions once. Pressing it again skips them all as duplicates. No network request is made.
+- A voice answer shows filler words, words per minute and length against the timer in the summary, with session totals. A typed answer shows no pace. The figures survive a reload (they are in History).
+- The History tab shows the trends, sessions per day, the heat map and the streak, with no chart library, and an empty history shows a friendly empty state.
+- `node --test tests/` passes locally and in the GitHub Action.
+- The pre-publish checklist has been run and its result reported to the owner.
 
 ## Acceptance criteria for v1
 
