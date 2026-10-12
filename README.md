@@ -6,12 +6,11 @@
 
 Practice mode works straight away, with no account and no key. Coach mode needs your own Anthropic API key: paste it in Settings and it stays in your browser (it is never in this repository). Your questions and history are saved in your browser only.
 
-<!-- Replace these placeholders with real images in docs/images/ -->
 | Interview | Summary and delivery | Progress |
 |---|---|---|
-| _screenshot: docs/images/interview.png_ | _screenshot: docs/images/summary.png_ | _screenshot: docs/images/progress.png_ |
+| ![The interview screen, with the interviewer and a live voice transcript](docs/images/interview.png) | ![A session summary with pace, filler words and timer use](docs/images/summary.png) | ![The progress view: streak, trend, sessions per day and weak topics](docs/images/progress.png) |
 
-_GIF: a short screen recording of one question and answer, to be added as docs/images/demo.gif._
+_The screenshots were taken from the app itself. The progress view shows sample sessions, so it has something to draw. The voice transcript and delivery figures come from stand-in speech, because the screenshots were taken without a microphone._
 
 **AI-generated interviewers:** the interviewer pictures are AI-generated, show no real people, and are not covered by the MIT licence. See [assets/interviewers/NOTICE.md](assets/interviewers/NOTICE.md).
 

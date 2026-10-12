@@ -24,7 +24,7 @@ const shortDate = (ms) => new Date(ms).toLocaleDateString([], { day: 'numeric', 
 /* ---------- Trend: one dot per session, joined by a line ---------- */
 function trendChart(points) {
   const W = 320; const H = 150;
-  const left = 30; const right = 8; const top = 8; const bottom = 22;
+  const left = 38; const right = 8; const top = 8; const bottom = 22;
   const x = (i) => (points.length === 1 ? (left + W - right) / 2 : left + (i * (W - left - right)) / (points.length - 1));
   const y = (v) => top + ((100 - v) / 100) * (H - top - bottom);
 
