@@ -7,6 +7,7 @@ import {
   newId, createSet, nameTaken, addQuestions, moveQuestion, describeSkipped,
   buildExport, parseImport, mergeImport,
 } from './sets.js';
+import { DEMO_EXPORT, DEMO_SET_NAME } from './demoset.js';
 
 const $ = (id) => document.getElementById(id);
 const fileInput = $('file-input');
@@ -264,6 +265,20 @@ $('import-btn').addEventListener('click', async () => {
     backupStatus.textContent = `Import failed. Nothing was changed. ${err.message}`;
   }
   $('import-input').value = '';
+});
+
+/* ---------- Demo questions ---------- */
+
+// Goes through the same check-and-merge steps as a file import, so duplicates are skipped.
+$('demo-btn').addEventListener('click', () => {
+  const { added, skipped } = mergeImport(sets, parseImport(JSON.stringify(DEMO_EXPORT)));
+  const demo = sets.find((s) => s.name === DEMO_SET_NAME);
+  save();
+  if (demo) openSet(demo.id);
+  render();
+  $('demo-status').textContent = added
+    ? `Added ${added} demo question(s) to "${DEMO_SET_NAME}". Tick that set on the Interview tab to practise them.`
+    : `The demo questions are already there. ${describeSkipped(skipped)}`;
 });
 
 render();

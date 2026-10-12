@@ -59,6 +59,7 @@ Open <http://localhost:8000> in Chrome and allow the microphone when asked.
 The four tabs at the top are **Interview**, **Questions**, **History** and **Settings**.
 
 1. **Questions tab: add your notes.**
+   - New here? Click **Try the demo** to add about 20 generic Engineering Manager questions with model answers, in a set called "Demo: Engineering Manager". Nothing is downloaded, and pressing it twice adds nothing new.
    - Open a set (the first one is called "My questions"). Use **New set** to create more, such as "Leadership" and "Technical".
    - Choose a file or paste text, then click **Find questions**. They are added to the open set.
    - Check each card. Fix the question or answer, add a topic, tag it **Easy** or **Hard**, or delete it. Text the reader could not place appears under "Not recognised".
