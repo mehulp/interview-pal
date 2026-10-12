@@ -26,12 +26,21 @@ export const countWords = (text) => wordsOf(text).length;
 
 // Count the fillers in a text. Returns { total, found: { word: count } }.
 export function countFillers(text) {
-  const padded = ` ${wordsOf(text).join(' ')} `;
+  const words = wordsOf(text);
+  const phrases = FILLERS.map((f) => f.split(' '));
   const found = {};
   let total = 0;
-  for (const filler of FILLERS) {
-    const n = padded.split(` ${filler} `).length - 1;
-    if (n > 0) { found[filler] = n; total += n; }
+  for (let i = 0; i < words.length;) {
+    // Does a filler start here? (FILLERS is longest first, so "you know" wins over a shorter match.)
+    const hit = phrases.find((p) => p.every((w, k) => words[i + k] === w));
+    if (hit) {
+      const name = hit.join(' ');
+      found[name] = (found[name] || 0) + 1;
+      total++;
+      i += hit.length;
+    } else {
+      i++;
+    }
   }
   return { total, found };
 }
