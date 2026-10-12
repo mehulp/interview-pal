@@ -278,3 +278,13 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   .check input { width: 22px; height: 22px; }
   .caption .question { font-size: 1.05rem; }
 }
+
+/* Progress view (History tab) */
+.prog-chart { width: 100%; height: auto; display: block; margin: 4px 0 8px; }
+.prog-key { margin-right: 12px; white-space: nowrap; }
+.prog-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; }
+.heat { display: grid; gap: 6px; margin-top: 6px; }
+.heat-row { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr); gap: 8px; align-items: center; }
+.heat-topic { overflow-wrap: anywhere; font-weight: 600; }
+.heat-cell { border-radius: 6px; padding: 4px 8px; text-align: center; color: #1d2433; font-weight: 600; }
+.heat-count { color: #555; font-size: 0.9rem; }

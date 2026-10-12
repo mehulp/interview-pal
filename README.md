@@ -52,6 +52,7 @@ Open <http://localhost:8000> in Chrome and allow the microphone when asked.
 - **Difficulty.** Easy, medium or hard change the answer timer, the interviewer's tone, the speaking speed, and whether you can repeat or skip a question.
 - **Coach mode (optional).** Claude gives a score out of 10, what you covered, what you missed and one tip, compared with your reference answer, and can speak the feedback.
 - **Summary and History.** A summary after every session, with topics to revisit, and a History tab of past sessions.
+- **Progress view.** On the History tab: a daily streak, your score and self-mark trend, sessions per day and a heat map of your weakest topics. Drawn on your device from your saved history.
 - **Delivery figures (voice answers).** Filler words, words per minute and how much of the timer you used, per answer and for the whole session. Worked out on your device from the words and timings; nothing is recorded.
 - **Eye-contact practice.** An optional mirrored picture of your own camera, shown only on your screen.
 
@@ -248,6 +249,10 @@ src/
   practice.js          Interview tab: setup, interview loop, summary
   review.js            Questions tab: sets, loading notes, editing, backup
   historyscreen.js     History tab
+  progress.js          numbers for the progress view: trend, streak, weak topics
+  progressview.js      draws the progress view
+  delivery.js          filler words, pace and timer use for answers
+  demoset.js           the demo questions
   settings.js          Settings tab: API key, model, microphone check
   parser.js            reads files and finds the questions (no AI)
   sets.js              question set rules (no duplicates, move, import)

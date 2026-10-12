@@ -59,6 +59,7 @@ flowchart TB
         P5["historyscreen.js"]
         P6["settings.js"]
         P7["summary.js"]
+        P8["progressview.js (v1.1)"]
     end
     subgraph D["Domain logic: pure, no page, testable in Node"]
         direction LR
