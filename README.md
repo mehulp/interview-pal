@@ -2,7 +2,7 @@
 
 **InterviewPal is a mock-interview practice tool that you run in your browser.** Load your own questions and model answers (or try the built-in Engineering Manager demo), and a realistic AI-generated interviewer asks them aloud while you answer by voice or typing. Practise with no AI and no account at all, or switch on Coach mode to have Claude score each answer against your own notes. It tracks your pace and filler words, your progress and your weak topics, and everything stays in your browser.
 
-**Live demo:** _coming soon (link to be added after publishing on GitHub Pages)_
+**Live demo:** <https://mehulp.github.io/interview-pal/> _(live once GitHub Pages is switched on for the repository)_
 
 <!-- Replace these placeholders with real images in docs/images/ -->
 | Interview | Summary and delivery | Progress |
@@ -228,14 +228,14 @@ Everything is stored in this browser, at this address only:
 
 ## Publishing on GitHub Pages
 
-This is optional. It lets you use the app on your phone, over HTTPS. This has **not** been done yet, because it needs your GitHub account.
+This is optional. It lets you use the app on your phone, over HTTPS. The code lives at <https://github.com/mehulp/interview-pal>; the Pages steps below are for turning the site on.
 
 1. Create a new repository on GitHub and push this project to it:
    ```bash
-   git remote add origin https://github.com/<you>/interviewpal.git
-   git push -u origin main
+   git remote add origin https://github.com/mehulp/interview-pal.git
+   git push -u origin main --tags
    ```
-2. In the repository, open **Settings → Pages**, choose **Deploy from a branch**, then the `main` branch and the `/ (root)` folder, and save. After a minute the site appears at `https://<you>.github.io/interviewpal/`.
+2. In the repository, open **Settings → Pages**, choose **Deploy from a branch**, then the `main` branch and the `/ (root)` folder, and save. After a minute the site appears at `https://mehulp.github.io/interview-pal/`.
 
 Things to know before you publish:
 
