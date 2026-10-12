@@ -4,7 +4,7 @@ Build and maintain the app described in `docs/requirements.md`. Read that file f
 
 ## Status
 
-**v1 is complete.** All eleven build steps are done and the owner has tested the app in Chrome on a laptop. Not yet done: testing on a real phone, and publishing to GitHub Pages (the README has the steps; it needs the owner's GitHub account). Do not build the "Deferred to v2" or "Later" items in the requirements unless asked.
+**v1 is complete.** All eleven build steps are done and the owner has tested the app in Chrome on a laptop and on a real phone. It is published at https://mehulp.github.io/interview-pal/ (repo: mehulp/interview-pal, pushed over SSH). Not yet tested: Safari and iPhone. Do not build the "Deferred to v2" or "Later" items in the requirements unless asked.
 
 **v1.1 ("make it publishable") is complete** (steps 12 to 16 in `docs/requirements.md`): published interviewers with a NOTICE, the demo set, delivery analytics, the progress view and streak, and repo polish (tests, GitHub Action, README opening, changelog, pre-publish checklist). Tags `v1.0.0` (commit `7417913`) and `v1.1.0` exist locally and have not been pushed. Still to do, by the owner: run `docs/pre-publish-checklist.md`, publish to GitHub Pages, then fill in the live demo link and the screenshot and GIF placeholders in the README.
 

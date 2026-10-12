@@ -2,7 +2,9 @@
 
 **InterviewPal is a mock-interview practice tool that you run in your browser.** Load your own questions and model answers (or try the built-in Engineering Manager demo), and a realistic AI-generated interviewer asks them aloud while you answer by voice or typing. Practise with no AI and no account at all, or switch on Coach mode to have Claude score each answer against your own notes. It tracks your pace and filler words, your progress and your weak topics, and everything stays in your browser.
 
-**Live demo:** <https://mehulp.github.io/interview-pal/> _(live once GitHub Pages is switched on for the repository)_
+**Live demo:** <https://mehulp.github.io/interview-pal/>
+
+Practice mode works straight away, with no account and no key. Coach mode needs your own Anthropic API key: paste it in Settings and it stays in your browser (it is never in this repository). Your questions and history are saved in your browser only.
 
 <!-- Replace these placeholders with real images in docs/images/ -->
 | Interview | Summary and delivery | Progress |
@@ -243,7 +245,7 @@ Things to know before you publish:
 - **A private repository needs a paid GitHub plan for Pages.** On a free plan, make the repository public (safe, for the reason above) or keep running it locally.
 - **The interviewer photos and clips are published too.** They are committed to the repository, so anyone can see and download them. They are AI-generated and are described in [assets/interviewers/NOTICE.md](assets/interviewers/NOTICE.md). If you add your own, only commit images you have the right to publish, and list them in the NOTICE file.
 - **Your sets will not be there.** Browser storage is separate for each address. Export your sets here and import them on the published site.
-- **On the phone,** use the published address (HTTPS). The microphone works there, and typing always works. The layout stacks into one column on small screens. It has not been tested on a real phone yet.
+- **On the phone,** use the published address (HTTPS). The microphone works there, and typing always works. The layout stacks into one column on small screens, and it has been tried on a real phone and works well.
 - Enter your API key on the phone separately, in Settings. Think twice before saving a key on a device you share.
 
 ## Project layout
@@ -295,7 +297,7 @@ There is no build step. The code is plain JavaScript modules, loaded directly by
 - The interviewer's mouth moves in a generic pattern, not in step with the exact words.
 - You can edit a question by hand into a duplicate of another set's question. The one-question-one-set rule is enforced when loading and importing.
 - History and the API key are not part of any export.
-- Not yet tested on a real phone or in Safari.
+- Tried on a real phone and works well; not yet tested in Safari or on an iPhone.
 - Planned for a later version: follow-up questions, weak-area-first ordering, "tidy up with AI" for messy files, a hint button and a panel of interviewers. Weak-area-first ordering is planned together with spaced repetition. See [docs/requirements.md](docs/requirements.md).
 
 ## Tests

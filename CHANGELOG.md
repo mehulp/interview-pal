@@ -12,6 +12,7 @@ Make it publishable.
 - **Progress view** on the History tab: score and self-mark trend, sessions per day, a weak-topics heat map and a daily streak. Plain SVG and CSS.
 - Unit tests with Node's built-in test runner, and a GitHub Action that runs the syntax check and the tests on every push.
 - README opening, changelog and a pre-publish checklist.
+- Published on GitHub Pages and checked on a real phone.
 
 ## v1.0.0 (2026-10)
 

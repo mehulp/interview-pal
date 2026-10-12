@@ -4,7 +4,7 @@ A daily mock-interview practice tool. You load your own Q&A notes and an animate
 
 ## Status
 
-**v1 is complete.** All eleven build steps are done (see "Build order"). The owner tested the app in Chrome on a laptop (Practice and Coach modes, question sets, History, the interviewer faces, self-view and voice answers). Not yet verified: the layout on a real phone, and publishing to GitHub Pages. Both are covered in the README. Items in "Deferred to v2" and "Later" are not built. **v1.1 ("make it publishable") is complete**; see the section of that name below. It is tagged `v1.1.0`, and the end of v1 is tagged `v1.0.0` (commit `7417913`). Still to do, by the owner: publish to GitHub Pages and fill in the README's live demo link, screenshots and GIF.
+**v1 is complete.** All eleven build steps are done (see "Build order"). The owner tested the app in Chrome on a laptop (Practice and Coach modes, question sets, History, the interviewer faces, self-view and voice answers). It is also tried on a real phone and works well, and it is published on GitHub Pages at https://mehulp.github.io/interview-pal/. Not yet verified: Safari and iPhone. Items in "Deferred to v2" and "Later" are not built. **v1.1 ("make it publishable") is complete**; see the section of that name below. It is tagged `v1.1.0`, and the end of v1 is tagged `v1.0.0` (commit `7417913`). Still to do, by the owner: add the README screenshots and GIF.
 
 ## Decisions (defaults confirmed)
 
@@ -138,7 +138,7 @@ Until an API key is saved in Settings, Coach mode is disabled in the mode picker
 - **Private:** documents and the API key never leave the browser except for Anthropic API calls, which happen only in Coach mode (answer feedback). Practice mode makes no AI calls. Nothing is sent to any other server by the app.
 - **Cheap:** a 10-question Coach session should cost only a few cents on a Sonnet-class model. Keep prompts small by sending only the current question, reference answer and user answer. Practice mode costs nothing.
 - **Browser support:** Chrome (laptop and Android) is the primary target. Safari and iOS have limited speech recognition, so typing must always work.
-- **Responsive:** usable on a phone screen, with large mic and next buttons and tap targets of at least 44 pixels. The layout stacks into one column on narrow screens. (Checked in a narrow browser window; not yet on a real phone.) The microphone on a phone needs HTTPS, so on a phone use the GitHub Pages address; typing always works.
+- **Responsive:** usable on a phone screen, with large mic and next buttons and tap targets of at least 44 pixels. The layout stacks into one column on narrow screens. (Checked in a narrow browser window and on a real phone.) The microphone on a phone needs HTTPS, so on a phone use the GitHub Pages address; typing always works.
 - **Accessible:** captions for everything spoken, keyboard operable, respects reduced-motion settings.
 
 ## Known limitations
@@ -150,7 +150,7 @@ Until an API key is saved in Settings, Coach mode is disabled in the mode picker
 - A question can be edited by hand into a duplicate of another set's question. The one-question-one-set rule is enforced when loading and importing, not when editing.
 - Leaving a session by switching tabs ends it (what was answered is saved to History).
 - History and the API key are not part of any export.
-- Not tested on a real phone or in Safari.
+- Tried on a real phone; not tested in Safari or on an iPhone.
 
 ## Technical approach
 
