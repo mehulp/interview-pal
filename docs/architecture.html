@@ -247,7 +247,7 @@
             <rect class="box-add" x="162" y="390" width="124" height="32" rx="6"/><text x="224" y="410" text-anchor="middle">demoset.js</text>
           </g>
           <text class="t-mut" x="590" y="308">Decides things: what counts as a</text>
-          <text class="t-mut" x="590" y="326">question, no duplicates, who</text>
+          <text class="t-mut" x="590" y="326">question, no repeats, who</text>
           <text class="t-mut" x="590" y="344">interviews you, how a score adds up,</text>
           <text class="t-mut" x="590" y="362">filler words and pace, your streak.</text>
           <text class="t-mut" x="590" y="388">Covered by 62 unit tests (npm test).</text>
@@ -342,7 +342,7 @@
     <p>Two shapes of data, kept apart on purpose. A history record is a copy of what happened, so editing or deleting a question later never rewrites the past.</p>
     <figure>
       <div class="fig-scroll">
-        <svg viewBox="0 0 900 330" role="img" aria-label="Question sets contain questions, and each question belongs to exactly one set. History sessions contain results, which are copies made at the end of a session. Four localStorage keys hold it all." style="color: var(--fg-soft)">
+        <svg viewBox="0 0 900 330" role="img" aria-label="Question sets contain questions, and a question is unique within a set, and may be in several sets. History sessions contain results, which are copies made at the end of a session. Four localStorage keys hold it all." style="color: var(--fg-soft)">
           <defs>
             <marker id="a4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker>
           </defs>
@@ -375,7 +375,7 @@
           <text class="t-mut" x="448" y="120" text-anchor="middle">copied at the end</text>
           <text class="t-mut" x="448" y="134" text-anchor="middle">of a session</text>
           <text class="t-mut" x="448" y="162" text-anchor="middle">a snapshot, not a link</text>
-          <text class="t-mut" x="30" y="218">One question, one set: loading and importing skip a question that exists anywhere.</text>
+          <text class="t-mut" x="30" y="218">Unique within a set. Repeats across sets are dropped at session start.</text>
           <text class="t-mut" x="510" y="218">delivery: filler words, pace, timer use (numbers only, no audio).</text>
 
           <text class="t-b" x="10" y="248">Four localStorage keys, for this browser and this address only</text>

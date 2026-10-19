@@ -63,8 +63,11 @@ function moveControl(pair) {
   select.addEventListener('change', () => {
     if (!select.value) return;
     const target = sets.find((s) => s.id === select.value);
-    if (moveQuestion(sets, activeId, pair.id, select.value)) {
-      setStatus.textContent = `Moved one question to "${target.name}".`;
+    const result = moveQuestion(sets, activeId, pair.id, select.value);
+    if (result) {
+      setStatus.textContent = result === 'merged'
+        ? `"${target.name}" already had that question, so it was only removed from here. The copy in "${target.name}" is unchanged.`
+        : `Moved one question to "${target.name}".`;
       save();
       render();
     }

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  createSet, nameTaken, findQuestion, addQuestions, moveQuestion, describeSkipped,
+  createSet, nameTaken, findInSet, addQuestions, moveQuestion, describeSkipped,
   buildExport, parseImport, mergeImport,
 } from '../src/sets.js';
 
@@ -15,24 +15,52 @@ test('adds questions and cleans them', () => {
   assert.equal(sets[0].questions[0].level, ''); // only easy or hard are kept
 });
 
-test('a question already in ANY set is skipped, ignoring case and extra spaces', () => {
+test('a question already in the SAME set is skipped, ignoring case and extra spaces', () => {
   const sets = twoSets();
   addQuestions(sets, sets[0].id, [{ question: 'How do you delegate?' }]);
-  const r = addQuestions(sets, sets[1].id, [{ question: 'how  do you   DELEGATE?' }]);
+  const r = addQuestions(sets, sets[0].id, [{ question: 'how  do you   DELEGATE?' }]);
   assert.equal(r.added, 0);
   assert.deepEqual(r.skipped, [{ question: 'how  do you   DELEGATE?', setName: 'Leadership' }]);
-  assert.equal(findQuestion(sets, 'HOW DO YOU DELEGATE?').name, 'Leadership');
+  assert.equal(findInSet(sets[0], 'HOW DO YOU DELEGATE?').question, 'How do you delegate?');
+  assert.equal(findInSet(sets[1], 'How do you delegate?'), undefined);
+});
+
+test('the same question can be in two different sets, each with its own answer', () => {
+  const sets = twoSets();
+  addQuestions(sets, sets[0].id, [{ question: 'How do you delegate?', answer: 'Demo answer' }]);
+  const r = addQuestions(sets, sets[1].id, [{ question: 'How do you delegate?', answer: 'My own answer' }]);
+  assert.equal(r.added, 1);
+  assert.equal(r.skipped.length, 0);
+  assert.equal(sets[0].questions[0].answer, 'Demo answer');
+  assert.equal(sets[1].questions[0].answer, 'My own answer');
+});
+
+test('the same question twice in one batch is added once', () => {
+  const sets = twoSets();
+  const r = addQuestions(sets, sets[0].id, [{ question: 'Q?' }, { question: ' q? ' }]);
+  assert.equal(r.added, 1);
+  assert.equal(r.skipped.length, 1);
 });
 
 test('move takes the question out of the old set', () => {
   const sets = twoSets();
   addQuestions(sets, sets[0].id, [{ question: 'Q1?' }]);
   const id = sets[0].questions[0].id;
-  assert.equal(moveQuestion(sets, sets[0].id, id, sets[1].id), true);
+  assert.equal(moveQuestion(sets, sets[0].id, id, sets[1].id), 'moved');
   assert.equal(sets[0].questions.length, 0);
   assert.equal(sets[1].questions.length, 1);
   assert.equal(moveQuestion(sets, sets[1].id, id, sets[1].id), false); // same set
   assert.equal(moveQuestion(sets, sets[0].id, 'nope', sets[1].id), false);
+});
+
+test('moving into a set that already has the question only removes it from the old set', () => {
+  const sets = twoSets();
+  addQuestions(sets, sets[0].id, [{ question: 'Q1?', answer: 'old answer' }]);
+  addQuestions(sets, sets[1].id, [{ question: 'q1?', answer: 'target answer' }]);
+  assert.equal(moveQuestion(sets, sets[0].id, sets[0].questions[0].id, sets[1].id), 'merged');
+  assert.equal(sets[0].questions.length, 0);
+  assert.equal(sets[1].questions.length, 1);
+  assert.equal(sets[1].questions[0].answer, 'target answer'); // the target's copy is untouched
 });
 
 test('set names are unique, ignoring case', () => {
@@ -44,7 +72,8 @@ test('set names are unique, ignoring case', () => {
 
 test('describeSkipped names the sets', () => {
   assert.equal(describeSkipped([]), '');
-  assert.equal(describeSkipped([{ setName: 'A' }, { setName: 'A' }, { setName: 'B' }]), 'Skipped 3 that already exist (in "A", "B").');
+  assert.equal(describeSkipped([{ setName: 'A' }]), 'Skipped 1 that was already in "A".');
+  assert.equal(describeSkipped([{ setName: 'A' }, { setName: 'A' }, { setName: 'B' }]), 'Skipped 3 that were already in "A", "B".');
 });
 
 test('export then import gives the same questions', () => {
@@ -57,6 +86,14 @@ test('export then import gives the same questions', () => {
   assert.equal(r.added, 1);
   assert.equal(r.created, 1); // "Technical" is new
   assert.deepEqual(fresh[0].questions[0], { ...fresh[0].questions[0], question: 'Q1?', answer: 'A1', topic: 'T', level: 'easy' });
+});
+
+test('importing a set does not skip a question that only exists in another set', () => {
+  const sets = [createSet('Demo'), createSet('Mine')];
+  addQuestions(sets, sets[0].id, [{ question: 'Q1?' }]);
+  const r = mergeImport(sets, [{ name: 'Mine', questions: [{ question: 'Q1?', answer: 'mine' }] }]);
+  assert.equal(r.added, 1);
+  assert.equal(sets[1].questions[0].answer, 'mine');
 });
 
 test('importing twice adds nothing the second time', () => {

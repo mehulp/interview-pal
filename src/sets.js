@@ -1,9 +1,9 @@
 // Sets: the rules for question sets. No page code here, so it is easy to test.
 //
 // A set looks like:  { id, name, questions: [ { id, question, answer, topic, level } ] }
-// The main rule: a question lives in exactly one set. Every question is stored inside one
-// set's list, "move" takes it out of one list and puts it in another, and nothing ever
-// copies a question into a second set.
+// The main rule: a question (ignoring case and extra spaces) can exist only once INSIDE a set.
+// The same question may be in several sets, each copy with its own answer, topic and level.
+// When several sets are practised together, session.js drops the repeats (see removeRepeats).
 
 export const DEFAULT_SET_NAME = 'My questions';
 const MAX_IMPORT_BYTES = 5 * 1024 * 1024;
@@ -11,7 +11,7 @@ const MAX_IMPORT_BYTES = 5 * 1024 * 1024;
 export const newId = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 
 // Compare questions ignoring capital letters and extra spaces.
-const normalize = (text) => String(text || '').trim().replace(/\s+/g, ' ').toLowerCase();
+export const normalize = (text) => String(text || '').trim().replace(/\s+/g, ' ').toLowerCase();
 
 export const createSet = (name) => ({ id: newId(), name, questions: [] });
 
@@ -20,25 +20,24 @@ export function nameTaken(sets, name, exceptId) {
   return sets.some((s) => s.id !== exceptId && normalize(s.name) === normalize(name));
 }
 
-// Which set already holds this question? Returns the set, or null.
-export function findQuestion(sets, text) {
+// Does this one set already hold the question? Returns the question, or undefined.
+export function findInSet(set, text) {
   const key = normalize(text);
-  return sets.find((s) => s.questions.some((q) => normalize(q.question) === key)) || null;
+  return set.questions.find((q) => normalize(q.question) === key);
 }
 
 const cleanLevel = (level) => (level === 'easy' || level === 'hard' ? level : '');
 
-// Add questions to one set. Any question that already exists in ANY set is skipped.
-// Returns { added: number, skipped: [{ question, setName }] }.
+// Add questions to one set. A question that is already in THAT set is skipped (other sets do not matter).
+// Returns { added: number, skipped: [{ question, setName }] }, where setName is the set it was already in.
 export function addQuestions(sets, setId, pairs) {
   const target = sets.find((s) => s.id === setId);
   let added = 0;
   const skipped = [];
   for (const p of pairs) {
     if (!normalize(p.question)) continue; // nothing to add
-    const existing = findQuestion(sets, p.question);
-    if (existing) {
-      skipped.push({ question: p.question, setName: existing.name });
+    if (findInSet(target, p.question)) {
+      skipped.push({ question: p.question, setName: target.name });
       continue;
     }
     target.questions.push({
@@ -54,20 +53,24 @@ export function addQuestions(sets, setId, pairs) {
 }
 
 // Move a question from one set to another (it leaves the old set).
+// Returns 'moved', or 'merged' if the other set already had that question (then it only leaves
+// the old set and the other set's copy is kept as it is), or false if nothing could be moved.
 export function moveQuestion(sets, fromId, questionId, toId) {
   const from = sets.find((s) => s.id === fromId);
   const to = sets.find((s) => s.id === toId);
   const index = from ? from.questions.findIndex((q) => q.id === questionId) : -1;
   if (!to || index === -1 || fromId === toId) return false;
-  to.questions.push(from.questions.splice(index, 1)[0]);
-  return true;
+  const [question] = from.questions.splice(index, 1);
+  if (findInSet(to, question.question)) return 'merged';
+  to.questions.push(question);
+  return 'moved';
 }
 
-// A short sentence about skipped duplicates, e.g. 'Skipped 3 that already exist (in "Technical").'
+// A short sentence about skipped duplicates, e.g. 'Skipped 3 that were already in "Technical".'
 export function describeSkipped(skipped) {
   if (!skipped.length) return '';
   const names = [...new Set(skipped.map((s) => `"${s.setName}"`))].join(', ');
-  return `Skipped ${skipped.length} that already exist (in ${names}).`;
+  return `Skipped ${skipped.length} that ${skipped.length === 1 ? 'was' : 'were'} already in ${names}.`;
 }
 
 /* ---------- Export and import (JSON file) ---------- */

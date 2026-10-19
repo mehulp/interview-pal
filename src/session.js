@@ -1,5 +1,6 @@
 // Session: choosing and ordering questions, difficulty rules, and the answer timer.
 // No page code here, so it is easy to test.
+import { normalize } from './sets.js';
 
 /* ---------- Difficulty rules ---------- */
 
@@ -53,6 +54,24 @@ export function describeDifficulty(difficulty, easyTimerOn) {
 // Questions with some text in them.
 export const usableQuestions = (pairs) => pairs.filter((p) => p.question && p.question.trim());
 
+// Drop repeats, so a question that is in several ticked sets (or twice in one) is asked once.
+// The copy kept is the first one, in the order given, that has a model answer; if none has
+// one, the first. It stays where the first copy was.
+export function removeRepeats(pairs) {
+  const kept = new Map(); // normalised question -> index in `result`
+  const result = [];
+  for (const p of pairs) {
+    const key = normalize(p.question);
+    if (!kept.has(key)) {
+      kept.set(key, result.length);
+      result.push(p);
+    } else if (!(result[kept.get(key)].answer || '').trim() && (p.answer || '').trim()) {
+      result[kept.get(key)] = p; // this copy has a model answer and the one kept does not
+    }
+  }
+  return result;
+}
+
 // level: 'all' keeps everything (including untagged); 'easy' / 'hard' keep only tagged ones.
 export function filterByLevel(pairs, level) {
   return level === 'all' ? pairs : pairs.filter((p) => p.level === level);
@@ -70,7 +89,7 @@ export function shuffle(list) {
 
 // order: 'serial' or 'random'. count: how many to ask (at most what is available).
 export function buildQuestionList(pairs, { order, level, count }) {
-  const matching = filterByLevel(usableQuestions(pairs), level);
+  const matching = removeRepeats(filterByLevel(usableQuestions(pairs), level));
   const ordered = order === 'random' ? shuffle(matching) : matching;
   const n = Math.max(1, Math.min(Number(count) || ordered.length, ordered.length));
   return ordered.slice(0, n);

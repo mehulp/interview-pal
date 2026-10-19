@@ -11,7 +11,7 @@ import { keyTerms } from './vocabulary.js';
 import { pickPhrase } from './phrases.js';
 import {
   DIFFICULTY, timerSecondsFor, describeDifficulty, usableQuestions, filterByLevel,
-  buildQuestionList, createSession, createTimer, formatTime,
+  buildQuestionList, removeRepeats, createSession, createTimer, formatTime,
 } from './session.js';
 import { loadInterviewers, pickInterviewer } from './interviewers.js';
 import { createSelfView } from './selfview.js';
@@ -206,8 +206,9 @@ export function initPractice(avatar) {
 
     const o = readOptions();
     const setIds = selectedSetIds();
-    const all = usableQuestions(loadQuestions(setIds));
-    const matching = filterByLevel(all, o.level);
+    const usable = usableQuestions(loadQuestions(setIds));
+    const all = removeRepeats(usable); // a question in two ticked sets counts once
+    const matching = removeRepeats(filterByLevel(usable, o.level));
 
     $('available').textContent = !usableQuestions(loadQuestions()).length
       ? 'No questions saved yet. Add some on the Questions tab first.'

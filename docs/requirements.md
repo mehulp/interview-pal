@@ -4,7 +4,7 @@ A daily mock-interview practice tool. You load your own Q&A notes and an animate
 
 ## Status
 
-**v1 is complete.** All eleven build steps are done (see "Build order"). The owner tested the app in Chrome on a laptop (Practice and Coach modes, question sets, History, the interviewer faces, self-view and voice answers). It is also tried on a real phone and works well, and it is published on GitHub Pages at https://mehulp.github.io/interview-pal/. Not yet verified: Safari and iPhone. Items in "Deferred to v2" and "Later" are not built. **v1.1 ("make it publishable") is complete**; see the section of that name below. It is tagged `v1.1.0`, and the end of v1 is tagged `v1.0.0` (commit `7417913`). The README screenshots are in (the demo GIF was skipped). **v1.2 is partly built** (not yet tagged or pushed): the model answer on the Interview screen and the tidier "Try the demo" card are done. The same question in more than one set (step 19) is agreed and documented, but not built. See "v1.2" below.
+**v1 is complete.** All eleven build steps are done (see "Build order"). The owner tested the app in Chrome on a laptop (Practice and Coach modes, question sets, History, the interviewer faces, self-view and voice answers). It is also tried on a real phone and works well, and it is published on GitHub Pages at https://mehulp.github.io/interview-pal/. Not yet verified: Safari and iPhone. Items in "Deferred to v2" and "Later" are not built. **v1.1 ("make it publishable") is complete**; see the section of that name below. It is tagged `v1.1.0`, and the end of v1 is tagged `v1.0.0` (commit `7417913`). The README screenshots are in (the demo GIF was skipped). **v1.2 is built** (not yet tagged or pushed): the model answer on the Interview screen, the tidier "Try the demo" card, and the same question in more than one set. See "v1.2" below.
 
 ## Decisions (defaults confirmed)
 
@@ -324,7 +324,7 @@ Three changes, each its own build step, one commit each. Nothing here adds a dep
 
 ### Questions in more than one set
 
-19. **Allow the same question in several sets.** (agreed, not built yet) Replaces the v1 rule that a question can exist in only one set across all sets. Reason: after adding the demo set, a question in the user's own notes could be skipped as a duplicate of the demo's and never reach the user's own set, so it (and the user's own model answer) was missing from practice sets.
+19. **Allow the same question in several sets.** (done) Replaces the v1 rule that a question can exist in only one set across all sets. Reason: after adding the demo set, a question in the user's own notes could be skipped as a duplicate of the demo's and never reach the user's own set, so it (and the user's own model answer) was missing from practice sets.
     - **Loading, importing and the demo** skip a question only if the target set already holds it. The skip message names the set ("already in this set"), not another set.
     - **Move to set**, **repeats removed at session start** and the **setup count**: as described under "Question sets" (item 13).
     - **The pool builder** (`src/session.js`) does the removal of repeats, as a pure, tested function. The copy kept is the first, in set order, that has a model answer (otherwise the first).

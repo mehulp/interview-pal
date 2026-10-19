@@ -5,6 +5,7 @@ All notable changes to InterviewPal. Dates are when the work was finished.
 ## Unreleased (v1.2)
 
 - **Show model answer** on the Interview screen: a setting (off by default) and a Show answer / Hide answer button for the current session. The panel is full width under the cards, never spoken, and the timer keeps running. In self-marking the reveal step is skipped when the answer is already visible. Sessions where it was visible are flagged in History and on the summary, in Practice and Coach modes.
+- **The same question can now be in several sets.** A question is unique within a set only, so the demo set no longer stops a question from reaching your own set. When several ticked sets share a question it is asked once (the copy with a model answer is used). Moving a question into a set that already has it just removes it from the old one.
 - **Try the demo** card moved to the top of the Questions tab. It no longer changes the open set, shows a count and an Open demo set button, and becomes a one-line note once the demo set exists.
 
 ## v1.1.0 (2026-10)
