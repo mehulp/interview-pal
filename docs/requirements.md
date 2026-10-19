@@ -4,7 +4,7 @@ A daily mock-interview practice tool. You load your own Q&A notes and an animate
 
 ## Status
 
-**v1 is complete.** All eleven build steps are done (see "Build order"). The owner tested the app in Chrome on a laptop (Practice and Coach modes, question sets, History, the interviewer faces, self-view and voice answers). It is also tried on a real phone and works well, and it is published on GitHub Pages at https://mehulp.github.io/interview-pal/. Not yet verified: Safari and iPhone. Items in "Deferred to v2" and "Later" are not built. **v1.1 ("make it publishable") is complete**; see the section of that name below. It is tagged `v1.1.0`, and the end of v1 is tagged `v1.0.0` (commit `7417913`). Still to do, by the owner: add the README screenshots and GIF.
+**v1 is complete.** All eleven build steps are done (see "Build order"). The owner tested the app in Chrome on a laptop (Practice and Coach modes, question sets, History, the interviewer faces, self-view and voice answers). It is also tried on a real phone and works well, and it is published on GitHub Pages at https://mehulp.github.io/interview-pal/. Not yet verified: Safari and iPhone. Items in "Deferred to v2" and "Later" are not built. **v1.1 ("make it publishable") is complete**; see the section of that name below. It is tagged `v1.1.0`, and the end of v1 is tagged `v1.0.0` (commit `7417913`). The README screenshots are in (the demo GIF was skipped). **v1.2 is planned and agreed but not started**: showing the model answer on the Interview screen, and a tidier "Try the demo" card (see "v1.2" below).
 
 ## Decisions (defaults confirmed)
 
@@ -55,6 +55,7 @@ The interviewer asks the questions aloud. There is no scoring and no AI feedback
 - **Interviewer phrases:** the lines the interviewer says around each question (opening, "next question", "take your time", "time is up", closing) are stored in `src/phrases.js`, with a few variants per difficulty so it does not sound repetitive.
 - **Timer:** a visible countdown per answer. When it reaches zero the interviewer says a time-up line and moves on. The timer is optional on easy.
 - **Self-marking (optional, off by default):** a toggle "Reveal my reference answer and self-mark". After each answer the reference answer from the user's notes is shown, and the user taps Got it / Partly / Missed. Self-marks are saved in history (and can feed weak-area ordering in v2).
+- **Show model answer (optional, off by default; v1.2):** see "Showing the model answer" below. It works in Coach mode too.
 
 ### Coach mode (AI, needs an API key)
 
@@ -105,6 +106,7 @@ Until an API key is saved in Settings, Coach mode is disabled in the mode picker
 11. **Session summary and history (lean version).**
     - **Summary.** Shown when a session ends. It has: questions asked out of the total, skipped, timed out, and time taken; the result (Coach: the average score; Practice with self-marking: how many Got it, Partly and Missed; Practice without marking: no result, because nothing is scored); **topics to revisit** (questions with a Coach score of 5 or less, or self-marked Partly or Missed, grouped by topic); and a question-by-question list where each question opens to show the user's answer and, in Coach mode, the feedback (covered, missed, tip) or the self-mark.
     - **History.** Every session that has at least one recorded answer is saved automatically when it ends, including one that was ended early or left by switching tabs. A History tab lists past sessions, newest first, with date, mode, difficulty, how many questions and the result. Opening one shows the same summary. A single session can be deleted, and the whole history can be cleared, each after a confirmation. Only the latest 200 sessions are kept.
+    - **Answers visible (v1.2).** If the model answer was on screen at any point during a session, the session record is flagged (see "Showing the model answer"), and the summary and the History list say so.
     - History is stored in the browser only, and it contains the user's answers. It is not part of the sets export. Charts, trends and export of history are not in v1. A progress view with trends comes in v1.1, and export of history stays under "Later".
 12. **Local storage.** Question sets, settings, API key and session history are stored in the browser only.
 13. **Question sets.** The user keeps several named sets of questions, for example "Leadership", "Technical" or "Behavioural".
@@ -266,7 +268,7 @@ Goal: make the project ready to publish on GitHub Pages and to show to others. A
     - Add a one-line "AI-generated" disclosure to the README, linking to the NOTICE file.
     - Replace every statement that the images are git-ignored or must never be committed: README (The interviewers, Publishing on GitHub Pages, Troubleshooting, Project layout), this file (the realistic interviewer item and "Privacy and GitHub notes", done as part of this planning), `CLAUDE.md` (Rules), `assets/interviewers/README.md` and `docs/architecture.md`. Remove the README note saying the published site shows only the drawn face.
     - The drawn face stays as the fallback if the files fail to load.
-13. **Demo set.** (done) A "Try the demo" button on the Questions tab loads about 20 generic Engineering Manager questions with model answers, topics and easy/hard levels. It goes through the existing import path, so the duplicate rules apply and nothing is loaded twice. The questions are generic, nothing employer-specific, and the data is part of the app's code (`src/demoset.js`), so there is no network call. The owner reviews the wording before it is committed.
+13. **Demo set.** (done; the card is moved and reworded in v1.2, step 18) A "Try the demo" button on the Questions tab loads about 20 generic Engineering Manager questions with model answers, topics and easy/hard levels. It goes through the existing import path, so the duplicate rules apply and nothing is loaded twice. The questions are generic, nothing employer-specific, and the data is part of the app's code (`src/demoset.js`), so there is no network call. The owner reviews the wording before it is committed.
 14. **Delivery analytics (no AI, local only).** (done) For voice answers: count filler words, measure words per minute, and compare the length of the answer with the timer.
     - The logic is in a pure module, `src/delivery.js`, testable in Node. It works on the answer text and timings only.
     - Shown per answer in the session summary, with session totals, and saved in the history record. Older records without it still display.
@@ -291,6 +293,41 @@ Goal: make the project ready to publish on GitHub Pages and to show to others. A
 - The History tab shows the trends, sessions per day, the heat map and the streak, with no chart library, and an empty history shows a friendly empty state.
 - `node --test tests/` passes locally and in the GitHub Action.
 - The pre-publish checklist has been run and its result reported to the owner.
+
+## v1.2: model answer on screen, and a tidier demo card
+
+Two small changes, each its own build step, one commit each. Nothing here adds a dependency, a server or a network call.
+
+### Showing the model answer
+
+17. **Show model answer on the Interview screen.**
+    - **Setting:** a new option on the setup screen, "Show model answer with each question". It is saved with `saveSettings`, like the other options, and is **off by default**.
+    - **Button:** an Interview-screen button that reads **Show answer** or **Hide answer**. It changes the **current session only** and is not saved. It starts in the state the setting gives, and what the user picks stays for the rest of that session. The saved setting is never changed by it.
+    - **The panel:** the question's reference answer is shown in a panel under the question and answer cards. It is full width, labelled **Model answer**, uses a readable font, and scrolls if the answer is long. On narrow screens it stacks below. It is set with `textContent` only, never as HTML.
+    - **No reference answer:** the panel says "No model answer saved for this question."
+    - **Never spoken.** The interviewer does not read the model answer aloud, and the timer keeps running.
+    - **Self-marking:** if the answer is already visible when the answer ends, the separate "reveal" step is skipped (the user has seen it), but the **Got it / Partly / Missed** buttons are still shown.
+    - **Coach mode:** allowed. Showing the answer sends nothing extra, and changes nothing about marking.
+    - **History flag.** A session where the model answer was visible at any point is recorded with `answersVisible: true` (and each question's result records whether it was visible for that question, `answerShown`). The summary and the History list show a short note, for example "The model answer was visible during this session, so the results may look better than a closed-book attempt." These sessions stay identifiable so that future progress charts can leave them out. The v1.1 progress view is **not** changed by this step: it keeps counting every session, and excluding flagged ones is left for later. Records saved before v1.2 have no flag and count as not visible.
+    - **No network call** in either mode. This is local display only.
+
+### The demo card
+
+18. **Questions tab layout.**
+    - The **Try the demo** card moves to the **top** of the Questions tab, above Question sets.
+    - New wording: "Adds about 20 sample questions to a separate set called Demo: Engineering Manager. It won't change the set you have open."
+    - After adding, a confirmation shows how many questions were added, with an **Open demo set** button. The set that is currently open **does not change** (in v1.1 the demo set was opened automatically). Questions that already exist anywhere are still skipped, and the note says how many.
+    - If the demo set already exists, the card is replaced by a **one-line note** saying so (it names the set and how many questions it has). It comes back if the demo set is deleted.
+
+### Acceptance criteria for v1.2
+
+- With the setting off, the Interview screen shows a **Show answer** button and no model answer. Pressing it shows the panel for the current and later questions of this session, and leaves the saved setting alone.
+- With the setting on, the answer is shown from the first question, and **Hide answer** hides it for this session only.
+- A question with no reference answer shows "No model answer saved for this question." Nothing is spoken, the timer keeps counting, and no network request is made (checked in the browser's network tab, in both modes).
+- With self-marking on and the answer visible, pressing Next goes straight to Got it / Partly / Missed, with no extra reveal screen.
+- A session with the answer shown is flagged, and the summary and the History list show the note. A session where it was never shown has no note.
+- Narrow screens show the panel below the cards without sideways scrolling.
+- The demo card is the first card on the Questions tab. Adding the demo leaves the open set alone, shows the count and an **Open demo set** button, and a second visit shows the one-line note instead of the card.
 
 ## Acceptance criteria for v1
 

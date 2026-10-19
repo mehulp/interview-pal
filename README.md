@@ -101,7 +101,7 @@ alias interviewpal='/home/mehul/projects/interviewpal/scripts/interviewpal.sh'
 The four tabs at the top are **Interview**, **Questions**, **History** and **Settings**.
 
 1. **Questions tab: add your notes.**
-   - New here? Click **Try the demo** to add about 20 generic Engineering Manager questions with model answers, in a set called "Demo: Engineering Manager". Nothing is downloaded, and pressing it twice adds nothing new.
+   - New here? The **Try the demo** card at the top adds about 20 sample Engineering Manager questions, with model answers, to a separate set called "Demo: Engineering Manager". It does not change the set you have open, and it offers an **Open demo set** button afterwards. Nothing is downloaded. Once the demo set exists, the card turns into a one-line note.
    - Open a set (the first one is called "My questions"). Use **New set** to create more, such as "Leadership" and "Technical".
    - Choose a file or paste text, then click **Find questions**. They are added to the open set.
    - Check each card. Fix the question or answer, add a topic, tag it **Easy** or **Hard**, or delete it. Text the reader could not place appears under "Not recognised".
@@ -111,12 +111,13 @@ The four tabs at the top are **Interview**, **Questions**, **History** and **Set
    - Tick the **question sets** to draw from.
    - Choose the **order** (in sequence or random), **question level** (all, only easy, or only hard), **difficulty** and **number of questions**.
    - Pick the **accent** for the interviewer's voice and for your own speech, your **microphone**, and the **interviewer face** (Automatic is the default).
-   - Optional: self-marking (Practice), spoken feedback (Coach), self-view, and the on-device recogniser.
+   - Optional: self-marking (Practice), spoken feedback (Coach), **Show model answer with each question** (off by default), self-view, and the on-device recogniser.
    - Click **Start practice** (or **Start coaching**).
 3. **During the interview.**
    - You get a short pause, then the interviewer asks the first question. The question also appears as a caption.
    - Press **🎤 Answer** and speak, or just type. The words appear in the box, and you can correct them. Press **Stop** (or just **Next**) when you finish.
    - **Repeat question** and **Skip** are available except on Hard. The timer counts down when the difficulty has one, and the interviewer moves on when it runs out.
+   - **Show answer / Hide answer** shows your saved model answer in a panel under the question (it is never read aloud, and the timer keeps running). The button only affects the current session. If you used it, the session is marked in History as "model answer visible", so you can tell those sessions from closed-book ones.
 4. **After the session.** You see the summary straight away, and the session is saved to the **History** tab. Open any past session to read your answers and feedback, delete one, or clear the history.
 
 ## Writing your notes so they load well
