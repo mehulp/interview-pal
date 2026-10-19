@@ -12,3 +12,7 @@ interviewpal-sets-*.json
 
 # Demo recordings (large, and they show the interviewer photos)
 demo-videos/
+
+# Local server process ID and log (scripts/interviewpal.sh), and Python caches
+.run/
+__pycache__/
