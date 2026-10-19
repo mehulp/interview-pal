@@ -2,7 +2,7 @@
 // so it is easy to test.
 //
 // A session record looks like:
-//   { id, startedAt, endedAt, durationSec, completed, mode, difficulty, order, level, total,
+//   { id, startedAt, endedAt, durationSec, completed, mode, difficulty, order, level, total, answersVisible,
 //     sets: [names], results: [ one entry per question that was answered, skipped or timed out ] }
 import { newId } from './sets.js';
 
@@ -24,6 +24,7 @@ function cleanResult(r) {
     timedOut: Boolean(r.timedOut),
     seconds: r.seconds || 0,
     delivery: r.delivery || null, // v1.1: filler words, pace, timer use (older records have none)
+    answerShown: Boolean(r.answerShown), // v1.2: the model answer was on screen for this question
     mark: r.mark || '', // Practice self-mark: 'got' | 'partly' | 'missed'
     score: r.score ?? null, // Coach score out of 10
     covered: r.covered || [],
@@ -47,6 +48,7 @@ export function buildSessionRecord({ options, results, total, startedAt, complet
     order: options.order,
     level: options.level,
     total,
+    answersVisible: results.some((r) => r.answerShown), // v1.2: the model answer was visible at some point (so charts can leave it out)
     sets: [...new Set(results.map((r) => r.set).filter(Boolean))],
     results: results.map(cleanResult),
   };
@@ -108,6 +110,7 @@ export function describeSession(record) {
   const parts = [cap(record.mode), cap(record.difficulty), `${s.asked} of ${s.total} questions`];
   if (s.average !== null) parts.push(`average ${s.average.toFixed(1)}/10`);
   else if (s.markedCount) parts.push(`${s.marks.got} got it, ${s.marks.partly} partly, ${s.marks.missed} missed`);
+  if (record.answersVisible) parts.push('model answer visible');
   if (!record.completed) parts.push('ended early');
   return { title: formatDate(record.startedAt), detail: parts.join(' · ') };
 }

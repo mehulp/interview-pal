@@ -288,3 +288,10 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .heat-topic { overflow-wrap: anywhere; font-weight: 600; }
 .heat-cell { border-radius: 6px; padding: 4px 8px; text-align: center; color: #1d2433; font-weight: 600; }
 .heat-count { color: #555; font-size: 0.9rem; }
+
+/* Model answer panel (Interview screen): full width under the question and answer cards */
+.model-answer { grid-column: 1 / -1; background: var(--card); border-radius: 12px; padding: 16px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1); }
+.model-answer h2 { margin: 0 0 8px; font-size: 1.1rem; }
+.model-answer-text { white-space: pre-wrap; line-height: 1.6; font-size: 1rem; max-height: 40vh; overflow-y: auto; background: #f0f3ff; border-radius: 8px; padding: 12px; }
+.model-answer-text:focus-visible { outline: 3px solid #ffb703; outline-offset: 2px; }
+@media (max-width: 520px) { .model-answer { padding: 12px; } }

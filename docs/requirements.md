@@ -4,7 +4,7 @@ A daily mock-interview practice tool. You load your own Q&A notes and an animate
 
 ## Status
 
-**v1 is complete.** All eleven build steps are done (see "Build order"). The owner tested the app in Chrome on a laptop (Practice and Coach modes, question sets, History, the interviewer faces, self-view and voice answers). It is also tried on a real phone and works well, and it is published on GitHub Pages at https://mehulp.github.io/interview-pal/. Not yet verified: Safari and iPhone. Items in "Deferred to v2" and "Later" are not built. **v1.1 ("make it publishable") is complete**; see the section of that name below. It is tagged `v1.1.0`, and the end of v1 is tagged `v1.0.0` (commit `7417913`). The README screenshots are in (the demo GIF was skipped). **v1.2 is planned and agreed but not started**: showing the model answer on the Interview screen, and a tidier "Try the demo" card (see "v1.2" below).
+**v1 is complete.** All eleven build steps are done (see "Build order"). The owner tested the app in Chrome on a laptop (Practice and Coach modes, question sets, History, the interviewer faces, self-view and voice answers). It is also tried on a real phone and works well, and it is published on GitHub Pages at https://mehulp.github.io/interview-pal/. Not yet verified: Safari and iPhone. Items in "Deferred to v2" and "Later" are not built. **v1.1 ("make it publishable") is complete**; see the section of that name below. It is tagged `v1.1.0`, and the end of v1 is tagged `v1.0.0` (commit `7417913`). The README screenshots are in (the demo GIF was skipped). **v1.2 is built** (not yet tagged or pushed): showing the model answer on the Interview screen, and a tidier "Try the demo" card (see "v1.2" below).
 
 ## Decisions (defaults confirmed)
 
@@ -300,20 +300,21 @@ Two small changes, each its own build step, one commit each. Nothing here adds a
 
 ### Showing the model answer
 
-17. **Show model answer on the Interview screen.**
+17. **Show model answer on the Interview screen.** (done)
     - **Setting:** a new option on the setup screen, "Show model answer with each question". It is saved with `saveSettings`, like the other options, and is **off by default**.
     - **Button:** an Interview-screen button that reads **Show answer** or **Hide answer**. It changes the **current session only** and is not saved. It starts in the state the setting gives, and what the user picks stays for the rest of that session. The saved setting is never changed by it.
     - **The panel:** the question's reference answer is shown in a panel under the question and answer cards. It is full width, labelled **Model answer**, uses a readable font, and scrolls if the answer is long. On narrow screens it stacks below. It is set with `textContent` only, never as HTML.
     - **No reference answer:** the panel says "No model answer saved for this question."
     - **Never spoken.** The interviewer does not read the model answer aloud, and the timer keeps running.
-    - **Self-marking:** if the answer is already visible when the answer ends, the separate "reveal" step is skipped (the user has seen it), but the **Got it / Partly / Missed** buttons are still shown.
+    - **Self-marking:** if the answer is already visible when the answer ends, the separate "reveal" step is skipped (the user has seen it), but the **Got it / Partly / Missed** buttons are still shown. (A question with no reference answer has nothing to mark against, so, as before, it is not offered for self-marking.)
+    - **When it counts as visible:** only while the question is open (being asked or answered). Turning it on while marking or reading Coach feedback happens after the answer is given, so it does not flag the session.
     - **Coach mode:** allowed. Showing the answer sends nothing extra, and changes nothing about marking.
     - **History flag.** A session where the model answer was visible at any point is recorded with `answersVisible: true` (and each question's result records whether it was visible for that question, `answerShown`). The summary and the History list show a short note, for example "The model answer was visible during this session, so the results may look better than a closed-book attempt." These sessions stay identifiable so that future progress charts can leave them out. The v1.1 progress view is **not** changed by this step: it keeps counting every session, and excluding flagged ones is left for later. Records saved before v1.2 have no flag and count as not visible.
     - **No network call** in either mode. This is local display only.
 
 ### The demo card
 
-18. **Questions tab layout.**
+18. **Questions tab layout.** (done)
     - The **Try the demo** card moves to the **top** of the Questions tab, above Question sets.
     - New wording: "Adds about 20 sample questions to a separate set called Demo: Engineering Manager. It won't change the set you have open."
     - After adding, a confirmation shows how many questions were added, with an **Open demo set** button. The set that is currently open **does not change** (in v1.1 the demo set was opened automatically). Questions that already exist anywhere are still skipped, and the note says how many.

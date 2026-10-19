@@ -33,6 +33,7 @@ function questionDetails(r, index) {
     body.append(el('p', { className: 'sum-answer', textContent: r.answer || '(no answer)' }));
   }
   if (r.timedOut) body.append(el('p', { textContent: 'The time ran out.' }));
+  if (r.answerShown) body.append(el('p', { className: 'sum-note', textContent: 'The model answer was visible for this question.' }));
   if (r.mark) body.append(el('p', { textContent: `Your self-mark: ${MARK_TEXT[r.mark]}.` }));
   if (r.feedbackSkipped) body.append(el('p', { textContent: 'The AI feedback was skipped for this question.' }));
   if (r.score !== null && !r.skipped) {
@@ -64,6 +65,10 @@ export function renderSummary(container, record, note = '') {
       textContent: `${s.asked} of ${s.total} question(s) asked · ${s.skipped} skipped · ${s.timedOut} ran out of time · ${formatDuration(s.durationSec)}`,
     }),
   ];
+
+  if (record.answersVisible) {
+    parts.push(el('p', { className: 'hint', textContent: 'The model answer was visible during this session, so the results may look better than a closed-book attempt.' }));
+  }
 
   // The result: an average score (Coach), or the self-marks (Practice). Plain Practice has no score.
   if (s.average !== null) {

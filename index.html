@@ -78,6 +78,9 @@
       <label class="check" id="selfmark-row">
         <input type="checkbox" id="opt-selfmark"> After each answer, show my reference answer and let me mark myself
       </label>
+      <label class="check" id="show-answer-row">
+        <input type="checkbox" id="opt-show-answer"> Show model answer with each question (you can also turn it on or off during a session)
+      </label>
       <label class="check" id="coach-speak-row" hidden>
         <input type="checkbox" id="opt-coach-speak"> Speak the feedback aloud (it is always shown as text too)
       </label>
@@ -126,14 +129,17 @@
           <div class="buttons">
             <button type="button" class="small" id="repeat-btn">↻ Repeat question</button>
             <button type="button" class="small" id="skip-btn">Skip</button>
+            <button type="button" class="small" id="answer-toggle" aria-pressed="false" aria-controls="model-answer">Show answer</button>
             <button type="button" class="small" id="selfview-btn" aria-pressed="false">📷 Self-view</button>
             <button type="button" class="small danger" id="end-btn">End session</button>
           </div>
         </div>
 
         <div id="reveal" hidden>
-          <h2>Your reference answer</h2>
-          <pre id="reference"></pre>
+          <div id="reveal-reference">
+            <h2>Your reference answer</h2>
+            <pre id="reference"></pre>
+          </div>
           <p>How did you do?</p>
           <div class="buttons">
             <button type="button" class="big" data-mark="got">Got it</button>
@@ -172,6 +178,12 @@
           <div id="finished-body"></div>
           <button type="button" class="big" id="again-btn">Practise again</button>
         </div>
+      </section>
+
+      <!-- Model answer: full width under the two cards (stacked below on narrow screens) -->
+      <section class="model-answer" id="model-answer" aria-label="Model answer" hidden>
+        <h2>Model answer</h2>
+        <div class="model-answer-text" id="model-answer-text" tabindex="0"></div>
       </section>
     </div>
   </main>

@@ -209,7 +209,7 @@ Everything is stored in `localStorage` under four keys, for this browser and thi
 |---|---|
 | `interviewpal.settings` | Choices such as mode, difficulty, accents, microphone, interviewer, model name |
 | `interviewpal.sets` | The question sets and their questions |
-| `interviewpal.history` | Finished sessions, including your answers (latest 200). From v1.1 each result also carries delivery numbers and whether it was spoken or typed |
+| `interviewpal.history` | Finished sessions, including your answers (latest 200). From v1.1 each result also carries delivery numbers and whether it was spoken or typed. From v1.2 a session has `answersVisible` and each result `answerShown`, set when the model answer was on screen while the question was open |
 | `interviewpal.apiKey` | The Anthropic API key, if one was saved |
 
 ## 9. Design patterns used

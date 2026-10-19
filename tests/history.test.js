@@ -82,3 +82,22 @@ test('describeSession mentions an early end', () => {
   assert.match(detail, /Practice · Medium · 4 of 5 questions/);
   assert.match(detail, /ended early/);
 });
+
+test('a session is flagged when the model answer was visible for any question', () => {
+  const withShown = buildSessionRecord({
+    options, results: [{ question: 'a?' }, { question: 'b?', answerShown: true }], total: 2, startedAt: 0, completed: true,
+  });
+  assert.equal(withShown.answersVisible, true);
+  assert.equal(withShown.results[0].answerShown, false);
+  assert.equal(withShown.results[1].answerShown, true);
+
+  const without = buildSessionRecord({ options, results: [{ question: 'a?' }], total: 1, startedAt: 0, completed: true });
+  assert.equal(without.answersVisible, false);
+});
+
+test('describeSession says when the model answer was visible; old records have no flag', () => {
+  const flagged = buildSessionRecord({ options, results: [{ question: 'a?', answerShown: true }], total: 1, startedAt: 0, completed: true });
+  assert.match(describeSession(flagged).detail, /model answer visible/);
+  const { answersVisible, ...old } = flagged; // a record saved before v1.2
+  assert.doesNotMatch(describeSession(old).detail, /model answer visible/);
+});

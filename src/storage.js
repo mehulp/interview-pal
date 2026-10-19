@@ -16,6 +16,7 @@ const DEFAULTS = {
   practiceDifficulty: 'medium', // 'easy', 'medium' or 'hard'
   practiceCount: 10,
   practiceSelfMark: false,
+  showModelAnswer: false, // show the model answer with each question (can be toggled during a session)
   practiceEasyTimer: false,
   coachSpeak: true, // speak the AI feedback aloud
   practiceSets: [], // ids of the sets ticked for a session (empty = all sets)

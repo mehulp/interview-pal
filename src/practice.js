@@ -65,6 +65,8 @@ export function initPractice(avatar) {
   let listening = false;
   let onDeviceReady = false; // the on-device recogniser is switched on and works here
   let textBefore = '';
+  let answerVisible = false; // is the model answer showing? (this session only; the saved setting only sets the start)
+  let answerShownNow = false; // was it visible at any point while the current question was open?
 
   /* ---------- Accent pickers (saved in this browser) ---------- */
   function setupPicker(select, key, apply) {
@@ -89,6 +91,7 @@ export function initPractice(avatar) {
   optCount.value = settings.practiceCount;
   optEasyTimer.checked = settings.practiceEasyTimer;
   optSelfMark.checked = settings.practiceSelfMark;
+  $('opt-show-answer').checked = settings.showModelAnswer;
   optCoachSpeak.checked = settings.coachSpeak;
   optSelfView.checked = settings.selfView;
 
@@ -181,6 +184,7 @@ export function initPractice(avatar) {
       count: Math.max(1, parseInt(optCount.value, 10) || 10),
       easyTimer: optEasyTimer.checked,
       selfMark: optSelfMark.checked,
+      showAnswer: $('opt-show-answer').checked,
       coachSpeak: optCoachSpeak.checked,
       selfView: optSelfView.checked,
     };
@@ -223,6 +227,7 @@ export function initPractice(avatar) {
     $('setup').hidden = false;
     $('interview').hidden = true;
     phase = 'setup';
+    refreshAnswerPanel();
     refreshMicList();
     renderSetChoices();
     refreshSetup();
@@ -238,6 +243,7 @@ export function initPractice(avatar) {
       practiceCount: options.count,
       practiceEasyTimer: options.easyTimer,
       practiceSelfMark: options.selfMark,
+      showModelAnswer: options.showAnswer,
       coachSpeak: options.coachSpeak,
       practiceSets: selectedSetIds(),
       selfView: options.selfView,
@@ -266,6 +272,7 @@ export function initPractice(avatar) {
     await pickVoice(); // choose the voice now, so the page can say which one it is
     $('voice-note').textContent = describeVoice();
     sessionStartedAt = Date.now();
+    answerVisible = options.showAnswer;
     $('setup').hidden = true;
     $('interview').hidden = false;
     showAnswerArea();
@@ -295,6 +302,31 @@ export function initPractice(avatar) {
     if (avatar.getState() === 'talking') avatar.setState('idle');
   }
 
+  /* ---------- Model answer panel ---------- */
+  // Shows the reference answer from the user's own notes. Text only (textContent), never spoken,
+  // and nothing is sent anywhere. It is only on screen while a question is open or being marked.
+  function refreshAnswerPanel() {
+    const q = session && session.current();
+    const open = phase === 'asking' || phase === 'answering' || phase === 'finishing' || phase === 'marking';
+    const show = Boolean(q) && answerVisible && open;
+    $('model-answer').hidden = !show;
+    if (show) {
+      $('model-answer-text').textContent = q.answer?.trim() || 'No model answer saved for this question.';
+      // It counts as seen only while the answer is still being given (not during marking or feedback)
+      if (phase === 'asking' || phase === 'answering') answerShownNow = true;
+    }
+    const toggle = $('answer-toggle');
+    toggle.textContent = answerVisible ? 'Hide answer' : 'Show answer';
+    toggle.setAttribute('aria-pressed', String(answerVisible));
+    toggle.disabled = !(phase === 'asking' || phase === 'answering');
+  }
+
+  $('answer-toggle').addEventListener('click', () => {
+    if (phase !== 'asking' && phase !== 'answering') return;
+    answerVisible = !answerVisible; // this session only: the saved setting is not touched
+    refreshAnswerPanel();
+  });
+
   /* ---------- Showing and hiding parts of the controls ---------- */
   function showAnswerArea() {
     $('answer-area').hidden = false;
@@ -321,6 +353,8 @@ export function initPractice(avatar) {
     const q = session.current();
     phase = 'asking';
     showAnswerArea();
+    answerShownNow = false;
+    refreshAnswerPanel();
     $('progress').textContent = `Question ${session.position()} of ${session.total}`;
     answerBox.value = '';
     voice = { chunks: [], live: '', ms: 0, since: 0 }; // what the speech recogniser heard for this answer
@@ -343,6 +377,7 @@ export function initPractice(avatar) {
     if (run !== runId) return; // you skipped or ended while the question was being read
 
     phase = 'answering';
+    refreshAnswerPanel();
     startedAt = Date.now();
     startTimer(run);
     setButtons();
@@ -379,6 +414,7 @@ export function initPractice(avatar) {
     const wasAnswering = phase === 'answering';
     phase = 'finishing'; // blocks double clicks while we wait for the last spoken words
     setButtons();
+    refreshAnswerPanel();
     stopTimer();
     hush();
     await stopListening(); // waits (briefly) for the last words, so nothing is cut off
@@ -394,6 +430,7 @@ export function initPractice(avatar) {
       timedOut: reason === 'timeup',
       mark: null,
       seconds: wasAnswering ? Math.round((Date.now() - startedAt) / 1000) : 0,
+      answerShown: answerShownNow, // the model answer was on screen while this question was open
     };
     // Delivery numbers come from the text and the timings only. No audio is kept.
     record.delivery = reason === 'skip' ? null : analyzeAnswer({
@@ -422,8 +459,10 @@ export function initPractice(avatar) {
     if (wantsMark) {
       phase = 'marking';
       $('reference').textContent = q.answer;
+      $('reveal-reference').hidden = answerVisible; // already on screen: skip the reveal, keep the mark buttons
       $('answer-area').hidden = true;
       $('reveal').hidden = false;
+      refreshAnswerPanel();
       return; // waits for Got it / Partly / Missed
     }
     goNext(reason === 'timeup' ? 'none' : 'next');
@@ -465,6 +504,7 @@ export function initPractice(avatar) {
     const run = runId;
     marking = { record, q };
     phase = 'feedback';
+    refreshAnswerPanel();
     $('answer-area').hidden = true;
     $('reveal').hidden = true;
     $('feedback').hidden = false;
@@ -560,6 +600,7 @@ export function initPractice(avatar) {
     hush();
     setSelfView(false); // session over: switch the camera off
     phase = 'finished';
+    refreshAnswerPanel();
 
     $('progress').textContent = '';
     $('question-text').textContent = '';
