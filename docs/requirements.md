@@ -160,6 +160,7 @@ Until an API key is saved in Settings, Coach mode is disabled in the mode picker
 - **API key:** entered once in Settings and stored in localStorage. Acceptable for a personal tool. The key must never be committed to the repo. Practice mode never reads it.
 - **Structured output:** prompts ask Claude to return JSON only. The client strips code fences and validates before use.
 - **Hosting:** GitHub Pages (static files only).
+- **Local run:** `scripts/interviewpal.sh` (start, stop, status, restart) runs `scripts/devserver.py`, a standard-library static server that listens on `127.0.0.1` only and sends `Cache-Control: no-store`. No new dependency. `python3 -m http.server` still works.
 - **Where data is kept (localStorage, this browser and this address only):**
 
 | Key | What it holds |

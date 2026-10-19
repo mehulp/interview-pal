@@ -6,7 +6,9 @@ Build and maintain the app described in `docs/requirements.md`. Read that file f
 
 **v1 is complete.** All eleven build steps are done and the owner has tested the app in Chrome on a laptop and on a real phone. It is published at https://mehulp.github.io/interview-pal/ (repo: mehulp/interview-pal, pushed over SSH). Not yet tested: Safari and iPhone. Do not build the "Deferred to v2" or "Later" items in the requirements unless asked.
 
-**v1.1 ("make it publishable") is complete** (steps 12 to 16 in `docs/requirements.md`): published interviewers with a NOTICE, the demo set, delivery analytics, the progress view and streak, and repo polish (tests, GitHub Action, README opening, changelog, pre-publish checklist). Tags `v1.0.0` (commit `7417913`) and `v1.1.0` exist locally and have not been pushed. Still to do, by the owner: run `docs/pre-publish-checklist.md`, publish to GitHub Pages, then fill in the live demo link and the screenshot and GIF placeholders in the README.
+**v1.1 ("make it publishable") is complete** (steps 12 to 16 in `docs/requirements.md`): published interviewers with a NOTICE, the demo set, delivery analytics, the progress view and streak, and repo polish (tests, GitHub Action, README opening, changelog, pre-publish checklist). Tags `v1.0.0` (commit `7417913`) and `v1.1.0` are pushed, the site is live, and the README has its screenshots (the demo GIF was skipped).
+
+**In progress: a start/stop script** (`scripts/interviewpal.sh` and `scripts/devserver.py`) so the owner can run the app without remembering commands. Documented in the README under "Start and stop".
 
 For any new work: agree the change with the owner, update `docs/requirements.md` first (and `README.md` if users will notice it), then build it in small steps and commit after each one.
 
@@ -43,6 +45,7 @@ Also built, beyond Practice and Coach: question sets with JSON export and import
 
 ## How the code is organised
 
+- `scripts/interviewpal.sh` starts, stops and reports on the local server; `scripts/devserver.py` is the small standard-library server behind it (127.0.0.1 only, `Cache-Control: no-store`). Its process ID and log live in `.run/`, which is git-ignored.
 - `index.html` holds all four screens (Interview, Questions, History, Settings); `src/ui.js` switches between them. `styles.css` holds all styles.
 - Logic that needs no page lives in small modules that can be tested on their own with Node: `parser.js` (the text rules), `sets.js`, `session.js`, `history.js`, `vocabulary.js`, `interviewers.js`, `phrases.js`, and from v1.1 `delivery.js` and `progress.js`.
 - Everything saved in the browser goes through `src/storage.js`. Settings are saved with `saveSettings({ key: value })`, which merges, so never save a whole copy of the settings object.
@@ -58,9 +61,9 @@ Also built, beyond Practice and Coach: question sets with JSON export and import
 ## Environment: Ubuntu on WSL
 
 - The project lives in the Linux filesystem (`~/interviewpal`), not under `/mnt/c`, for speed and reliable git.
-- Run the dev server inside WSL: `python3 -m http.server 8000`.
+- Run the dev server inside WSL with `scripts/interviewpal.sh start` (also `stop`, `status`, `restart`; `PORT=` and `NO_BROWSER=1` are options). `python3 -m http.server 8000` still works as a manual fallback.
 - Choose the headset or microphone you actually use in the app's Microphone list (the Windows default may be the laptop microphone).
 - Test in **Google Chrome on the Windows side** at `http://localhost:8000`. WSL forwards localhost automatically, and the Windows microphone works there.
 - Do not test voice features by opening the WSL IP address. Microphone access needs `localhost` or HTTPS, so an IP address will block it.
-- Do not try to launch a browser from inside WSL. Tell me the URL and I will open it.
+- Claude Code itself must not launch a browser from inside WSL. Tell me the URL and I will open it. The one exception is the project's own `scripts/interviewpal.sh`, which is allowed to open Chrome on the Windows side when the owner runs it (and Claude Code tests it with `NO_BROWSER=1`, so no browser opens during testing).
 - Microphone access also does not work on plain `file://` pages.

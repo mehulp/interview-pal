@@ -19,6 +19,7 @@ It is a plain website (HTML, CSS and JavaScript). There is no server, no login a
 ## Contents
 
 - [Quick start](#quick-start)
+- [Start and stop](#start-and-stop)
 - [What it does](#what-it-does)
 - [How to use it](#how-to-use-it)
 - [Writing your notes so they load well](#writing-your-notes-so-they-load-well)
@@ -46,9 +47,40 @@ python3 -m http.server 8000
 
 Open <http://localhost:8000> in Chrome and allow the microphone when asked.
 
+Prefer one command? See [Start and stop](#start-and-stop) just below.
+
 - Use `localhost` (not an IP address, and not a `file://` page). The microphone and camera only work on `localhost` or on HTTPS.
 - Use the same address every time. Your saved questions and history belong to that address, so `localhost:8000` and `127.0.0.1:8000` do not share them.
 - On Windows with WSL, run the server inside WSL and open Chrome on the Windows side.
+
+## Start and stop
+
+A small script starts and stops the local server for you, so you do not have to remember the command. It needs only Bash and Python 3.
+
+```bash
+scripts/interviewpal.sh start     # start the server, then open Chrome on it
+scripts/interviewpal.sh status    # is it running? shows the address and process ID
+scripts/interviewpal.sh stop      # stop the server it started
+scripts/interviewpal.sh restart   # stop, then start
+```
+
+- It works from any folder, because it finds the project from its own location.
+- The address is <http://localhost:8000>. To use another port: `PORT=8001 scripts/interviewpal.sh start`.
+- On Windows with WSL it opens Chrome on the Windows side. If that does not work, or you set `NO_BROWSER=1`, it only prints the address and you open it yourself.
+- If the server is already running, `start` says so and does not start a second one. If another program is using the port, it says so and suggests `PORT=`.
+- The server listens on this computer only (`127.0.0.1`), not on your network. It tells the browser not to keep old copies of the files, so an ordinary refresh always shows the latest code.
+- The process ID and the log are kept in `.run/` (git-ignored). If the server fails to start, the message shows the log path.
+- `python3 -m http.server 8000` still works as a manual fallback.
+
+### Shortcut command (optional)
+
+To type just `interviewpal` from any terminal, add this one line to `~/.bashrc`:
+
+```bash
+alias interviewpal='/home/mehul/projects/interviewpal/scripts/interviewpal.sh'
+```
+
+(Use the real path of your own copy of the project.) It takes effect in a new terminal, or right away after `source ~/.bashrc`. Then `interviewpal start`, `interviewpal status` and `interviewpal stop` work. The alias is only a convenience: the full path to the script always works without it.
 
 ## What it does
 
@@ -276,6 +308,7 @@ src/
   avatar.js            the interviewer's face (drawn, photos or clips)
   interviewers.js      reads the installed interviewers
   storage.js           everything saved in the browser
+scripts/               interviewpal.sh (start, stop, status, restart) and devserver.py (the local server)
 tests/                 unit tests (Node's built-in test runner)
 .github/workflows/     the GitHub Action that runs the checks
 CHANGELOG.md           what changed in each version
