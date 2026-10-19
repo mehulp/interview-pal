@@ -178,6 +178,20 @@
 
   <!-- Questions screen: load notes, then review and edit the pairs -->
   <main class="app-main single" id="screen-questions" hidden>
+    <!-- Demo card: first on the screen. Once the demo set exists it becomes the one-line note below. -->
+    <section class="card" id="demo-card" aria-label="Demo questions" hidden>
+      <h2>New here? Try the demo</h2>
+      <div id="demo-intro">
+        <p class="hint">Adds about 20 sample questions to a separate set called Demo: Engineering Manager. It won't change the set you have open.</p>
+        <button type="button" class="big secondary" id="demo-btn">Try the demo</button>
+      </div>
+      <div id="demo-done" hidden>
+        <p class="status" id="demo-status"></p>
+        <button type="button" class="big secondary" id="demo-open" hidden>Open demo set</button>
+      </div>
+    </section>
+    <p class="hint demo-note" id="demo-note" aria-live="polite" hidden></p>
+
     <section class="card" aria-label="Question sets">
       <h2>Question sets</h2>
       <p class="hint">Keep separate sets, for example Leadership and Technical. Each question belongs to one set. You pick which sets to practise when you start.</p>
@@ -190,13 +204,6 @@
         <button type="button" class="small danger" id="set-delete">Delete set</button>
       </div>
       <p class="status" id="set-status" aria-live="polite"></p>
-    </section>
-
-    <section class="card" aria-label="Demo questions">
-      <h2>New here? Try the demo</h2>
-      <p class="hint">Adds about 20 generic Engineering Manager questions, with model answers, to a set called "Demo: Engineering Manager". Nothing is downloaded, and questions you already have are skipped.</p>
-      <button type="button" class="big secondary" id="demo-btn">Try the demo</button>
-      <p class="status" id="demo-status" aria-live="polite"></p>
     </section>
 
     <section class="card" aria-label="Load notes">

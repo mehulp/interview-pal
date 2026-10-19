@@ -131,6 +131,7 @@ function render() {
   }
   unplacedSection.hidden = unplaced.length === 0;
   unplacedList.replaceChildren(...unplaced.map(unplacedCard));
+  renderDemo();
 }
 
 /* ---------- Managing sets ---------- */
@@ -269,16 +270,46 @@ $('import-btn').addEventListener('click', async () => {
 
 /* ---------- Demo questions ---------- */
 
+const demoSet = () => sets.find((s) => s.name === DEMO_SET_NAME);
+let demoResult = null; // { added, skipped } right after the button was pressed, so the confirmation stays visible
+
+// The demo card at the top: the full card, the confirmation after adding, or (once the
+// demo set exists) just a one-line note.
+function renderDemo() {
+  const demo = demoSet();
+  const confirming = demoResult !== null;
+  $('demo-card').hidden = Boolean(demo) && !confirming;
+  $('demo-intro').hidden = confirming;
+  $('demo-done').hidden = !confirming;
+  $('demo-note').hidden = !demo || confirming;
+  if (demo && !confirming) {
+    $('demo-note').textContent = `The demo set "${demo.name}" is already added (${demo.questions.length} question(s)).`;
+  }
+  if (confirming) {
+    const { added, skipped } = demoResult;
+    $('demo-status').textContent = added
+      ? `Added ${added} question(s) to "${DEMO_SET_NAME}". The set you had open has not changed. ${describeSkipped(skipped)}`.trim()
+      : `Nothing was added. ${describeSkipped(skipped)}`.trim();
+    $('demo-open').hidden = !demo;
+  }
+}
+
 // Goes through the same check-and-merge steps as a file import, so duplicates are skipped.
+// The open set is not changed.
 $('demo-btn').addEventListener('click', () => {
   const { added, skipped } = mergeImport(sets, parseImport(JSON.stringify(DEMO_EXPORT)));
-  const demo = sets.find((s) => s.name === DEMO_SET_NAME);
+  const demo = demoSet();
+  if (demo && !demo.questions.length) sets.splice(sets.indexOf(demo), 1); // nothing to show: do not leave an empty set behind
   save();
+  demoResult = { added, skipped };
+  render();
+});
+
+$('demo-open').addEventListener('click', () => {
+  const demo = demoSet();
+  demoResult = null;
   if (demo) openSet(demo.id);
   render();
-  $('demo-status').textContent = added
-    ? `Added ${added} demo question(s) to "${DEMO_SET_NAME}". Tick that set on the Interview tab to practise them.`
-    : `The demo questions are already there. ${describeSkipped(skipped)}`;
 });
 
 render();
