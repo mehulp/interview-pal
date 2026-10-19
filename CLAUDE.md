@@ -8,7 +8,7 @@ Build and maintain the app described in `docs/requirements.md`. Read that file f
 
 **v1.1 ("make it publishable") is complete** (steps 12 to 16 in `docs/requirements.md`): published interviewers with a NOTICE, the demo set, delivery analytics, the progress view and streak, and repo polish (tests, GitHub Action, README opening, changelog, pre-publish checklist). Tags `v1.0.0` (commit `7417913`) and `v1.1.0` are pushed, the site is live, and the README has its screenshots (the demo GIF was skipped).
 
-**In progress: a start/stop script** (`scripts/interviewpal.sh` and `scripts/devserver.py`) so the owner can run the app without remembering commands. Documented in the README under "Start and stop".
+**Also done: a start/stop script** (`scripts/interviewpal.sh` and `scripts/devserver.py`) so the owner can run the app without remembering commands. Documented in the README under "Start and stop". The owner confirmed it opens Chrome on the Windows side, and added the optional `interviewpal` alias to `~/.bashrc`.
 
 For any new work: agree the change with the owner, update `docs/requirements.md` first (and `README.md` if users will notice it), then build it in small steps and commit after each one.
 
