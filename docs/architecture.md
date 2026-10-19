@@ -86,7 +86,7 @@ flowchart TB
     P -->|calls| A
 ```
 
-This is a "pure core, thin shell" design. The rules that matter (parsing, no duplicate questions, scoring numbers, difficulty rules, who gets picked) sit in small pure modules that can be tested with plain Node scripts and no browser. Everything messy (speech, camera, API, storage) sits behind adapters, so a failure or a missing feature is handled in one place. Domain modules never touch the page or browser APIs, which is what lets `tests/` run them under plain Node (`npm test`, also run by a GitHub Action on every push). Adapters may reuse small domain helpers, such as the shape of a question set.
+This is a "pure core, thin shell" design. The rules that matter (parsing, no repeated questions, scoring numbers, difficulty rules, who gets picked) sit in small pure modules that can be tested with plain Node scripts and no browser. Everything messy (speech, camera, API, storage) sits behind adapters, so a failure or a missing feature is handled in one place. Domain modules never touch the page or browser APIs, which is what lets `tests/` run them under plain Node (`npm test`, also run by a GitHub Action on every push). Adapters may reuse small domain helpers, such as the shape of a question set.
 
 ## 5. The major components
 
@@ -94,14 +94,14 @@ This is a "pure core, thin shell" design. The rules that matter (parsing, no dup
 |---|---|
 | `practice.js` (about 670 lines) | Owns the interview loop as a small state machine and connects everything else |
 | `parser.js` | Reads a file into text (with mammoth or pdf.js for Word and PDF), then tries four layout rules in order. Text it can't place is returned as "unplaced", so nothing is lost |
-| `sets.js`, `storage.js` | Sets are `{ id, name, questions[] }`. A question lives in exactly one set, and loading or importing skips duplicates. `storage.js` is the only file that touches `localStorage` |
+| `sets.js`, `storage.js` | Sets are `{ id, name, questions[] }`. A question text is unique within a set (the same question may be in several sets, from v1.2), loading or importing skips repeats within the target set, and `session.js` removes repeats across the ticked sets when a session starts. `storage.js` is the only file that touches `localStorage` |
 | `speech.js` | Two halves. Text-to-speech picks a voice by accent and by the interviewer's gender (guessed from the voice name). The recogniser wrapper keeps listening through pauses, joins results with spaces, waits for the last words, and can use a chosen microphone or the on-device mode |
 | `avatar.js` | One interface, `setState('idle' \| 'talking' \| 'listening')`, with three ways to draw the face: photo frames, video clips or an SVG. It falls back to the SVG if files fail to load |
 | `claude.js` | The API client. It builds the marking prompt (question, reference answer and answer inside tags, JSON-only reply), validates the reply, and turns HTTP errors into plain messages |
 | `history.js`, `summary.js` | At the end of a session `buildSessionRecord` takes a snapshot of the results, and `renderSummary` draws it, right after the session and on the History tab |
 | `delivery.js` (v1.1) | Pure. From an answer's text, its duration, whether it was spoken or typed, and the timer, works out filler words, words per minute (spoken only) and length against the timer. The numbers are stored in the history snapshot. No audio is kept |
 | `progress.js` and a progress view (v1.1) | `progress.js` is pure: it turns stored history into the score trend, sessions per day, a weak-topics heat map and the daily streak. A page module draws them as plain SVG or CSS on the History tab |
-| `demoset.js` (v1.1) | The "Try the demo" questions, held as data in the code and loaded through the same import path as a file, so the duplicate rules apply and no network call is made |
+| `demoset.js` (v1.1) | The "Try the demo" questions, held as data in the code and loaded through the same import path as a file, so the duplicate rules apply (within the demo set) and no network call is made |
 
 ## 6. The interview as a state machine
 

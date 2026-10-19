@@ -4,7 +4,7 @@ A daily mock-interview practice tool. You load your own Q&A notes and an animate
 
 ## Status
 
-**v1 is complete.** All eleven build steps are done (see "Build order"). The owner tested the app in Chrome on a laptop (Practice and Coach modes, question sets, History, the interviewer faces, self-view and voice answers). It is also tried on a real phone and works well, and it is published on GitHub Pages at https://mehulp.github.io/interview-pal/. Not yet verified: Safari and iPhone. Items in "Deferred to v2" and "Later" are not built. **v1.1 ("make it publishable") is complete**; see the section of that name below. It is tagged `v1.1.0`, and the end of v1 is tagged `v1.0.0` (commit `7417913`). The README screenshots are in (the demo GIF was skipped). **v1.2 is built** (not yet tagged or pushed): showing the model answer on the Interview screen, and a tidier "Try the demo" card (see "v1.2" below).
+**v1 is complete.** All eleven build steps are done (see "Build order"). The owner tested the app in Chrome on a laptop (Practice and Coach modes, question sets, History, the interviewer faces, self-view and voice answers). It is also tried on a real phone and works well, and it is published on GitHub Pages at https://mehulp.github.io/interview-pal/. Not yet verified: Safari and iPhone. Items in "Deferred to v2" and "Later" are not built. **v1.1 ("make it publishable") is complete**; see the section of that name below. It is tagged `v1.1.0`, and the end of v1 is tagged `v1.0.0` (commit `7417913`). The README screenshots are in (the demo GIF was skipped). **v1.2 is partly built** (not yet tagged or pushed): the model answer on the Interview screen and the tidier "Try the demo" card are done. The same question in more than one set (step 19) is agreed and documented, but not built. See "v1.2" below.
 
 ## Decisions (defaults confirmed)
 
@@ -12,7 +12,7 @@ A daily mock-interview practice tool. You load your own Q&A notes and an animate
 |---|---|
 | Modes | Practice (default, no AI, no API key) and Coach (AI, needs an API key) |
 | Document formats | .md, .txt, .docx, .pdf |
-| Question sets | Several named sets (for example Leadership, Technical). A question belongs to exactly one set. Sets are picked at the start of a session, so any combination can be practised. Sets can be exported and imported as a JSON file |
+| Question sets | Several named sets (for example Leadership, Technical). A question text is unique within a set, but the same question can be in several sets (from v1.2). Sets are picked at the start of a session, so any combination can be practised. Sets can be exported and imported as a JSON file |
 | Repository | Private to start |
 | Main answer mode | Voice, with typing as fallback |
 | Language / accent | Default English (India), `en-IN`. Separate pickers for the interviewer voice and the user's speech: en-IN, en-US, en-GB |
@@ -112,9 +112,11 @@ Until an API key is saved in Settings, Coach mode is disabled in the mode picker
 13. **Question sets.** The user keeps several named sets of questions, for example "Leadership", "Technical" or "Behavioural".
     - There is always at least one set. The default is called "My questions". Questions saved before sets existed are moved into it automatically.
     - Sets can be created, renamed and deleted (deleting asks for confirmation). Set names are unique.
-    - **One question, one set.** A question is stored inside exactly one set. There is no copy. "Move to set" takes it out of one set and puts it into another. A question text (ignoring case and extra spaces) can exist only once across all sets, so loading a document or importing a file skips questions that already exist anywhere and reports how many were skipped and in which set they are.
-    - At session setup the user ticks one or more sets. The questions of all ticked sets form one pool, and order, question level, difficulty and count apply to that pool. The last choice is remembered.
-    - **Backup:** "Export sets" saves all sets to a `.json` file. "Import sets" reads such a file. Sets with a name that already exists are merged into it, new names create new sets, and duplicate questions are skipped. Files that are not valid InterviewPal exports are rejected with a clear message and change nothing.
+    - **Unique within a set; the same question may be in several sets (from v1.2).** A question text (ignoring case and extra spaces) can exist only once inside one set, so loading a document, importing a file or adding the demo skips questions that already exist **in the set they are going into**, and reports how many were skipped. The same question can also be in other sets, each copy with its own answer, topic and level, so for example the demo set never stops a question from reaching your own set. (Before v1.2 a question could exist in only one set across all sets; saved data needs no change.)
+    - **Move to set** takes a question out of one set and puts it into another. If the target set already has that question, the question is just removed from the old set, the target's copy is kept as it is, and the message says so.
+    - **Repeats are removed when a session starts.** If several ticked sets (or a hand-edited set) hold the same question, it is asked once. The copy kept is the first one, in the order the sets are listed, that has a model answer; if none has one, the first. The count on the setup screen and the number of questions asked use the list after repeats are removed. History records the set the kept copy came from.
+    - At session setup the user ticks one or more sets. The questions of all ticked sets form one pool (without repeats, see above), and order, question level, difficulty and count apply to that pool. The last choice is remembered.
+    - **Backup:** "Export sets" saves all sets to a `.json` file. "Import sets" reads such a file. Sets with a name that already exists are merged into it, new names create new sets, and questions that already exist in the set they would be merged into are skipped. Files that are not valid InterviewPal exports are rejected with a clear message and change nothing.
 
 ### Should have (v2)
 
@@ -149,7 +151,7 @@ Until an API key is saved in Settings, Coach mode is disabled in the mode picker
 - Choosing a specific microphone for recognition, and the on-device recogniser, need a recent Chrome. Other browsers use the default microphone and the standard recogniser.
 - The browser does not say whether a text-to-speech voice is male or female, so the match is guessed from the voice's name. A device with no suitable voice gets a pitch adjustment only.
 - The interviewer's mouth moves in a generic pattern and does not follow the exact words.
-- A question can be edited by hand into a duplicate of another set's question. The one-question-one-set rule is enforced when loading and importing, not when editing.
+- A question can be edited by hand into a duplicate of another question in the same set. This is not blocked when editing, but the repeat is removed when a session starts (see "Repeats are removed when a session starts").
 - Leaving a session by switching tabs ends it (what was answered is saved to History).
 - History and the API key are not part of any export.
 - Tried on a real phone; not tested in Safari or on an iPhone.
@@ -202,7 +204,7 @@ An answer is optional in Practice mode, because the interviewer only needs the q
 | `src/parser.js` | File reading (md, txt, docx, pdf) and rule-based Q&A extraction |
 | `src/session.js` | Question ordering and filtering, session flow, timer, difficulty rules |
 | `src/storage.js` | localStorage for settings, question sets, API key and history |
-| `src/sets.js` | Question set rules: duplicates, move, export and import checking (no page code) |
+| `src/sets.js` | Question set rules: duplicates within a set, move, export and import checking (no page code) |
 | `src/settings.js` | Settings screen: API key, model, test connection |
 | `src/practice.js` | Practice screen: setup, interview loop, self-marking, end-of-session summary |
 | `src/history.js` | Session records: building, summarising, topics to revisit, keeping the latest 200 (no page code) |
@@ -294,9 +296,9 @@ Goal: make the project ready to publish on GitHub Pages and to show to others. A
 - `node --test tests/` passes locally and in the GitHub Action.
 - The pre-publish checklist has been run and its result reported to the owner.
 
-## v1.2: model answer on screen, and a tidier demo card
+## v1.2: model answer on screen, a tidier demo card, and questions in more than one set
 
-Two small changes, each its own build step, one commit each. Nothing here adds a dependency, a server or a network call.
+Three changes, each its own build step, one commit each. Nothing here adds a dependency, a server or a network call.
 
 ### Showing the model answer
 
@@ -320,6 +322,15 @@ Two small changes, each its own build step, one commit each. Nothing here adds a
     - After adding, a confirmation shows how many questions were added, with an **Open demo set** button. The set that is currently open **does not change** (in v1.1 the demo set was opened automatically). Questions that already exist anywhere are still skipped, and the note says how many.
     - If the demo set already exists, the card is replaced by a **one-line note** saying so (it names the set and how many questions it has). It comes back if the demo set is deleted.
 
+### Questions in more than one set
+
+19. **Allow the same question in several sets.** (agreed, not built yet) Replaces the v1 rule that a question can exist in only one set across all sets. Reason: after adding the demo set, a question in the user's own notes could be skipped as a duplicate of the demo's and never reach the user's own set, so it (and the user's own model answer) was missing from practice sets.
+    - **Loading, importing and the demo** skip a question only if the target set already holds it. The skip message names the set ("already in this set"), not another set.
+    - **Move to set**, **repeats removed at session start** and the **setup count**: as described under "Question sets" (item 13).
+    - **The pool builder** (`src/session.js`) does the removal of repeats, as a pure, tested function. The copy kept is the first, in set order, that has a model answer (otherwise the first).
+    - **Code that changes:** `src/sets.js` (the duplicate check is per set; move; messages), `src/session.js` (the new repeat removal) and where the setup screen counts questions, plus tests for all three. Export and import file formats do not change. Saved data needs no migration.
+    - **Docs that change with it:** this file, the README (Questions tab, backup and limitations), `docs/architecture.md` and `docs/architecture.html`.
+
 ### Acceptance criteria for v1.2
 
 - With the setting off, the Interview screen shows a **Show answer** button and no model answer. Pressing it shows the panel for the current and later questions of this session, and leaves the saved setting alone.
@@ -328,6 +339,10 @@ Two small changes, each its own build step, one commit each. Nothing here adds a
 - With self-marking on and the answer visible, pressing Next goes straight to Got it / Partly / Missed, with no extra reveal screen.
 - A session with the answer shown is flagged, and the summary and the History list show the note. A session where it was never shown has no note.
 - Narrow screens show the panel below the cards without sideways scrolling.
+- Load the same question into two different sets: both keep it. Load it into the same set again: it is skipped, and the message says it is already in that set.
+- Add the demo set, then load notes containing a demo question into your own set: your set gets it, with your own answer.
+- Tick two sets that share a question: it is asked once, the setup count counts it once, and the copy with a model answer is the one used.
+- Move a question into a set that already has it: it leaves the old set, the target is unchanged, and the message says so.
 - The demo card is the first card on the Questions tab. Adding the demo leaves the open set alone, shows the count and an **Open demo set** button, and a second visit shows the one-line note instead of the card.
 
 ## Acceptance criteria for v1
@@ -339,7 +354,7 @@ Two small changes, each its own build step, one commit each. Nothing here adds a
 - In Coach mode, receive a score and feedback per answer within a few seconds.
 - See a summary at the end, and find the session on the History tab after reloading the page. Open it to see the answers and feedback, delete one session, and clear the history.
 - Keep three or four question sets, tick two of them, and run one session with questions from both.
-- Move a question to another set, and see that it is no longer in the old set. Loading a document that repeats an existing question skips it.
+- Move a question to another set, and see that it is no longer in the old set. Loading a document that repeats a question already in the same set skips it (from v1.2 the same question may exist in other sets).
 - Export sets to a file, clear the browser data (or use a different browser), import the file, and get the same sets back.
 - With clips installed in `assets/interviewers/`, pick the interviewer on the setup screen and see the person listen while you answer and talk while the question is read. With no clips, the drawn face still works.
 - With self-view on, see your own mirrored camera picture. The camera light goes off when the session ends.

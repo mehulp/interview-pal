@@ -105,7 +105,7 @@ The four tabs at the top are **Interview**, **Questions**, **History** and **Set
    - Open a set (the first one is called "My questions"). Use **New set** to create more, such as "Leadership" and "Technical".
    - Choose a file or paste text, then click **Find questions**. They are added to the open set.
    - Check each card. Fix the question or answer, add a topic, tag it **Easy** or **Hard**, or delete it. Text the reader could not place appears under "Not recognised".
-   - A question can live in only one set. Use **Move to set…** on a card to move it. A question that already exists in any set is skipped when you load a file, and you are told how many.
+   - The same question can be in more than one set (for example your own notes and the demo). Inside one set a question can appear only once: loading a question that is already in the open set skips it, and you are told how many. **Move to set…** on a card moves it. If the other set already has that question, it just leaves this set. When you tick several sets, a question that appears in more than one is asked only once.
 2. **Interview tab: set up a session.**
    - Pick a **mode**: Practice (the default) or Coach.
    - Tick the **question sets** to draw from.
@@ -228,7 +228,7 @@ Everything is stored in this browser, at this address only:
 | Settings | This browser | No |
 | API key | This browser | No |
 
-- **Export sets** (Questions tab, Backup) saves all sets to `interviewpal-sets-<date>.json`. **Import sets** reads such a file: sets with the same name are merged, new names create new sets, duplicate questions are skipped, and an invalid file changes nothing.
+- **Export sets** (Questions tab, Backup) saves all sets to `interviewpal-sets-<date>.json`. **Import sets** reads such a file: sets with the same name are merged, new names create new sets, questions already in the set they merge into are skipped, and an invalid file changes nothing.
 - Clearing the browser's site data deletes everything above. Export your sets first, and keep your original notes in `my-notes/` (git-ignored).
 - The export file contains your notes. Keep it private and out of git (`interviewpal-sets-*.json` is already git-ignored).
 - History keeps the latest 200 sessions. It contains your answers, so keep the computer private.
@@ -296,7 +296,7 @@ src/
   demoset.js           the demo questions
   settings.js          Settings tab: API key, model, microphone check
   parser.js            reads files and finds the questions (no AI)
-  sets.js              question set rules (no duplicates, move, import)
+  sets.js              question set rules (no repeats within a set, move, import)
   session.js           question order, difficulty rules, timer
   phrases.js           what the interviewer says, per difficulty
   history.js           session records and the numbers for the summary
@@ -329,7 +329,7 @@ There is no build step. The code is plain JavaScript modules, loaded directly by
 - Choosing a microphone for recognition, and the on-device recogniser, need a recent Chrome.
 - Whether a voice is male or female is guessed from its name.
 - The interviewer's mouth moves in a generic pattern, not in step with the exact words.
-- You can edit a question by hand into a duplicate of another set's question. The one-question-one-set rule is enforced when loading and importing.
+- You can edit a question by hand into a duplicate of another question in the same set. It is not blocked, but the repeat is dropped when a session starts.
 - History and the API key are not part of any export.
 - Tried on a real phone and works well; not yet tested in Safari or on an iPhone.
 - Planned for a later version: follow-up questions, weak-area-first ordering, "tidy up with AI" for messy files, a hint button and a panel of interviewers. Weak-area-first ordering is planned together with spaced repetition. See [docs/requirements.md](docs/requirements.md).
