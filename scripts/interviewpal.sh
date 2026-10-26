@@ -4,7 +4,7 @@
 #   scripts/interviewpal.sh start | stop | status | restart
 #
 # Options (environment variables):
-#   PORT=8001        use another port (default 8000)
+#   PORT=8010        use another port (default 8010)
 #   NO_BROWSER=1     do not open Chrome, just print the address
 set -euo pipefail
 
@@ -16,7 +16,7 @@ PID_FILE="$RUN_DIR/server.pid"   # two lines: the process ID, then the port
 LOG_FILE="$RUN_DIR/server.log"
 SERVER="$ROOT/scripts/devserver.py"
 
-PORT="${PORT:-8000}"
+PORT="${PORT:-8010}"
 if ! [[ "$PORT" =~ ^[0-9]+$ ]] || (( PORT < 1 || PORT > 65535 )); then
   echo "PORT must be a number from 1 to 65535 (got: $PORT)." >&2
   exit 2
