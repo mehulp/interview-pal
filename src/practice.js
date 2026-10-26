@@ -18,6 +18,7 @@ import { createSelfView } from './selfview.js';
 import { loadSets, loadQuestions, loadSettings, saveSettings, getApiKey, saveSession } from './storage.js';
 import { buildSessionRecord } from './history.js';
 import { analyzeAnswer } from './delivery.js';
+import { recPanel } from './recpanel.js';
 import { renderSummary } from './summary.js';
 
 const $ = (id) => document.getElementById(id);
@@ -65,6 +66,7 @@ export function initPractice(avatar) {
   let listening = false;
   let onDeviceReady = false; // the on-device recogniser is switched on and works here
   let textBefore = '';
+  let questionToken = 0; // a new number for every question asked, so a recording is never tied to the wrong one
   let answerVisible = false; // is the model answer showing? (this session only; the saved setting only sets the start)
   let answerShownNow = false; // was it visible at any point while the current question was open?
 
@@ -306,7 +308,18 @@ export function initPractice(avatar) {
   /* ---------- Model answer panel ---------- */
   // Shows the reference answer from the user's own notes. Text only (textContent), never spoken,
   // and nothing is sent anywhere. It is only on screen while a question is open or being marked.
+  // Tell the recorder which question is on screen, and whether recording is allowed right now
+  // (only while the question is being answered). Anything else stops a recording in progress.
+  function syncRecorder() {
+    const q = session && session.current();
+    const open = ['asking', 'answering', 'finishing', 'marking', 'feedback'].includes(phase);
+    recPanel.setContext(q && open
+      ? { token: questionToken, question: q.question, set: q.set, topic: q.topic, canRecord: phase === 'answering' }
+      : null);
+  }
+
   function refreshAnswerPanel() {
+    syncRecorder();
     const q = session && session.current();
     const open = phase === 'asking' || phase === 'answering' || phase === 'finishing' || phase === 'marking';
     const show = Boolean(q) && answerVisible && open;
@@ -353,6 +366,7 @@ export function initPractice(avatar) {
     const run = ++runId;
     const q = session.current();
     phase = 'asking';
+    questionToken++;
     showAnswerArea();
     answerShownNow = false;
     refreshAnswerPanel();

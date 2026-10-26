@@ -295,3 +295,29 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .model-answer-text { white-space: pre-wrap; line-height: 1.6; font-size: 1rem; max-height: 40vh; overflow-y: auto; background: #f0f3ff; border-radius: 8px; padding: 12px; }
 .model-answer-text:focus-visible { outline: 3px solid #ffb703; outline-offset: 2px; }
 @media (max-width: 520px) { .model-answer { padding: 12px; } }
+
+/* Recording (v1.3): the recorder panel, the shared unsaved-recording panel and saved attempts */
+.rec-panel { margin-top: 16px; border-top: 1px solid #d5d9e6; padding-top: 12px; }
+.rec-panel h3 { margin: 0 0 8px; font-size: 1rem; }
+.rec-controls { display: flex; gap: 12px; flex-wrap: wrap; }
+.rec-controls .field input[type="number"] { width: 6em; }
+.rec-clock { font-size: 1.3rem; font-weight: 700; margin: 8px 0 4px; font-variant-numeric: tabular-nums; }
+.rec-panel.recording .rec-clock { color: #c92a2a; }
+.rec-panel.rec-reached { border-top-color: #f08c00; background: #fff8e6; border-radius: 8px; padding: 12px; }
+.rec-panel.rec-reached .rec-clock { color: #b35900; }
+@media (prefers-reduced-motion: no-preference) {
+  .rec-panel.rec-reached { animation: rec-pulse 1.4s ease-in-out 3; }
+  @keyframes rec-pulse { 50% { box-shadow: 0 0 0 4px rgba(240, 140, 0, 0.35); } }
+}
+.rec-dock { background: #fff8e6; border-bottom: 2px solid #f08c00; padding: 12px 16px; }
+.rec-dock > * { max-width: 900px; margin-left: auto; margin-right: auto; }
+.rec-dock h2 { margin: 0 0 4px; font-size: 1.05rem; }
+.rec-dock .rec-dock-question { margin: 0 0 4px; font-weight: 600; }
+.rec-dock audio, .rec-attempt audio { width: 100%; margin: 6px 0; }
+.rec-attempt { border: 1px solid #d5d9e6; border-radius: 8px; padding: 8px 10px; margin: 8px 0; background: #fff; }
+.rec-attempt .rec-attempt-title { font-weight: 600; margin: 0; }
+.rec-attempt .hint { margin: 2px 0 6px; }
+.rec-group h3 { font-size: 0.98rem; margin: 14px 0 4px; overflow-wrap: anywhere; }
+#rec-saved { margin-top: 10px; }
+#rec-saved summary { cursor: pointer; }
+#rec-saved summary:focus-visible { outline: 3px solid #ffb703; outline-offset: 2px; }

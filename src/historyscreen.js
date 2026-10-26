@@ -3,6 +3,7 @@ import { loadHistory, saveHistory } from './storage.js';
 import { removeSession, describeSession } from './history.js';
 import { renderSummary } from './summary.js';
 import { renderProgress } from './progressview.js';
+import { renderRecordingsCard } from './recordingsview.js';
 
 const $ = (id) => document.getElementById(id);
 let openId = null; // the session being shown in detail
@@ -12,8 +13,10 @@ function showList() {
   $('history-detail').hidden = true;
   $('history-list-card').hidden = false;
   $('progress-card').hidden = false;
+  $('recordings-card').hidden = false;
   const history = loadHistory();
   renderProgress($('progress-card'), history);
+  renderRecordingsCard($('recordings-card')); // saved recordings: details only, no audio is read
   $('history-count').textContent = `(${history.length})`;
   $('history-clear').hidden = history.length === 0;
 
@@ -42,6 +45,7 @@ function showDetail(record) {
   openId = record.id;
   $('history-list-card').hidden = true;
   $('progress-card').hidden = true;
+  $('recordings-card').hidden = true;
   $('history-detail').hidden = false;
   renderSummary($('history-summary'), record);
   window.scrollTo(0, 0);

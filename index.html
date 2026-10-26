@@ -19,6 +19,22 @@
     </nav>
   </header>
 
+  <!-- Unsaved recording: shown on every tab while there is one, so it is never lost by switching screens -->
+  <section class="rec-dock" id="rec-dock" aria-label="Unsaved recording" hidden>
+    <h2>Unsaved recording</h2>
+    <p class="rec-dock-question" id="rec-dock-question"></p>
+    <p class="hint" id="rec-dock-meta"></p>
+    <audio id="rec-audio" controls preload="auto"></audio>
+    <div class="buttons">
+      <button type="button" class="small" id="rec-save">Save</button>
+      <button type="button" class="small" id="rec-download">Download</button>
+      <button type="button" class="small" id="rec-retry" hidden>Retry</button>
+      <button type="button" class="small danger" id="rec-discard">Discard</button>
+    </div>
+    <p class="status" id="rec-dock-status" aria-live="polite"></p>
+    <p class="hint">Saved recordings stay in this browser, on this address. An unsaved recording is lost if you close the page.</p>
+  </section>
+
   <!-- Interview screen: setup (with mode picker), then the interview, then the end-of-session list -->
   <main class="app-main single" id="screen-practice">
     <section class="card" id="setup" aria-label="Practice setup">
@@ -132,6 +148,36 @@
             <button type="button" class="small" id="answer-toggle" aria-pressed="false" aria-controls="model-answer">Show answer</button>
             <button type="button" class="small" id="selfview-btn" aria-pressed="false">📷 Self-view</button>
             <button type="button" class="small danger" id="end-btn">End session</button>
+          </div>
+
+          <div class="rec-panel" id="rec-panel">
+            <h3>Record your answer <span class="hint">(optional)</span></h3>
+            <div class="rec-controls">
+              <label class="field">Target length
+                <select id="rec-target">
+                  <option value="0">No target</option>
+                  <option value="60">1 min</option>
+                  <option value="90">90 sec</option>
+                  <option value="120">2 min</option>
+                  <option value="180">3 min</option>
+                  <option value="custom">Custom…</option>
+                </select>
+              </label>
+              <label class="field" id="rec-custom-row" hidden>Seconds
+                <input type="number" id="rec-custom" min="10" max="600" step="5" inputmode="numeric">
+              </label>
+            </div>
+            <div class="buttons">
+              <button type="button" class="small" id="rec-btn">● Record</button>
+              <button type="button" class="small" id="rec-stop" hidden>■ Stop recording</button>
+            </div>
+            <p class="rec-clock" id="rec-clock" hidden></p>
+            <p class="hint" id="rec-device"></p>
+            <p class="status" id="rec-status" aria-live="polite"></p>
+            <details id="rec-saved" hidden>
+              <summary id="rec-saved-summary">Saved recordings for this question</summary>
+              <div id="rec-saved-list"></div>
+            </details>
           </div>
         </div>
 
@@ -259,6 +305,8 @@
   <!-- History screen: past sessions -->
   <main class="app-main single" id="screen-history" hidden>
     <section class="card sum" id="progress-card" aria-label="Progress"></section>
+
+    <section class="card" id="recordings-card" aria-label="Saved recordings"></section>
 
     <section class="card" id="history-list-card" aria-label="Past sessions">
       <h2>History <span id="history-count"></span></h2>
