@@ -39,6 +39,7 @@ export function initPractice(avatar) {
   const optMic = $('opt-mic');
   const optInterviewer = $('opt-interviewer');
   const selfView = createSelfView($('self-view'));
+  recPanel.setCameraSource(() => selfView.getVideoTrack()); // video recording can copy self-view's camera
   const selfViewBtn = $('selfview-btn');
   const startBtn = $('start-btn');
   const modeRadios = document.querySelectorAll('input[name="mode"]');

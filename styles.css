@@ -321,3 +321,17 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 #rec-saved { margin-top: 10px; }
 #rec-saved summary { cursor: pointer; }
 #rec-saved summary:focus-visible { outline: 3px solid #ffb703; outline-offset: 2px; }
+
+/* Video recording (v1.4): full-screen view of you, and the video review */
+.rec-stage { position: fixed; inset: 0; z-index: 1000; background: #000; display: flex; flex-direction: column; justify-content: space-between; color: #fff; }
+.rec-stage[hidden] { display: none; }
+.rec-stage #rec-preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; transform: scaleX(-1); background: #000; }
+.rec-stage-top, .rec-stage-bottom { position: relative; z-index: 1; padding: 12px 16px; background: rgba(0, 0, 0, 0.55); }
+.rec-stage-top p { margin: 4px 0 0; font-size: 1.1rem; font-weight: 600; overflow-wrap: anywhere; }
+.rec-live { color: #ff6b6b; font-weight: 700; }
+.rec-stage-bottom { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+.rec-stage-bottom .rec-clock { color: #fff; margin: 0; flex: 1 1 14em; }
+.rec-stage-bottom.rec-reached .rec-clock { color: #ffc069; }
+.rec-stage-note { margin: 0; flex: 1 1 100%; font-size: 0.9rem; opacity: 0.9; }
+.rec-dock video { width: 100%; max-height: 50vh; background: #000; border-radius: 8px; margin: 6px 0; }
+.rec-dock .buttons .big { flex: 0 0 auto; }

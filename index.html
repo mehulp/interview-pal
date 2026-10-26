@@ -25,6 +25,7 @@
     <p class="rec-dock-question" id="rec-dock-question"></p>
     <p class="hint" id="rec-dock-meta"></p>
     <audio id="rec-audio" controls preload="auto"></audio>
+    <video id="rec-video-player" controls playsinline preload="auto" hidden></video>
     <div class="buttons">
       <button type="button" class="small" id="rec-save">Save</button>
       <button type="button" class="small" id="rec-download">Download</button>
@@ -32,7 +33,22 @@
       <button type="button" class="small danger" id="rec-discard">Discard</button>
     </div>
     <p class="status" id="rec-dock-status" aria-live="polite"></p>
-    <p class="hint">Saved recordings stay in this browser, on this address. An unsaved recording is lost if you close the page.</p>
+    <p class="hint" id="rec-dock-hint">Saved recordings stay in this browser, on this address. An unsaved recording is lost if you close the page.</p>
+  </section>
+
+  <!-- Full-screen view while recording video: only you, mirrored. The recorded file is not mirrored. -->
+  <section class="rec-stage" id="rec-stage" role="region" aria-label="Video recording" hidden>
+    <video id="rec-preview" muted playsinline></video>
+    <div class="rec-stage-top">
+      <span class="rec-live">● Recording video</span>
+      <p id="rec-stage-question"></p>
+    </div>
+    <div class="rec-stage-bottom">
+      <p class="rec-clock" id="rec-stage-clock"></p>
+      <p class="rec-stage-note" id="rec-stage-device"></p>
+      <p class="rec-stage-note" id="rec-stage-status" aria-live="polite"></p>
+      <button type="button" class="big" id="rec-stage-stop">■ Stop recording</button>
+    </div>
   </section>
 
   <!-- Interview screen: setup (with mode picker), then the interview, then the end-of-session list -->
@@ -167,6 +183,9 @@
                 <input type="number" id="rec-custom" min="10" max="600" step="5" inputmode="numeric">
               </label>
             </div>
+            <label class="check" id="rec-video-row">
+              <input type="checkbox" id="rec-video"> Include video (shows only you, full screen, up to 7 minutes). A video is not kept in this browser: you download it.
+            </label>
             <div class="buttons">
               <button type="button" class="small" id="rec-btn">● Record</button>
               <button type="button" class="small" id="rec-stop" hidden>■ Stop recording</button>

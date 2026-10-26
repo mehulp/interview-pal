@@ -1,6 +1,7 @@
 // Recorder panel and the shared "unsaved recording" panel.
 //
-// The Interview screen has a small recorder panel (target length, Record, Stop, clock). A
+// The Interview screen has a small recorder panel (target length, Include video, Record, Stop,
+// clock). With video on, a full-screen view shows only the user while recording. A
 // finished recording becomes an UNSAVED ATTEMPT, shown in a panel at the top of the page that
 // stays visible on every tab. It has Save, Download, Discard and (sometimes) Retry.
 //
@@ -9,7 +10,8 @@
 //     can never end up attached to a question that came later;
 //   - recording stops when the question stops being the one being answered (Next, Skip, End
 //     session, time up, switching tabs);
-//   - only one unsaved attempt at a time; a failed save keeps the audio so it can be retried.
+//   - only one unsaved attempt at a time; a failed save keeps the audio so it can be retried;
+//   - a VIDEO is never stored by the app: no Save, only Download, with warnings until it is downloaded.
 import { createRecorder, recordingProblem } from './recorder.js';
 import { createPlayer } from './playback.js';
 import { saveAttempt, listAttempts, requestPersistence } from './recordstore.js';
@@ -17,7 +19,7 @@ import { loadSettings, saveSettings } from './storage.js';
 import { renderAttemptList, closeActivePlayer, downloadBlob } from './recordingsview.js';
 import {
   TARGET_PRESETS, clampTarget, targetLabel, formatClock, timeState, makeSnapshot, questionKey, canRetry,
-  recordAvailability, validateAttempt, downloadName, describeStoreError,
+  recordAvailability, validateAttempt, downloadName, describeStoreError, canSaveInBrowser, isAtRisk,
 } from './recordings.js';
 
 const $ = (id) => document.getElementById(id);
@@ -31,41 +33,52 @@ let tickTimer = null;
 let reachedAnnounced = false;
 let persistenceAsked = false;
 let savedLoad = 0;
+let cameraSource = null; // () => self-view's live camera track or null (set by the practice screen)
 
-const player = createPlayer($('rec-audio'), { onProblem: (message) => { if (pending) { pending.message = message; renderDock(); } } });
+const onPlayerProblem = (message) => { if (pending) { pending.message = message; renderDock(); } };
+const player = createPlayer($('rec-audio'), { onProblem: onPlayerProblem });
+const videoPlayer = createPlayer($('rec-video-player'), { onProblem: onPlayerProblem });
 
 /* ---------- The recorder ---------- */
 const recorder = createRecorder({
   onState: (state) => {
     if (state === 'recording') startTicking();
     else stopTicking();
+    if (state === 'idle' || state === 'stopping') hideStage(); // not while waiting for permission: full screen is already asked for
     updatePanel();
   },
-  onStarted: ({ deviceLabel, notice }) => {
+  onStarted: ({ deviceLabel, notice, kind, stream }) => {
     reachedAnnounced = false;
-    $('rec-device').textContent = `Recording with: ${deviceLabel}.${notice ? ' ' + notice : ''}`;
+    const text = `Recording ${kind === 'video' ? 'video ' : ''}with: ${deviceLabel}.${notice ? ' ' + notice : ''}`;
+    $('rec-device').textContent = text;
     $('rec-status').textContent = '';
+    if (kind === 'video') showStage(stream, text);
     tick();
   },
   onFinished: (result) => {
     if (!recording) return; // nothing is waiting for it
     const reasons = {
-      limit: 'It stopped by itself at the 10-minute limit.',
+      limit: result.kind === 'video' ? 'It stopped by itself at the 7-minute limit.' : 'It stopped by itself at the 10-minute limit.',
       'device-lost': 'The microphone was disconnected, so the recording ends where it stopped.',
       error: 'The recorder had a problem, so the recording ends where it stopped.',
     };
     pending = {
       snapshot: recording.snapshot, targetSec: recording.targetSec, ...result,
-      saveState: 'review', message: reasons[result.reason] || '',
+      saveState: 'review', downloaded: false,
+      message: [result.kind === 'video' ? 'This video is not stored in the browser. Download it to keep it.' : '', reasons[result.reason] || ''].filter(Boolean).join(' '),
     };
     recording = null;
     $('rec-status').textContent = '';
     renderDock();
     updatePanel();
-    player.load(pending.blob);
+    // The panel is at the top of the page: bring it into view so a finished recording is not missed
+    const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    $('rec-dock').scrollIntoView({ block: 'start', behavior: calm ? 'auto' : 'smooth' });
+    (pending.kind === 'video' ? videoPlayer : player).load(pending.blob);
   },
   onError: (message) => {
     recording = null;
+    hideStage();
     $('rec-status').textContent = message;
     updatePanel();
   },
@@ -82,10 +95,35 @@ function tick() {
   else if (t.reached) clock.textContent = `${formatClock(ms)} · target reached (+${formatClock(t.overMs)} over)`;
   else clock.textContent = `${formatClock(ms)} · ${formatClock(t.remainingMs)} left of ${targetLabel(recording.targetSec)}`;
   $('rec-panel').classList.toggle('rec-reached', t.reached);
+  $('rec-stage-clock').textContent = clock.textContent;
+  document.querySelector('.rec-stage-bottom').classList.toggle('rec-reached', t.reached);
   if (t.reached && !reachedAnnounced) {
     reachedAnnounced = true;
     $('rec-status').textContent = 'Target reached. Recording continues.';
+    $('rec-stage-status').textContent = 'Target reached. Recording continues.';
   }
+}
+
+/* ---------- The full-screen view (video only) ---------- */
+// Ask the browser for true full screen (best effort: it may say no, and the view still fills the window).
+function enterFullscreen() {
+  const root = document.documentElement;
+  if (root.requestFullscreen && !document.fullscreenElement) root.requestFullscreen().catch(() => {});
+}
+function showStage(stream, deviceText) {
+  const preview = $('rec-preview');
+  preview.srcObject = stream; // the same stream that is being recorded, muted so there is no echo
+  preview.play().catch(() => {});
+  $('rec-stage-question').textContent = recording ? recording.snapshot.questionText.trim() : '';
+  $('rec-stage-device').textContent = deviceText;
+  $('rec-stage-status').textContent = '';
+  $('rec-stage').hidden = false;
+  $('rec-stage-stop').focus();
+}
+function hideStage() {
+  const stage = $('rec-stage');
+  if (!stage.hidden) { $('rec-preview').srcObject = null; stage.hidden = true; }
+  if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
 }
 function startTicking() { stopTicking(); tickTimer = setInterval(tick, 250); }
 function stopTicking() { clearInterval(tickTimer); tickTimer = null; }
@@ -125,6 +163,7 @@ function updatePanel() {
   $('rec-stop').textContent = state === 'requesting' ? 'Cancel' : '■ Stop recording';
   $('rec-target').disabled = busy;
   $('rec-custom').disabled = busy;
+  $('rec-video').disabled = busy || Boolean(pending);
   $('rec-panel').classList.toggle('recording', state === 'recording');
   if (state === 'idle') {
     $('rec-clock').hidden = true;
@@ -139,25 +178,28 @@ function startRecording() {
   const avail = recordAvailability({ supported: !recordingProblem(), recState: recorder.getState(), hasPending: Boolean(pending), current: context });
   if (!avail.ok) return;
   // Captured now, before anything asynchronous happens, and kept with the attempt from here on
-  recording = { snapshot: makeSnapshot(context, context.token), targetSec: readTarget() };
+  const video = $('rec-video').checked;
+  recording = { snapshot: makeSnapshot(context, context.token), targetSec: readTarget(), kind: video ? 'video' : 'audio' };
+  if (video) enterFullscreen(); // must happen right here, while the click is fresh
   savedNote = ''; // a new recording started: the old "saved" message is out of date
   renderDock();
   $('rec-status').textContent = '';
-  recorder.start({ deviceId: loadSettings().micDeviceId || '' }).then((began) => {
-    if (!began && recorder.getState() === 'idle' && !pending) recording = null;
+  recorder.start({ deviceId: loadSettings().micDeviceId || '', video, videoTrack: video && cameraSource ? cameraSource() : null }).then((began) => {
+    if (!began && recorder.getState() === 'idle' && !pending) { recording = null; hideStage(); }
     updatePanel();
   });
   updatePanel();
 }
 
 function stopRecording() {
-  if (recorder.getState() === 'requesting') recording = null; // permission was still pending: nothing will come of it
+  if (recorder.getState() === 'requesting') { recording = null; hideStage(); } // permission was still pending: nothing will come of it
   recorder.stop();
   updatePanel();
 }
 
 $('rec-btn').addEventListener('click', startRecording);
 $('rec-stop').addEventListener('click', stopRecording);
+$('rec-stage-stop').addEventListener('click', stopRecording);
 
 /* ---------- The unsaved recording panel ---------- */
 function renderDock() {
@@ -165,10 +207,17 @@ function renderDock() {
   if (!pending && !savedNote) { dock.hidden = true; return; }
   dock.hidden = false;
   const has = Boolean(pending);
-  $('rec-audio').hidden = !has;
-  $('rec-save').hidden = !has;
+  const isVideo = has && pending.kind === 'video';
+  $('rec-audio').hidden = !has || isVideo;
+  $('rec-video-player').hidden = !isVideo;
+  $('rec-save').hidden = !has || !canSaveInBrowser(pending.kind); // a video has no Save: Download is the only way to keep it
   $('rec-download').hidden = !has;
+  $('rec-download').textContent = isVideo ? 'Download video' : 'Download';
+  $('rec-download').className = isVideo ? 'big' : 'small';
   $('rec-discard').hidden = !has;
+  $('rec-dock-hint').textContent = isVideo
+    ? 'This video exists only on this page. Download it to keep it: closing the page or discarding loses it.'
+    : 'Saved recordings stay in this browser, on this address. An unsaved recording is lost if you close the page.';
   if (!has) {
     $('rec-dock').querySelector('h2').textContent = 'Recording saved';
     $('rec-dock-question').textContent = '';
@@ -177,7 +226,7 @@ function renderDock() {
     $('rec-dock-status').textContent = savedNote;
     return;
   }
-  $('rec-dock').querySelector('h2').textContent = 'Unsaved recording';
+  $('rec-dock').querySelector('h2').textContent = isVideo ? 'Video recording (not saved)' : 'Unsaved recording';
   const s = pending.snapshot;
   $('rec-dock-question').textContent = `For: "${s.questionText.trim()}"${s.setName ? ` (${s.setName})` : ''}`;
   const moved = context && context.token !== s.token ? ' You have moved on to another question.' : '';
@@ -196,13 +245,15 @@ function renderDock() {
 
 function clearPending() {
   pending = null;
-  player.clear(); // releases the temporary address of the audio
+  player.clear(); // releases the temporary address of the audio or video
+  videoPlayer.clear();
   renderDock();
   updatePanel();
 }
 
 async function savePending() {
   if (!pending || pending.saveState === 'saving') return; // repeated clicks do nothing
+  if (!canSaveInBrowser(pending.kind)) return; // a video is never stored: Download is the only way
   const check = validateAttempt({ mimeType: pending.mimeType, size: pending.blob.size, durationMs: pending.durationMs });
   if (!check.ok) { pending.message = check.message; renderDock(); return; }
   const attempt = pending; // keep this one, even if something changes while saving
@@ -237,14 +288,25 @@ function showSavedNote(text) {
 }
 
 $('rec-save').addEventListener('click', savePending);
-$('rec-discard').addEventListener('click', () => { if (pending && pending.saveState !== 'saving') clearPending(); });
+$('rec-discard').addEventListener('click', () => {
+  if (!pending || pending.saveState === 'saving') return;
+  // A video that has not been downloaded would be lost for good: make sure that is what was meant
+  if (pending.kind === 'video' && isAtRisk(pending) && !window.confirm('This video has not been downloaded. Discard it and lose it?')) return;
+  clearPending();
+});
 $('rec-download').addEventListener('click', () => {
   if (!pending) return;
   downloadBlob(pending.blob, downloadName({ questionText: pending.snapshot.questionText, createdAt: pending.startedAt, mimeType: pending.mimeType }));
+  pending.downloaded = true;
+  pending.message = 'Downloaded. Check your browser\'s downloads. You can keep replaying it here until you leave this page.';
+  renderDock();
 });
 $('rec-retry').addEventListener('click', () => {
   // Only for the original question, while recording is allowed (checked again here, not just in the button)
   if (!pending || pending.saveState === 'saving' || !canRetry(pending.snapshot, context)) return;
+  const again = pending.kind === 'video'; // retry the same kind of recording
+  if (again && isAtRisk(pending) && !window.confirm('This video has not been downloaded. Discard it and record again?')) return;
+  $('rec-video').checked = again;
   clearPending();
   startRecording();
 });
@@ -283,7 +345,7 @@ function setContext(next) {
 // Warn before leaving while recording or with an unsaved attempt. This is only a warning: an
 // unsaved recording is not recovered after a crash or a forced close.
 window.addEventListener('beforeunload', (event) => {
-  if (recorder.isBusy() || pending) {
+  if (recorder.isBusy() || isAtRisk(pending)) {
     event.preventDefault();
     event.returnValue = '';
   }
@@ -295,6 +357,7 @@ updatePanel();
 
 export const recPanel = {
   setContext,
+  setCameraSource: (fn) => { cameraSource = fn; }, // where to find self-view's camera track
   stopRecording,
   hasUnsaved: () => Boolean(pending),
   isRecording: () => recorder.isBusy(),

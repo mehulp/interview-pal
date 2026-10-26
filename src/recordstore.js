@@ -87,6 +87,8 @@ const requestValue = (request, set) => { request.onsuccess = () => set(request.r
 // `details` has questionKey, questionText, setName, topic, createdAt, targetSec, durationMs,
 // mimeType, deviceLabel. Returns the details as saved (with id and size).
 export async function saveAttempt(details, blob) {
+  // Only audio is ever stored. A video is kept by the user's Download, never by the app.
+  if (!String(blob?.type || '').toLowerCase().startsWith('audio/')) throw new StoreError('failed');
   const saved = { ...details, id: newId(), size: blob.size };
   await transaction(['attempts', 'audio'], 'readwrite', (stores) => {
     stores.attempts.put(saved);
