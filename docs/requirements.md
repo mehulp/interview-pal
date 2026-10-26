@@ -409,20 +409,21 @@ An attempt is linked to a question by the question's **normalised text** (the sa
 
 ## v1.4: record video (download only)
 
-Approved by the owner. An optional extension of the v1.3 recorder: record the camera as well as the microphone, shown full screen, and keep the result **only as a downloaded file**.
+Approved by the owner. An optional extension of the v1.3 recorder: record the camera as well as the microphone, and keep the result **only as a downloaded file**. (Revised after the first version: it does **not** take over the screen. See "Nothing takes over the screen".)
 
 ### Product decisions (approved)
 
 - **Video is optional and explicit.** A box **Include video**, unticked each time the page loads, sits in the recorder panel. Nothing records the camera unless that box is ticked and Record is pressed. Camera self-view stays on screen only and never records on its own.
 - **Never stored in the browser.** A video recording is not saved to IndexedDB or anywhere else the app keeps data. There is no Save button for video. The only way to keep it is **Download**, which saves an ordinary video file to the computer. The app also refuses to save a video through the audio store.
 - **Maximum length 7 minutes** (audio recording keeps its 10 minutes). Modest quality (about 1 Mbps at up to 720p) so files stay a sensible size, roughly 7 MB a minute.
-- **Full screen, you only.** While recording video the page shows the user's own camera, mirrored, filling the whole window. The interviewer is not shown. A small bar shows the question, the clock against the target, the microphone name and a **Stop** button. The app also asks the browser for true full screen, and falls back to a window-filling view if the browser says no. (The saved file is not mirrored.)
+- **The file contains only the user.** The recording is the camera and the microphone and nothing else: no interviewer, no screen, no notes. (The saved file is not mirrored.)
+- **Nothing takes over the screen.** While recording video the page stays exactly as it is, so the user can still see the interviewer, the question, the model answer, notes and the timers. The only addition is a **small mirrored preview** of the camera in the recorder panel (with the clock, the target alert and the Stop button already there), so the user can check they are in frame. There is no full-screen view and no request for full screen.
 - **Reuse of the self-view camera.** If self-view is on, the recording takes a copy of its camera track instead of opening the camera again. Stopping the recording leaves self-view as it was.
 - **Nothing is uploaded and nothing analysed.** Camera frames are never sent anywhere and never analysed.
 
 ### How it works
 
-- Everything about timing, targets, the alert, the microphone name and its fallback notice, question association, Retry rules and stopping on Next, Skip, End session and tab changes works as for audio (see v1.3). The target alert also shows on the full-screen view.
+- Everything about timing, targets, the alert, the microphone name and its fallback notice, question association, Retry rules and stopping on Next, Skip, End session and tab changes works as for audio (see v1.3). The target alert shows in the recorder panel, as for audio.
 - After Stop, the **unsaved-recording panel** (on every tab) shows a video player with seeking, **Download** as the main action, **Retry** (same rules as audio) and **Discard**. Until the video has been downloaded, leaving the page shows the browser warning, and Discard asks for confirmation. Once it has been downloaded, neither happens.
 - The file name uses the question and the date, with the real format's extension (for example `.webm`, or `.mp4` where the browser records that).
 - Failure cases are as for audio, with camera wording: camera or microphone blocked, no camera, camera in use, camera disconnected mid-recording (what was recorded is kept and can be downloaded), the 7-minute limit.
@@ -439,18 +440,18 @@ Approved by the owner. An optional extension of the v1.3 recorder: record the ca
 26. **Docs and rules** (this section, README, CLAUDE.md camera rule, architecture). (done)
 27. (done) **Pure rules in `src/recordings.js`** and tests: video formats, 7-minute cap, extensions, "videos cannot be saved in the browser", camera error wording.
 28. (done) **`src/recorder.js` video support** (camera and microphone together, track copy from self-view, tracks released) and a `getVideoTrack()` on self-view.
-29. (done) **Full-screen recording view, the video review panel and download-only flow** in `src/recpanel.js`, `index.html` and `styles.css`; the store refuses video.
+29. (done) **Small preview, the video review panel and download-only flow** in `src/recpanel.js`, `index.html` and `styles.css`; the store refuses video.
 30. (done) **Docs, architecture and changelog final; checks.**
 
 ### How it was checked, and what is still open (v1.4)
 
-- **Checked in headless Chromium with a fake camera and microphone:** Include video off by default and audio unaffected; one permission request for camera and microphone; true full screen asked for straight from the click; the view fills the window with nothing on top of it (the interviewer is covered); the preview is the recorded stream, mirrored and muted; question, clock and the target alert on the view; Stop closes it and both camera and microphone are released; the video replays and seeks; nothing is written to the browser store (counted); the store itself refuses a video; the page-exit warning and the Discard confirmation until the video is downloaded, and neither after; the download's file name and extension; Next while recording (labelled with the original question, no Retry, no Save); Retry for the same question; self-view's camera is not opened a second time and self-view carries on afterwards; camera permission denied (clear message, nothing left behind); the 7-minute limit; the camera disconnected mid-recording; phone width. No network requests and no page errors.
-- **Still needs a real camera and browser:** how the real camera and microphone look and sound; real full-screen behaviour (the headless run uses a stand-in for the full-screen request, and the window-filling view is what was verified); a 7-minute recording and its file size; the downloaded file playing in your usual player; Safari, Firefox and phones (only Chromium was run).
+- **Checked in headless Chromium with a fake camera and microphone:** Include video off by default and audio unaffected; one permission request for camera and microphone; no full-screen request and no overlay; only one camera track and one microphone track are captured (no screen capture); the interviewer, question, timer and model answer stay visible and usable while recording (the model answer was opened and typing worked during a recording); the small preview is mirrored, muted and no wider than 260 pixels; the clock and the target alert in the recorder panel; Stop removes the preview and both camera and microphone are released; the video replays and seeks; nothing is written to the browser store (counted); the store itself refuses a video; the page-exit warning and the Discard confirmation until the video is downloaded, and neither after; the download's file name and extension; Next while recording (labelled with the original question, no Retry, no Save); Retry for the same question; self-view's camera is not opened a second time and self-view carries on afterwards; camera permission denied; the 7-minute limit; the camera disconnected mid-recording; phone width. No network requests and no page errors.
+- **Still needs a real camera and browser:** how the real camera and microphone look and sound; a 7-minute recording and its file size; the downloaded file playing in your usual player; Safari, Firefox and phones (only Chromium was run).
 
 ### Acceptance criteria for v1.4
 
 - Include video is off by default. With it off, nothing about audio recording changes, and the camera is not touched.
-- With it on, pressing Record asks for camera and microphone (once), then shows only the user's own mirrored camera filling the window, with question, clock, target alert and Stop. The interviewer is not visible.
+- With it on, pressing Record asks for camera and microphone (once), then the recorder panel shows a small mirrored preview of the camera. The rest of the page does not change: the interviewer, the model answer, notes and timers stay visible and usable, and nothing goes full screen. The file contains only the camera and microphone.
 - A recording stops at 7 minutes by itself, and on Next, Skip, End session and tab changes, exactly as audio does. The camera and microphone lights go off.
 - After Stop the video can be replayed and sought, and downloaded. There is no Save button, and nothing is written to IndexedDB (checked).
 - Leaving the page or discarding warns until the video has been downloaded.

@@ -4,7 +4,7 @@ All notable changes to InterviewPal. Dates are when the work was finished.
 
 ## Unreleased (v1.4)
 
-- **Record video (optional, download only).** An unticked-by-default Include video box in the recorder panel. While recording, the window shows only you, mirrored and full screen, with the question, clock, target alert and Stop. Up to 7 minutes. A video is never stored in the browser: replay it, then Download it. Warnings before leaving or discarding until it has been downloaded. Nothing is uploaded.
+- **Record video (optional, download only).** An unticked-by-default Include video box in the recorder panel. While recording, a small mirrored preview of you appears in the recorder panel and the rest of the screen stays as it is; the file contains only your camera and microphone. Up to 7 minutes. A video is never stored in the browser: replay it, then Download it. Warnings before leaving or discarding until it has been downloaded. Nothing is uploaded.
 
 ## Unreleased (v1.3)
 

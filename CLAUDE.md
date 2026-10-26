@@ -10,7 +10,7 @@ Build and maintain the app described in `docs/requirements.md`. Read that file f
 
 **v1.3 (record and replay answers) is built** (steps 20 to 25 in `docs/requirements.md`): optional recording with a target length, an unsaved-recording panel on every tab, saving to IndexedDB, and a Recordings card on the History tab. Not yet tagged or pushed. The browser checks were done in headless Chromium with a fake microphone; real-microphone checks are the owner's (listed in the requirements).
 
-**v1.4 (record video, download only) is built** (steps 26 to 30): an unticked-by-default Include video box, a full-screen view of the user while recording (up to 7 minutes), and a review with Download only. Videos are never stored by the app. Not yet tagged or pushed; real-camera checks are the owner's (listed in the requirements).
+**v1.4 (record video, download only) is built** (steps 26 to 30): an unticked-by-default Include video box, a small mirrored preview in the recorder panel while recording (the screen is never taken over; the file holds only the camera and microphone; up to 7 minutes), and a review with Download only. Videos are never stored by the app. Not yet tagged or pushed; real-camera checks are the owner's (listed in the requirements).
 
 **Also done: a start/stop script** (`scripts/interviewpal.sh` and `scripts/devserver.py`) so the owner can run the app without remembering commands. Documented in the README under "Start and stop". The owner confirmed it opens Chrome on the Windows side, and added the optional `interviewpal` alias to `~/.bashrc`.
 
