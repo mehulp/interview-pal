@@ -4,7 +4,7 @@ A daily mock-interview practice tool. You load your own Q&A notes and an animate
 
 ## Status
 
-**v1 is complete.** All eleven build steps are done (see "Build order"). The owner tested the app in Chrome on a laptop (Practice and Coach modes, question sets, History, the interviewer faces, self-view and voice answers). It is also tried on a real phone and works well, and it is published on GitHub Pages at https://mehulp.github.io/interview-pal/. Not yet verified: Safari and iPhone. Items in "Deferred to v2" and "Later" are not built. **v1.1 ("make it publishable") is complete**; see the section of that name below. It is tagged `v1.1.0`, and the end of v1 is tagged `v1.0.0` (commit `7417913`). The README screenshots are in (the demo GIF was skipped). **v1.4 (record video, download only) is being built**; see "v1.4" below. **v1.3 (record and replay answers) is built** (not yet tagged or pushed); see "v1.3" below. **v1.2 is built** (not yet tagged or pushed): the model answer on the Interview screen, the tidier "Try the demo" card, and the same question in more than one set. See "v1.2" below.
+**v1 is complete.** All eleven build steps are done (see "Build order"). The owner tested the app in Chrome on a laptop (Practice and Coach modes, question sets, History, the interviewer faces, self-view and voice answers). It is also tried on a real phone and works well, and it is published on GitHub Pages at https://mehulp.github.io/interview-pal/. Not yet verified: Safari and iPhone. Items in "Deferred to v2" and "Later" are not built. **v1.1 ("make it publishable") is complete**; see the section of that name below. It is tagged `v1.1.0`, and the end of v1 is tagged `v1.0.0` (commit `7417913`). The README screenshots are in (the demo GIF was skipped). **v1.4 (record video, download only) is built** (not yet tagged or pushed); see "v1.4" below. **v1.3 (record and replay answers) is built** (not yet tagged or pushed); see "v1.3" below. **v1.2 is built** (not yet tagged or pushed): the model answer on the Interview screen, the tidier "Try the demo" card, and the same question in more than one set. See "v1.2" below.
 
 ## Decisions (defaults confirmed)
 
@@ -437,10 +437,15 @@ Approved by the owner. An optional extension of the v1.3 recorder: record the ca
 ### Build steps
 
 26. **Docs and rules** (this section, README, CLAUDE.md camera rule, architecture). (done)
-27. **Pure rules in `src/recordings.js`** and tests: video formats, 7-minute cap, extensions, "videos cannot be saved in the browser", camera error wording.
-28. **`src/recorder.js` video support** (camera and microphone together, track copy from self-view, tracks released) and a `getVideoTrack()` on self-view.
-29. **Full-screen recording view, the video review panel and download-only flow** in `src/recpanel.js`, `index.html` and `styles.css`; the store refuses video.
-30. **Docs, architecture and changelog final; checks.**
+27. (done) **Pure rules in `src/recordings.js`** and tests: video formats, 7-minute cap, extensions, "videos cannot be saved in the browser", camera error wording.
+28. (done) **`src/recorder.js` video support** (camera and microphone together, track copy from self-view, tracks released) and a `getVideoTrack()` on self-view.
+29. (done) **Full-screen recording view, the video review panel and download-only flow** in `src/recpanel.js`, `index.html` and `styles.css`; the store refuses video.
+30. (done) **Docs, architecture and changelog final; checks.**
+
+### How it was checked, and what is still open (v1.4)
+
+- **Checked in headless Chromium with a fake camera and microphone:** Include video off by default and audio unaffected; one permission request for camera and microphone; true full screen asked for straight from the click; the view fills the window with nothing on top of it (the interviewer is covered); the preview is the recorded stream, mirrored and muted; question, clock and the target alert on the view; Stop closes it and both camera and microphone are released; the video replays and seeks; nothing is written to the browser store (counted); the store itself refuses a video; the page-exit warning and the Discard confirmation until the video is downloaded, and neither after; the download's file name and extension; Next while recording (labelled with the original question, no Retry, no Save); Retry for the same question; self-view's camera is not opened a second time and self-view carries on afterwards; camera permission denied (clear message, nothing left behind); the 7-minute limit; the camera disconnected mid-recording; phone width. No network requests and no page errors.
+- **Still needs a real camera and browser:** how the real camera and microphone look and sound; real full-screen behaviour (the headless run uses a stand-in for the full-screen request, and the window-filling view is what was verified); a 7-minute recording and its file size; the downloaded file playing in your usual player; Safari, Firefox and phones (only Chromium was run).
 
 ### Acceptance criteria for v1.4
 
