@@ -99,6 +99,7 @@ This is a "pure core, thin shell" design. The rules that matter (parsing, no rep
 | `avatar.js` | One interface, `setState('idle' \| 'talking' \| 'listening')`, with three ways to draw the face: photo frames, video clips or an SVG. It falls back to the SVG if files fail to load |
 | `claude.js` | The API client. It builds the marking prompt (question, reference answer and answer inside tags, JSON-only reply), validates the reply, and turns HTTP errors into plain messages |
 | `history.js`, `summary.js` | At the end of a session `buildSessionRecord` takes a snapshot of the results, and `renderSummary` draws it, right after the session and on the History tab |
+| `recordings.js`, `recorder.js`, `recordstore.js`, `recpanel.js`, `recordingsview.js` (v1.3) | Optional recording of answers. `recordings.js` is pure (format choice, recorder state machine, time and target maths, question snapshot, retry rule, validation, names). `recorder.js` is the only file that opens the microphone for recording and drives `MediaRecorder`; late permission answers are ignored by a generation counter and every track is released. `recordstore.js` keeps details and audio in two IndexedDB stores (saved and deleted in one transaction, so lists never load audio). `recpanel.js` is the recorder panel plus the shared review panel; `recordingsview.js` draws the History card and playback. Nothing is uploaded |
 | `delivery.js` (v1.1) | Pure. From an answer's text, its duration, whether it was spoken or typed, and the timer, works out filler words, words per minute (spoken only) and length against the timer. The numbers are stored in the history snapshot. No audio is kept |
 | `progress.js` and a progress view (v1.1) | `progress.js` is pure: it turns stored history into the score trend, sessions per day, a weak-topics heat map and the daily streak. A page module draws them as plain SVG or CSS on the History tab |
 | `demoset.js` (v1.1) | The "Try the demo" questions, held as data in the code and loaded through the same import path as a file, so the duplicate rules apply (within the demo set) and no network call is made |
@@ -203,7 +204,7 @@ From v1.1 a result also stores `spoken` (true or false), the answer's duration a
 
 A session result is a **copy** of what happened (a snapshot), not a link to the question. Editing or deleting a question later does not rewrite history.
 
-Everything is stored in `localStorage` under four keys, for this browser and this address only:
+Recordings (v1.3) are kept apart, in IndexedDB database `interviewpal-recordings`: store `attempts` (details: id, questionKey, questionText, setName, topic, createdAt, targetSec, durationMs, mimeType, size, deviceLabel) and store `audio` (id, blob). Everything else is stored in `localStorage` under four keys, for this browser and this address only:
 
 | Key | What it holds |
 |---|---|

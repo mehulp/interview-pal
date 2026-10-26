@@ -4,7 +4,7 @@ A daily mock-interview practice tool. You load your own Q&A notes and an animate
 
 ## Status
 
-**v1 is complete.** All eleven build steps are done (see "Build order"). The owner tested the app in Chrome on a laptop (Practice and Coach modes, question sets, History, the interviewer faces, self-view and voice answers). It is also tried on a real phone and works well, and it is published on GitHub Pages at https://mehulp.github.io/interview-pal/. Not yet verified: Safari and iPhone. Items in "Deferred to v2" and "Later" are not built. **v1.1 ("make it publishable") is complete**; see the section of that name below. It is tagged `v1.1.0`, and the end of v1 is tagged `v1.0.0` (commit `7417913`). The README screenshots are in (the demo GIF was skipped). **v1.2 is built** (not yet tagged or pushed): the model answer on the Interview screen, the tidier "Try the demo" card, and the same question in more than one set. See "v1.2" below.
+**v1 is complete.** All eleven build steps are done (see "Build order"). The owner tested the app in Chrome on a laptop (Practice and Coach modes, question sets, History, the interviewer faces, self-view and voice answers). It is also tried on a real phone and works well, and it is published on GitHub Pages at https://mehulp.github.io/interview-pal/. Not yet verified: Safari and iPhone. Items in "Deferred to v2" and "Later" are not built. **v1.1 ("make it publishable") is complete**; see the section of that name below. It is tagged `v1.1.0`, and the end of v1 is tagged `v1.0.0` (commit `7417913`). The README screenshots are in (the demo GIF was skipped). **v1.3 (record and replay answers) is being built**; see "v1.3" below. **v1.2 is built** (not yet tagged or pushed): the model answer on the Interview screen, the tidier "Try the demo" card, and the same question in more than one set. See "v1.2" below.
 
 ## Decisions (defaults confirmed)
 
@@ -228,6 +228,7 @@ An answer is optional in Practice mode, because the interviewer only needs the q
 ## Privacy and GitHub notes
 
 - The camera (self-view) is used only to show a picture on your own screen. Frames are never recorded, stored or sent anywhere.
+- Recordings of answers (v1.3) are saved only on request, only in this browser's storage, and never uploaded. See "v1.3".
 - Interviewer photos and clips live in `assets/interviewers/`. **From v1.1 they are committed and published.** The rule for committed media: it must be AI-generated or otherwise rights-cleared, it must be listed in `assets/interviewers/NOTICE.md`, and it must never use a real person's likeness. Keep clips small (under about 10 MB each). No paid or third-party avatar service. The shipped ones are AI-generated and are not covered by the MIT licence (see the NOTICE file).
 - `demo-videos/` (screen recordings) stays git-ignored.
 - Keep personal Q&A notes out of the repo. They are loaded in the browser and never need to be committed. A `my-notes/` folder is git-ignored for local use, and so are exported sets (`interviewpal-sets-*.json`).
@@ -275,7 +276,7 @@ Goal: make the project ready to publish on GitHub Pages and to show to others. A
     - The logic is in a pure module, `src/delivery.js`, testable in Node. It works on the answer text and timings only.
     - Shown per answer in the session summary, with session totals, and saved in the history record. Older records without it still display.
     - Typed answers are excluded from the pace figure (a typing speed says nothing about speaking pace). Each recorded answer therefore needs to say whether it was spoken or typed, and how long the answer took.
-    - Nothing is recorded or sent anywhere. No audio is kept; only numbers.
+    - Nothing is recorded or sent anywhere. Delivery analytics never process or keep audio; only numbers. (The separate, optional recording feature in v1.3 saves audio locally only when the user presses Save.)
     - **Definitions (as built).** *Filler words*: um, uh, er, erm, ah, hmm, you know, I mean, sort of, kind of, basically, actually, literally ("like" is not counted, because it is too often a normal word). Chrome's recogniser often leaves "um" and "uh" out, so the count can be low; the summary says so. *Pace*: words that came from speech recognition divided by the time the microphone was on, shown only when there are at least 10 spoken words and 5 seconds. Labelled slow under 110, steady up to 170 and fast above that, words per minute. *Length against the timer*: seconds used as a percentage of the timer (only when there is a timer). Fillers and the timer comparison are worked out for any answer with text; the pace only for answers that were spoken. Skipped questions and empty answers have no delivery numbers.
 15. **Progress view and daily streak** (done) on the History tab, built from stored history only. It shows the score and self-mark trend over time, sessions per day, a weak-topics heat map, and the daily streak (moved here from the v2 list). Plain SVG or CSS, no chart library. The calculations are in a pure module, `src/progress.js` (testable in Node, and added to the tests); the drawing is in a page module, `src/progressview.js`, with the charts as plain SVG and the heat map as CSS. Details as built: the trend chart plots one dot per session as a percentage (a Coach average of 7.5/10 is 75%; self-marks count Got it as full, Partly as half, Missed as none); sessions per day covers the last 14 days; the heat map shows, for each topic, how many scored or self-marked answers were weak (Coach score of 5 or less, or Partly or Missed), weakest first, as a percentage and a count so colour is not the only signal; the streak counts consecutive days with at least one saved session and stays alive until the end of the day after the last session. Skipped questions are ignored. The view is at the top of the History tab and hides when a session is opened.
 16. **Repo polish.** (done; the architecture page stays out of the repo for now)
@@ -344,6 +345,62 @@ Three changes, each its own build step, one commit each. Nothing here adds a dep
 - Tick two sets that share a question: it is asked once, the setup count counts it once, and the copy with a model answer is the one used.
 - Move a question into a set that already has it: it leaves the old set, the target is unchanged, and the message says so.
 - The demo card is the first card on the Questions tab. Adding the demo leaves the open set alone, shows the count and an **Open demo set** button, and a second visit shows the one-line note instead of the card.
+
+## v1.3: record and replay your answers
+
+Approved by the owner. Optional audio recording of spoken answers, saved only when the user chooses, with an optional target length. Built as the steps below, one commit each. No backend, no new dependency, no upload.
+
+### Product decisions (approved)
+
+- **Explicit and optional.** The microphone is requested only when the user presses Record, never on page load. Nothing is saved without pressing Save.
+- **Storage:** the browser's IndexedDB, on this computer. Every saved attempt also has a **Download** button that gives an ordinary audio file. There is no backend and no folder picker.
+- **Target length:** off by default. Presets 1 min, 90 sec, 2 min and 3 min, or a custom number of seconds. Reaching it shows a visual alert and recording continues.
+- **Maximum length:** 10 minutes, then recording stops by itself.
+- **Several attempts per question.** They are listed on the History tab and can be reached from the current question on the Interview screen.
+
+### How it works
+
+- **Recorder panel (Interview screen).** Record is enabled only while the question is in its answering phase, so the interviewer's voice is not recorded. While recording it shows the elapsed time, the time remaining against the target, and **which microphone is in use**. Elapsed time comes from timestamps, so a background tab stays accurate. At the target the panel changes colour and says "Target reached", then "+m:ss over". There is no sound, and no animation when "reduce motion" is on. At 10 minutes it stops by itself.
+- **Chosen microphone.** The microphone chosen on the Interview screen is used. If it cannot be opened, the default microphone may be used instead, but the panel then says so and names the device. The device name is saved with the attempt.
+- **Recording ends** on Stop, Next, Skip, the difficulty timer ending, End session, and any tab navigation. The microphone is released every time. A recording stopped by a lost microphone keeps what was recorded and says so.
+- **Review.** A stopped recording is an **unsaved attempt**, shown in a shared panel that stays visible on every tab, labelled with the question it belongs to. It has a player, **Save**, **Discard**, **Download** and **Retry**. There is one unsaved attempt at a time: Record is off until it is saved or discarded.
+- **Question association.** The question is captured when recording starts (not when it ends) and travels with the attempt. If the user has moved to another question, the previous attempt can only be saved or discarded (and downloaded). **Retry** is offered only while the original question is still the active one and the practice state allows recording.
+- **Page exit.** Leaving or closing the page while recording or with an unsaved attempt shows the browser's "leave site?" warning. This is only a warning: an unsaved recording is **not** recovered after a crash or a forced close.
+- **Failed save.** If saving fails (storage blocked, full, or other), the audio is kept so the user can try Save again or Download it. The message says what went wrong in plain words.
+- **Saved attempts** show the date, the question, the target length (or none) and the actual length. Each can be played (with seeking), downloaded or deleted (after a confirmation). Listing them loads only the details, never all the audio; audio is read only when one is played or downloaded.
+
+### Linking, editing and re-import
+
+An attempt is linked to a question by the question's **normalised text** (the same comparison `sets.js` uses), and a copy of the text and the set name are saved with it. Question ids are not used, because they change on import. If the question is edited, the recording stays under its old text. If the question is deleted, the recordings are kept, and the user deletes them explicitly. Loading the same question again links it to its old recordings again.
+
+### Storage, persistence and privacy
+
+- Recordings live in IndexedDB under the browser profile and **the exact address (origin, including the port)**. Another address (`localhost:8010` vs `localhost:8000`, `127.0.0.1`, or the published site) or another browser has its own, separate recordings. Clearing site data, or the browser clearing storage when the disk is low, deletes them. The app asks the browser for persistent storage once, but the browser may decline or not support it, and the app says which. **Download** is the way to keep an important attempt.
+- Audio and details are saved together in one step, so there is no half-saved attempt. The details are in a separate store from the audio so lists stay light.
+- **The recording feature adds no audio upload and no network request.** It is separate from voice answers: when the user presses 🎤 Answer, the browser's speech recogniser works exactly as before, and in Chrome that sends audio to Google's speech service (see the notes above and the README). The app makes no claim that audio never leaves the browser.
+- Delivery analytics are unchanged: they use only the answer text and timings and never process audio.
+- Recording and voice answers can be used at the same time. Both use the microphone; this has not been tested with every headset.
+
+### Build steps
+
+20. **Docs and rules** for this feature (this section, README, CLAUDE.md, architecture). (done)
+21. **`src/recordings.js` and tests.** Pure: choosing a supported audio format, recorder states, time and target maths, question snapshot, retry rule, validation, file names, grouping.
+22. **`src/recordstore.js`.** The IndexedDB adapter: details and audio in separate stores, saved and deleted together, listing without audio, plain error kinds (unavailable, full, other), persistent-storage request.
+23. **`src/recorder.js` and the recorder panel** (record, stop, timer and target alert, device name, errors, late permission answers).
+24. **Review panel, saving and lifecycle:** shared panel, Save, Discard, Download, Retry rules, failed-save retry, page-exit warning, hooks into the practice flow, saved attempts for the current question.
+25. **History "Recordings" card and playback** (seeking, one player at a time, object URLs released), docs, changelog and architecture updates.
+
+### Acceptance criteria for v1.3
+
+- The microphone prompt appears only after pressing Record. With the microphone denied, missing or unplugged, a plain message appears and typing still works.
+- Recording shows elapsed and remaining time and the microphone name. At the target an alert appears and recording continues. At 10 minutes it stops.
+- A finished recording can be replayed (including seeking) before saving. Discard and Retry free the audio and the player, and the microphone light goes off.
+- Saved attempts survive closing and reopening the browser, list with date, target and actual length, and can be played, downloaded and deleted.
+- An attempt is never shown under a different question than the one it was recorded for, even after moving on or an asynchronous delay. Retry appears only for the original active question.
+- Next, Skip, End session and switching tabs stop a recording. An unsaved attempt stays reachable from every tab. Leaving the page warns.
+- A failed save keeps the audio, allows another Save and Download, and says why.
+- Listing attempts does not load their audio. Object URLs are released when players are replaced or removed.
+- No network request is made by the recording feature.
 
 ## Acceptance criteria for v1
 

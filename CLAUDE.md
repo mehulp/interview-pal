@@ -32,7 +32,8 @@ For any new work: agree the change with the owner, update `docs/requirements.md`
 - Respect `prefers-reduced-motion` in avatar animations, including the video clips (show a still frame instead of playing).
 - Camera self-view stays on screen only. Never record, store, upload or analyse camera frames, never request the microphone for it, and stop the camera when the session ends.
 - Interviewer photos and clips may be committed (from v1.1) only if they are AI-generated or otherwise rights-cleared, are listed in `assets/interviewers/NOTICE.md`, and never use a real person's likeness. Keep clips small (under about 10 MB each; tell the owner before committing a bigger one). No paid or third-party avatar service, and no uploading anything for the avatar. `demo-videos/` stays git-ignored.
-- Delivery analytics (v1.1) use only the answer text and timings. Never keep audio, and never send these numbers anywhere.
+- Delivery analytics (v1.1) use only the answer text and timings. They never process or keep audio, and these numbers are never sent anywhere.
+- Recording answers (v1.3) is a separate, optional feature. The microphone is requested only when the user presses Record; audio is saved only when the user presses Save, only in IndexedDB through `src/recordstore.js`, and is never uploaded. The feature makes no network request. Do not claim that audio never leaves the browser: voice answers use the browser's speech recogniser, which in Chrome sends audio to Google. Release every microphone track on stop, discard, error and navigation.
 
 ## Modes
 
@@ -48,7 +49,7 @@ Also built, beyond Practice and Coach: question sets with JSON export and import
 - `scripts/interviewpal.sh` starts, stops and reports on the local server; `scripts/devserver.py` is the small standard-library server behind it (127.0.0.1 only, `Cache-Control: no-store`). Its process ID and log live in `.run/`, which is git-ignored.
 - `index.html` holds all four screens (Interview, Questions, History, Settings); `src/ui.js` switches between them. `styles.css` holds all styles.
 - Logic that needs no page lives in small modules that can be tested on their own with Node: `parser.js` (the text rules), `sets.js`, `session.js`, `history.js`, `vocabulary.js`, `interviewers.js`, `phrases.js`, and from v1.1 `delivery.js` and `progress.js`.
-- Everything saved in the browser goes through `src/storage.js`. Settings are saved with `saveSettings({ key: value })`, which merges, so never save a whole copy of the settings object.
+- Everything saved in the browser goes through `src/storage.js`, except recordings, which go through `src/recordstore.js` (IndexedDB, because audio does not fit localStorage). Settings are saved with `saveSettings({ key: value })`, which merges, so never save a whole copy of the settings object.
 - Anything a user's notes, answers or Claude's replies put on screen must be set with `textContent`, never as HTML.
 - `src/claude.js` is the only file that talks to the Anthropic API, and Practice mode never loads it (Coach loads it on demand).
 
@@ -63,7 +64,7 @@ Also built, beyond Practice and Coach: question sets with JSON export and import
 - The project lives in the Linux filesystem (`~/interviewpal`), not under `/mnt/c`, for speed and reliable git.
 - Run the dev server inside WSL with `scripts/interviewpal.sh start` (also `stop`, `status`, `restart`; `PORT=` and `NO_BROWSER=1` are options). `python3 -m http.server 8000` still works as a manual fallback.
 - Choose the headset or microphone you actually use in the app's Microphone list (the Windows default may be the laptop microphone).
-- Test in **Google Chrome on the Windows side** at `http://localhost:8000`. WSL forwards localhost automatically, and the Windows microphone works there.
+- Test in **Google Chrome on the Windows side** at `http://localhost:8010` (the script's default port; storage, including recordings, belongs to the exact address, so always use the same one). WSL forwards localhost automatically, and the Windows microphone works there.
 - Do not test voice features by opening the WSL IP address. Microphone access needs `localhost` or HTTPS, so an IP address will block it.
 - Claude Code itself must not launch a browser from inside WSL. Tell me the URL and I will open it. The one exception is the project's own `scripts/interviewpal.sh`, which is allowed to open Chrome on the Windows side when the owner runs it (and Claude Code tests it with `NO_BROWSER=1`, so no browser opens during testing).
 - Microphone access also does not work on plain `file://` pages.

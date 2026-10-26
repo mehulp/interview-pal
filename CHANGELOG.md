@@ -2,6 +2,10 @@
 
 All notable changes to InterviewPal. Dates are when the work was finished.
 
+## Unreleased (v1.3)
+
+- **Record and replay your answers** (optional): Record and Stop on the Interview screen with an optional target length (alert when reached, recording continues), a 10-minute limit, replay with seeking, and Save, Discard, Retry or Download. Saved attempts (several per question) are kept in this browser's IndexedDB and listed on the History tab and under the current question. Adds no audio upload.
+
 ## Unreleased (v1.2)
 
 - **Show model answer** on the Interview screen: a setting (off by default) and a Show answer / Hide answer button for the current session. The panel is full width under the cards, never spoken, and the timer keeps running. In self-marking the reveal step is skipped when the answer is already visible. Sessions where it was visible are flagged in History and on the summary, in Practice and Coach modes.

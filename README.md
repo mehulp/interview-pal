@@ -26,6 +26,7 @@ It is a plain website (HTML, CSS and JavaScript). There is no server, no login a
 - [Practice and Coach modes](#practice-and-coach-modes)
 - [The interviewers](#the-interviewers)
 - [Voice, microphone and camera](#voice-microphone-and-camera)
+- [Recording your answers](#recording-your-answers)
 - [Your data and backups](#your-data-and-backups)
 - [Privacy](#privacy)
 - [Troubleshooting](#troubleshooting)
@@ -42,15 +43,15 @@ You need Python 3 (only to serve the files) and Google Chrome.
 
 ```bash
 cd interviewpal
-python3 -m http.server 8000
+python3 -m http.server 8010
 ```
 
-Open <http://localhost:8000> in Chrome and allow the microphone when asked.
+Open <http://localhost:8010> in Chrome and allow the microphone when asked.
 
 Prefer one command? See [Start and stop](#start-and-stop) just below.
 
 - Use `localhost` (not an IP address, and not a `file://` page). The microphone and camera only work on `localhost` or on HTTPS.
-- Use the same address every time. Your saved questions and history belong to that address, so `localhost:8000` and `127.0.0.1:8000` do not share them.
+- Use the same address every time. Your saved questions, history and recordings belong to that exact address, including the port, so `localhost:8010`, `localhost:8000` and `127.0.0.1:8010` do not share them. The start script's default is `http://localhost:8010`.
 - On Windows with WSL, run the server inside WSL and open Chrome on the Windows side.
 
 ## Start and stop
@@ -65,12 +66,12 @@ scripts/interviewpal.sh restart   # stop, then start
 ```
 
 - It works from any folder, because it finds the project from its own location.
-- The address is <http://localhost:8000>. To use another port: `PORT=8001 scripts/interviewpal.sh start`.
+- The address is <http://localhost:8010>. To use another port: `PORT=8001 scripts/interviewpal.sh start` (but then your saved data and recordings are those of that address, not this one).
 - On Windows with WSL it opens Chrome on the Windows side. If that does not work, or you set `NO_BROWSER=1`, it only prints the address and you open it yourself.
 - If the server is already running, `start` says so and does not start a second one. If another program is using the port, it says so and suggests `PORT=`.
 - The server listens on this computer only (`127.0.0.1`), not on your network. It tells the browser not to keep old copies of the files, so an ordinary refresh always shows the latest code.
 - The process ID and the log are kept in `.run/` (git-ignored). If the server fails to start, the message shows the log path.
-- `python3 -m http.server 8000` still works as a manual fallback.
+- `python3 -m http.server 8010` still works as a manual fallback. Use the same port, so you see the same saved data.
 
 ### Shortcut command (optional)
 
@@ -94,6 +95,7 @@ alias interviewpal='/home/mehul/projects/interviewpal/scripts/interviewpal.sh'
 - **Summary and History.** A summary after every session, with topics to revisit, and a History tab of past sessions.
 - **Progress view.** On the History tab: a daily streak, your score and self-mark trend, sessions per day and a heat map of your weakest topics. Drawn on your device from your saved history.
 - **Delivery figures (voice answers).** Filler words, words per minute and how much of the timer you used, per answer and for the whole session. Worked out on your device from the words and timings; nothing is recorded.
+- **Record and replay your answers (optional).** Record yourself answering, with an optional target length, replay it, and keep the attempts you want. They are saved only in this browser, and every attempt can be downloaded as an audio file.
 - **Eye-contact practice.** An optional mirrored picture of your own camera, shown only on your screen.
 
 ## How to use it
@@ -217,6 +219,24 @@ Speech recognition is the part that depends most on your setup. For the best res
 
 **Reduce motion:** if your system has "reduce motion" switched on, the faces stay still and show one picture per state.
 
+## Recording your answers
+
+This is optional. Nothing is recorded unless you press **Record**, and nothing is saved unless you press **Save**.
+
+1. On the Interview tab, once the question has been asked, the **Record your answer** panel is ready. You can first choose a **target length** (off by default; 1 min, 90 sec, 2 min, 3 min or your own number of seconds).
+2. Press **Record** and allow the microphone when the browser asks. The panel shows the time so far, the time left for your target, and **which microphone** is being used. When you reach the target it changes colour and says "Target reached", and the recording carries on. A recording stops by itself after 10 minutes.
+3. Press **Stop** (or Next, Skip, End session, or switch tab, which also stop it). You can play the recording back, with a slider to jump around.
+4. Choose **Save**, **Discard** or **Download**. **Retry** discards it and records again, and is offered only while that same question is still on screen. If you have moved to another question you can still Save, Discard or Download the earlier recording, and the panel tells you which question it belongs to.
+5. Your saved attempts show under the question (**Saved recordings for this question**) and in the **Recordings** card on the History tab, with the date, your target length and the real length. You can play, download or delete each one.
+
+Things to know:
+
+- **Where recordings are kept.** In this browser's storage, on this computer, for this exact address (including the port, so use the same address every time). Another address, another browser or another profile has its own recordings.
+- **They can be lost.** Clearing your browser's site data deletes them, and a browser can also clear storage when the disk is nearly full. The app asks the browser to keep them (persistent storage) but the browser may say no, and the Recordings card tells you which. **Use Download for any attempt you want to keep.**
+- **An unsaved recording is not recovered** after a crash or if the browser is closed. The browser warns you before you leave the page, but that is only a warning.
+- **The recording feature does not upload anything.** It is separate from voice answers: when you use the 🎤 **Answer** button, the browser's recogniser works as it always did, and in Chrome that sends your speech to Google. You can use both at once.
+- Recordings are not part of **Export sets**. Questions you edit or delete keep their recordings, which stay under the original wording.
+
 ## Your data and backups
 
 Everything is stored in this browser, at this address only:
@@ -227,6 +247,7 @@ Everything is stored in this browser, at this address only:
 | Session history | This browser | No |
 | Settings | This browser | No |
 | API key | This browser | No |
+| Recordings (optional) | This browser, in its own storage | No. Use **Download** on each attempt |
 
 - **Export sets** (Questions tab, Backup) saves all sets to `interviewpal-sets-<date>.json`. **Import sets** reads such a file: sets with the same name are merged, new names create new sets, questions already in the set they merge into are skipped, and an invalid file changes nothing.
 - Clearing the browser's site data deletes everything above. Export your sets first, and keep your original notes in `my-notes/` (git-ignored).
@@ -244,13 +265,14 @@ Everything is stored in this browser, at this address only:
 | Voice answers | The browser's speech recogniser. **In Chrome this sends your audio to Google's speech service**, which is outside this app. Typing sends nothing. The on-device option avoids this where available. |
 | Spoken questions | Read by your browser's voices. |
 | Camera self-view | Shown on your screen only. Never recorded or sent. |
-| Delivery figures | Counted on your device from the words and timings, and saved in History. No audio is kept. |
+| Recordings of your answers (optional) | Saved only if you press Save, in this browser only. The recording feature uploads nothing. (Voice answers are separate, see above.) |
+| Delivery figures | Counted on your device from the words and timings, and saved in History. They never use or keep audio. |
 | Word and PDF reading | Two libraries (`mammoth`, `pdf.js`) are downloaded from a public CDN when you first load such a file. Your file is not uploaded. |
 | Analytics | None. |
 
 ## Troubleshooting
 
-- **The microphone does not work.** Use `http://localhost:8000` (not an IP address or a file), allow the microphone in the address bar, and pick the right one in the Microphone list. Voice input needs an internet connection in Chrome.
+- **The microphone does not work.** Use `http://localhost:8010` (not an IP address or a file), allow the microphone in the address bar, and pick the right one in the Microphone list. Voice input needs an internet connection in Chrome.
 - **Words are missed or wrong.** Run the microphone check, use a headset close to your mouth, try another accent, and avoid Bluetooth call mode.
 - **The interviewer has the wrong voice.** The Interview tab shows which voice was chosen. The match is guessed from the voice's name. Set a name hint in `assets/interviewers/interviewers.json`, as described in its README, or install more voices in your system.
 - **Start is greyed out.** No saved question matches your choices. Check the sets you ticked, the question level, and that you have questions on the Questions tab.
@@ -295,6 +317,11 @@ src/
   delivery.js          filler words, pace and timer use for answers
   demoset.js           the demo questions
   settings.js          Settings tab: API key, model, microphone check
+  recordings.js        recording rules: format, timer, retry rule, names (pure)
+  recorder.js          microphone and MediaRecorder (the only file that records)
+  recordstore.js       saved recordings in IndexedDB
+  recpanel.js          the recorder panel and the shared review panel
+  recordingsview.js    the Recordings card and playback
   parser.js            reads files and finds the questions (no AI)
   sets.js              question set rules (no repeats within a set, move, import)
   session.js           question order, difficulty rules, timer
