@@ -229,6 +229,13 @@ This is optional. Nothing is recorded unless you press **Record**, and nothing i
 4. Choose **Save**, **Discard** or **Download**. **Retry** discards it and records again, and is offered only while that same question is still on screen. If you have moved to another question you can still Save, Discard or Download the earlier recording, and the panel tells you which question it belongs to.
 5. Your saved attempts show under the question (**Saved recordings for this question**) and in the **Recordings** card on the History tab, with the date, your target length and the real length. You can play, download or delete each one.
 
+**Recording video as well (optional).** In the recorder panel, tick **Include video** (it is unticked every time the page loads). Press Record and allow the camera and microphone. The window then shows only you, mirrored and full screen, with the question, the clock, the target alert and a **Stop** button. The interviewer is hidden. A video can be up to **7 minutes**.
+
+- **Videos are never kept in the browser.** There is no Save button for a video. After Stop you can replay it, then **Download** it as a normal video file (it is saved wherever your browser puts downloads). Until you download it, closing the page or pressing Discard warns you first, and once you have discarded it, it is gone.
+- Nothing is uploaded and the camera is only recorded while you are recording video. The file you download is yours to keep private: it has your face and voice.
+- If Self-view is on, the recording uses the same camera, and self-view carries on afterwards.
+- Videos are not listed in the Recordings card on the History tab, because the app does not keep them.
+
 Things to know:
 
 - **Where recordings are kept.** In this browser's storage, on this computer, for this exact address (including the port, so use the same address every time). Another address, another browser or another profile has its own recordings.
@@ -266,6 +273,7 @@ Everything is stored in this browser, at this address only:
 | Voice answers | The browser's speech recogniser. **In Chrome this sends your audio to Google's speech service**, which is outside this app. Typing sends nothing. The on-device option avoids this where available. |
 | Spoken questions | Read by your browser's voices. |
 | Camera self-view | Shown on your screen only. Never recorded or sent. |
+| Video recording (optional) | Only if you tick Include video and press Record. The video is never stored by the app and never uploaded: it exists only until you download it as a file. |
 | Recordings of your answers (optional) | Saved only if you press Save, in this browser only. The recording feature uploads nothing. (Voice answers are separate, see above.) |
 | Delivery figures | Counted on your device from the words and timings, and saved in History. They never use or keep audio. |
 | Word and PDF reading | Two libraries (`mammoth`, `pdf.js`) are downloaded from a public CDN when you first load such a file. Your file is not uploaded. |

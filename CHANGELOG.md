@@ -2,6 +2,10 @@
 
 All notable changes to InterviewPal. Dates are when the work was finished.
 
+## Unreleased (v1.4)
+
+- **Record video (optional, download only).** An unticked-by-default Include video box in the recorder panel. While recording, the window shows only you, mirrored and full screen, with the question, clock, target alert and Stop. Up to 7 minutes. A video is never stored in the browser: replay it, then Download it. Warnings before leaving or discarding until it has been downloaded. Nothing is uploaded.
+
 ## Unreleased (v1.3)
 
 - **Record and replay your answers** (optional): Record and Stop on the Interview screen with an optional target length (alert when reached, recording continues), a 10-minute limit, replay with seeking, and Save, Discard, Retry or Download. Saved attempts (several per question) are kept in this browser's IndexedDB and listed on the History tab and under the current question. Adds no audio upload.

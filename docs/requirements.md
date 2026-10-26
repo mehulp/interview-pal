@@ -4,7 +4,7 @@ A daily mock-interview practice tool. You load your own Q&A notes and an animate
 
 ## Status
 
-**v1 is complete.** All eleven build steps are done (see "Build order"). The owner tested the app in Chrome on a laptop (Practice and Coach modes, question sets, History, the interviewer faces, self-view and voice answers). It is also tried on a real phone and works well, and it is published on GitHub Pages at https://mehulp.github.io/interview-pal/. Not yet verified: Safari and iPhone. Items in "Deferred to v2" and "Later" are not built. **v1.1 ("make it publishable") is complete**; see the section of that name below. It is tagged `v1.1.0`, and the end of v1 is tagged `v1.0.0` (commit `7417913`). The README screenshots are in (the demo GIF was skipped). **v1.3 (record and replay answers) is built** (not yet tagged or pushed); see "v1.3" below. **v1.2 is built** (not yet tagged or pushed): the model answer on the Interview screen, the tidier "Try the demo" card, and the same question in more than one set. See "v1.2" below.
+**v1 is complete.** All eleven build steps are done (see "Build order"). The owner tested the app in Chrome on a laptop (Practice and Coach modes, question sets, History, the interviewer faces, self-view and voice answers). It is also tried on a real phone and works well, and it is published on GitHub Pages at https://mehulp.github.io/interview-pal/. Not yet verified: Safari and iPhone. Items in "Deferred to v2" and "Later" are not built. **v1.1 ("make it publishable") is complete**; see the section of that name below. It is tagged `v1.1.0`, and the end of v1 is tagged `v1.0.0` (commit `7417913`). The README screenshots are in (the demo GIF was skipped). **v1.4 (record video, download only) is being built**; see "v1.4" below. **v1.3 (record and replay answers) is built** (not yet tagged or pushed); see "v1.3" below. **v1.2 is built** (not yet tagged or pushed): the model answer on the Interview screen, the tidier "Try the demo" card, and the same question in more than one set. See "v1.2" below.
 
 ## Decisions (defaults confirmed)
 
@@ -227,7 +227,7 @@ An answer is optional in Practice mode, because the interviewer only needs the q
 
 ## Privacy and GitHub notes
 
-- The camera (self-view) is used only to show a picture on your own screen. Frames are never recorded, stored or sent anywhere.
+- The camera (self-view) is used only to show a picture on your own screen. Frames are never recorded, stored or sent anywhere. The one exception is the optional video recording in v1.4: the camera is recorded only while the user is recording with Include video ticked, the video is never stored by the app, and the only way to keep it is the user's own Download. Nothing is uploaded.
 - Recordings of answers (v1.3) are saved only on request, only in this browser's storage, and never uploaded. See "v1.3".
 - Interviewer photos and clips live in `assets/interviewers/`. **From v1.1 they are committed and published.** The rule for committed media: it must be AI-generated or otherwise rights-cleared, it must be listed in `assets/interviewers/NOTICE.md`, and it must never use a real person's likeness. Keep clips small (under about 10 MB each). No paid or third-party avatar service. The shipped ones are AI-generated and are not covered by the MIT licence (see the NOTICE file).
 - `demo-videos/` (screen recordings) stays git-ignored.
@@ -406,6 +406,51 @@ An attempt is linked to a question by the question's **normalised text** (the sa
 - A failed save keeps the audio, allows another Save and Download, and says why.
 - Listing attempts does not load their audio. Object URLs are released when players are replaced or removed.
 - No network request is made by the recording feature.
+
+## v1.4: record video (download only)
+
+Approved by the owner. An optional extension of the v1.3 recorder: record the camera as well as the microphone, shown full screen, and keep the result **only as a downloaded file**.
+
+### Product decisions (approved)
+
+- **Video is optional and explicit.** A box **Include video**, unticked each time the page loads, sits in the recorder panel. Nothing records the camera unless that box is ticked and Record is pressed. Camera self-view stays on screen only and never records on its own.
+- **Never stored in the browser.** A video recording is not saved to IndexedDB or anywhere else the app keeps data. There is no Save button for video. The only way to keep it is **Download**, which saves an ordinary video file to the computer. The app also refuses to save a video through the audio store.
+- **Maximum length 7 minutes** (audio recording keeps its 10 minutes). Modest quality (about 1 Mbps at up to 720p) so files stay a sensible size, roughly 7 MB a minute.
+- **Full screen, you only.** While recording video the page shows the user's own camera, mirrored, filling the whole window. The interviewer is not shown. A small bar shows the question, the clock against the target, the microphone name and a **Stop** button. The app also asks the browser for true full screen, and falls back to a window-filling view if the browser says no. (The saved file is not mirrored.)
+- **Reuse of the self-view camera.** If self-view is on, the recording takes a copy of its camera track instead of opening the camera again. Stopping the recording leaves self-view as it was.
+- **Nothing is uploaded and nothing analysed.** Camera frames are never sent anywhere and never analysed.
+
+### How it works
+
+- Everything about timing, targets, the alert, the microphone name and its fallback notice, question association, Retry rules and stopping on Next, Skip, End session and tab changes works as for audio (see v1.3). The target alert also shows on the full-screen view.
+- After Stop, the **unsaved-recording panel** (on every tab) shows a video player with seeking, **Download** as the main action, **Retry** (same rules as audio) and **Discard**. Until the video has been downloaded, leaving the page shows the browser warning, and Discard asks for confirmation. Once it has been downloaded, neither happens.
+- The file name uses the question and the date, with the real format's extension (for example `.webm`, or `.mp4` where the browser records that).
+- Failure cases are as for audio, with camera wording: camera or microphone blocked, no camera, camera in use, camera disconnected mid-recording (what was recorded is kept and can be downloaded), the 7-minute limit.
+- The History tab's Recordings card lists audio recordings only. Videos are not in it, because the app does not keep them.
+
+### Privacy and wording
+
+- Video recording adds no upload and no network request. Camera frames are recorded only while recording video, and the file exists only in memory until the user downloads it. Closing the page or discarding loses it, and the browser warns first (a warning only, not recovery after a crash).
+- A downloaded video is an ordinary file on the user's disk and is outside the app's control. It contains the user's face and voice, so it should be kept private.
+- As in v1.3, the app makes no claim that audio never leaves the browser: voice answers still use the browser's speech recogniser.
+
+### Build steps
+
+26. **Docs and rules** (this section, README, CLAUDE.md camera rule, architecture). (done)
+27. **Pure rules in `src/recordings.js`** and tests: video formats, 7-minute cap, extensions, "videos cannot be saved in the browser", camera error wording.
+28. **`src/recorder.js` video support** (camera and microphone together, track copy from self-view, tracks released) and a `getVideoTrack()` on self-view.
+29. **Full-screen recording view, the video review panel and download-only flow** in `src/recpanel.js`, `index.html` and `styles.css`; the store refuses video.
+30. **Docs, architecture and changelog final; checks.**
+
+### Acceptance criteria for v1.4
+
+- Include video is off by default. With it off, nothing about audio recording changes, and the camera is not touched.
+- With it on, pressing Record asks for camera and microphone (once), then shows only the user's own mirrored camera filling the window, with question, clock, target alert and Stop. The interviewer is not visible.
+- A recording stops at 7 minutes by itself, and on Next, Skip, End session and tab changes, exactly as audio does. The camera and microphone lights go off.
+- After Stop the video can be replayed and sought, and downloaded. There is no Save button, and nothing is written to IndexedDB (checked).
+- Leaving the page or discarding warns until the video has been downloaded.
+- Self-view still works afterwards if it was on. If self-view was on, no second camera open is needed.
+- No network requests are made by the feature.
 
 ## Acceptance criteria for v1
 
