@@ -1,7 +1,8 @@
 // Recorder panel and the shared "unsaved recording" panel.
 //
 // The Interview screen has a small recorder panel (target length, Include video, Record, Stop,
-// clock). With video on, a full-screen view shows only the user while recording. A
+// clock). With video on, a small mirrored preview of the camera shows in the panel; nothing
+// else on screen changes and nothing goes full screen. A
 // finished recording becomes an UNSAVED ATTEMPT, shown in a panel at the top of the page that
 // stays visible on every tab. It has Save, Download, Discard and (sometimes) Retry.
 //
@@ -44,7 +45,7 @@ const recorder = createRecorder({
   onState: (state) => {
     if (state === 'recording') startTicking();
     else stopTicking();
-    if (state === 'idle' || state === 'stopping') hideStage(); // not while waiting for permission: full screen is already asked for
+    if (state === 'idle' || state === 'stopping') hidePreview();
     updatePanel();
   },
   onStarted: ({ deviceLabel, notice, kind, stream }) => {
@@ -52,7 +53,7 @@ const recorder = createRecorder({
     const text = `Recording ${kind === 'video' ? 'video ' : ''}with: ${deviceLabel}.${notice ? ' ' + notice : ''}`;
     $('rec-device').textContent = text;
     $('rec-status').textContent = '';
-    if (kind === 'video') showStage(stream, text);
+    if (kind === 'video') showPreview(stream);
     tick();
   },
   onFinished: (result) => {
@@ -78,7 +79,7 @@ const recorder = createRecorder({
   },
   onError: (message) => {
     recording = null;
-    hideStage();
+    hidePreview();
     $('rec-status').textContent = message;
     updatePanel();
   },
@@ -95,35 +96,24 @@ function tick() {
   else if (t.reached) clock.textContent = `${formatClock(ms)} · target reached (+${formatClock(t.overMs)} over)`;
   else clock.textContent = `${formatClock(ms)} · ${formatClock(t.remainingMs)} left of ${targetLabel(recording.targetSec)}`;
   $('rec-panel').classList.toggle('rec-reached', t.reached);
-  $('rec-stage-clock').textContent = clock.textContent;
-  document.querySelector('.rec-stage-bottom').classList.toggle('rec-reached', t.reached);
   if (t.reached && !reachedAnnounced) {
     reachedAnnounced = true;
     $('rec-status').textContent = 'Target reached. Recording continues.';
-    $('rec-stage-status').textContent = 'Target reached. Recording continues.';
   }
 }
 
-/* ---------- The full-screen view (video only) ---------- */
-// Ask the browser for true full screen (best effort: it may say no, and the view still fills the window).
-function enterFullscreen() {
-  const root = document.documentElement;
-  if (root.requestFullscreen && !document.fullscreenElement) root.requestFullscreen().catch(() => {});
-}
-function showStage(stream, deviceText) {
+/* ---------- The small camera preview (video only) ---------- */
+// The preview is the stream that is being recorded, muted so there is no echo and mirrored by CSS
+// (the recorded file is not mirrored). It lives in the recorder panel; nothing else changes.
+function showPreview(stream) {
   const preview = $('rec-preview');
-  preview.srcObject = stream; // the same stream that is being recorded, muted so there is no echo
+  preview.srcObject = stream;
   preview.play().catch(() => {});
-  $('rec-stage-question').textContent = recording ? recording.snapshot.questionText.trim() : '';
-  $('rec-stage-device').textContent = deviceText;
-  $('rec-stage-status').textContent = '';
-  $('rec-stage').hidden = false;
-  $('rec-stage-stop').focus();
+  $('rec-preview-box').hidden = false;
 }
-function hideStage() {
-  const stage = $('rec-stage');
-  if (!stage.hidden) { $('rec-preview').srcObject = null; stage.hidden = true; }
-  if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+function hidePreview() {
+  $('rec-preview').srcObject = null;
+  $('rec-preview-box').hidden = true;
 }
 function startTicking() { stopTicking(); tickTimer = setInterval(tick, 250); }
 function stopTicking() { clearInterval(tickTimer); tickTimer = null; }
@@ -180,26 +170,24 @@ function startRecording() {
   // Captured now, before anything asynchronous happens, and kept with the attempt from here on
   const video = $('rec-video').checked;
   recording = { snapshot: makeSnapshot(context, context.token), targetSec: readTarget(), kind: video ? 'video' : 'audio' };
-  if (video) enterFullscreen(); // must happen right here, while the click is fresh
   savedNote = ''; // a new recording started: the old "saved" message is out of date
   renderDock();
   $('rec-status').textContent = '';
   recorder.start({ deviceId: loadSettings().micDeviceId || '', video, videoTrack: video && cameraSource ? cameraSource() : null }).then((began) => {
-    if (!began && recorder.getState() === 'idle' && !pending) { recording = null; hideStage(); }
+    if (!began && recorder.getState() === 'idle' && !pending) { recording = null; hidePreview(); }
     updatePanel();
   });
   updatePanel();
 }
 
 function stopRecording() {
-  if (recorder.getState() === 'requesting') { recording = null; hideStage(); } // permission was still pending: nothing will come of it
+  if (recorder.getState() === 'requesting') { recording = null; hidePreview(); } // permission was still pending: nothing will come of it
   recorder.stop();
   updatePanel();
 }
 
 $('rec-btn').addEventListener('click', startRecording);
 $('rec-stop').addEventListener('click', stopRecording);
-$('rec-stage-stop').addEventListener('click', stopRecording);
 
 /* ---------- The unsaved recording panel ---------- */
 function renderDock() {

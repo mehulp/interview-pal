@@ -36,20 +36,6 @@
     <p class="hint" id="rec-dock-hint">Saved recordings stay in this browser, on this address. An unsaved recording is lost if you close the page.</p>
   </section>
 
-  <!-- Full-screen view while recording video: only you, mirrored. The recorded file is not mirrored. -->
-  <section class="rec-stage" id="rec-stage" role="region" aria-label="Video recording" hidden>
-    <video id="rec-preview" muted playsinline></video>
-    <div class="rec-stage-top">
-      <span class="rec-live">● Recording video</span>
-      <p id="rec-stage-question"></p>
-    </div>
-    <div class="rec-stage-bottom">
-      <p class="rec-clock" id="rec-stage-clock"></p>
-      <p class="rec-stage-note" id="rec-stage-device"></p>
-      <p class="rec-stage-note" id="rec-stage-status" aria-live="polite"></p>
-      <button type="button" class="big" id="rec-stage-stop">■ Stop recording</button>
-    </div>
-  </section>
 
   <!-- Interview screen: setup (with mode picker), then the interview, then the end-of-session list -->
   <main class="app-main single" id="screen-practice">
@@ -184,11 +170,15 @@
               </label>
             </div>
             <label class="check" id="rec-video-row">
-              <input type="checkbox" id="rec-video"> Include video (shows only you, full screen, up to 7 minutes). A video is not kept in this browser: you download it.
+              <input type="checkbox" id="rec-video"> Include video (records your camera and microphone, up to 7 minutes). A video is not kept in this browser: you download it.
             </label>
             <div class="buttons">
               <button type="button" class="small" id="rec-btn">● Record</button>
               <button type="button" class="small" id="rec-stop" hidden>■ Stop recording</button>
+            </div>
+            <div class="rec-preview-box" id="rec-preview-box" hidden>
+              <video id="rec-preview" muted playsinline aria-label="Preview of your camera, shown only on this screen"></video>
+              <p class="hint">● Recording video. The file has only your camera and microphone. Everything else on screen stays as it is.</p>
             </div>
             <p class="rec-clock" id="rec-clock" hidden></p>
             <p class="hint" id="rec-device"></p>
