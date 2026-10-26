@@ -8,6 +8,13 @@ export function createSelfView(videoEl) {
   return {
     isOn: () => Boolean(stream),
 
+    // The live camera track, or null. The video recorder takes a COPY of it (track.clone()), so
+    // stopping the recording never switches self-view off.
+    getVideoTrack() {
+      const track = stream?.getVideoTracks()[0];
+      return track && track.readyState === 'live' ? track : null;
+    },
+
     // Returns { ok: true } or { ok: false, message } with something safe to show the user.
     async start() {
       if (stream) return { ok: true };
