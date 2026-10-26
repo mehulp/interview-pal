@@ -119,7 +119,7 @@
   <!-- 1. CONTEXT -->
   <section id="context">
     <h2>Who talks to whom</h2>
-    <p>There is no backend. The browser holds the app, the data and the interface, and reaches outside only when a feature needs it. About 4,200 lines of plain HTML, CSS and JavaScript, with no framework and no build step, plus unit tests for the pure logic.</p>
+    <p>There is no backend. The browser holds the app, the data and the interface, and reaches outside only when a feature needs it. About 5,400 lines of plain HTML, CSS and JavaScript, with no framework and no build step, plus unit tests for the pure logic.</p>
     <figure>
       <div class="fig-scroll">
         <svg viewBox="0 0 900 440" role="img" aria-label="The browser contains the app, local storage, the Web Speech API and the camera and microphone. Only the Anthropic API and Google's speech service sit outside it, and the app is delivered once from a static host." style="color: var(--fg-soft)">
@@ -209,12 +209,12 @@
     <p>The rules that matter live in small pure modules. The messy browser and network work sits behind adapters. The screens call both.</p>
     <figure>
       <div class="fig-scroll">
-        <svg viewBox="0 0 900 690" role="img" aria-label="Three stacked layers. Presentation modules call the domain logic and the adapters. Domain logic is pure and testable in Node." style="color: var(--fg-soft)">
+        <svg viewBox="0 0 900 728" role="img" aria-label="Three stacked layers. Presentation modules call the domain logic and the adapters. Domain logic is pure and testable in Node." style="color: var(--fg-soft)">
           <defs>
             <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker>
           </defs>
 
-          <rect class="band" x="10" y="10" width="850" height="194" rx="10"/>
+          <rect class="band" x="10" y="10" width="850" height="186" rx="10"/>
           <text class="t-b" x="26" y="34">Presentation</text><text class="t-mut" x="118" y="34">touches the page</text>
           <g class="t-mono">
             <rect class="box-in" x="26" y="54" width="124" height="32" rx="6"/><text x="88" y="74" text-anchor="middle">index.html</text>
@@ -226,55 +226,62 @@
             <rect class="box-in" x="298" y="100" width="124" height="32" rx="6"/><text x="360" y="120" text-anchor="middle">settings.js</text>
             <rect class="box-in" x="434" y="100" width="124" height="32" rx="6"/><text x="496" y="120" text-anchor="middle">summary.js</text>
             <rect class="box-add" x="26" y="146" width="124" height="32" rx="6"/><text x="88" y="166" text-anchor="middle">progressview.js</text>
+            <rect class="box-add" x="162" y="146" width="124" height="32" rx="6"/><text x="224" y="166" text-anchor="middle">recpanel.js</text>
+            <rect class="box-add" x="298" y="146" width="124" height="32" rx="6"/><text x="360" y="166" text-anchor="middle">recordingsview.js</text>
           </g>
           <text class="t-mut" x="590" y="64">Screens, buttons and what you see.</text>
           <text class="t-mut" x="590" y="82">practice.js runs the interview loop</text>
           <text class="t-mut" x="590" y="100">and connects everything else.</text>
-          <text class="t-mut" x="590" y="118">progressview.js draws the charts.</text>
+          <text class="t-mut" x="590" y="118">recpanel.js is the recorder panel.</text>
 
-          <rect class="band" x="10" y="254" width="850" height="194" rx="10"/>
-          <text class="t-b" x="26" y="278">Domain logic</text><text class="t-mut" x="132" y="278">pure: no page, no browser APIs, testable in Node</text>
+          <rect class="band" x="10" y="246" width="850" height="186" rx="10"/>
+          <text class="t-b" x="26" y="270">Domain logic</text><text class="t-mut" x="132" y="270">pure: no page, no browser APIs, testable in Node</text>
           <g class="t-mono">
-            <rect class="box" x="26" y="298" width="124" height="32" rx="6"/><text x="88" y="318" text-anchor="middle">parser.js</text>
-            <rect class="box" x="162" y="298" width="124" height="32" rx="6"/><text x="224" y="318" text-anchor="middle">sets.js</text>
-            <rect class="box" x="298" y="298" width="124" height="32" rx="6"/><text x="360" y="318" text-anchor="middle">session.js</text>
-            <rect class="box" x="434" y="298" width="124" height="32" rx="6"/><text x="496" y="318" text-anchor="middle">history.js</text>
-            <rect class="box" x="26" y="344" width="124" height="32" rx="6"/><text x="88" y="364" text-anchor="middle">phrases.js</text>
-            <rect class="box" x="162" y="344" width="124" height="32" rx="6"/><text x="224" y="364" text-anchor="middle">vocabulary.js</text>
-            <rect class="box" x="298" y="344" width="124" height="32" rx="6"/><text x="360" y="364" text-anchor="middle">interviewers.js</text>
-            <rect class="box-add" x="434" y="344" width="124" height="32" rx="6"/><text x="496" y="364" text-anchor="middle">delivery.js</text>
-            <rect class="box-add" x="26" y="390" width="124" height="32" rx="6"/><text x="88" y="410" text-anchor="middle">progress.js</text>
-            <rect class="box-add" x="162" y="390" width="124" height="32" rx="6"/><text x="224" y="410" text-anchor="middle">demoset.js</text>
+            <rect class="box" x="26" y="290" width="124" height="32" rx="6"/><text x="88" y="310" text-anchor="middle">parser.js</text>
+            <rect class="box" x="162" y="290" width="124" height="32" rx="6"/><text x="224" y="310" text-anchor="middle">sets.js</text>
+            <rect class="box" x="298" y="290" width="124" height="32" rx="6"/><text x="360" y="310" text-anchor="middle">session.js</text>
+            <rect class="box" x="434" y="290" width="124" height="32" rx="6"/><text x="496" y="310" text-anchor="middle">history.js</text>
+            <rect class="box" x="26" y="336" width="124" height="32" rx="6"/><text x="88" y="356" text-anchor="middle">phrases.js</text>
+            <rect class="box" x="162" y="336" width="124" height="32" rx="6"/><text x="224" y="356" text-anchor="middle">vocabulary.js</text>
+            <rect class="box" x="298" y="336" width="124" height="32" rx="6"/><text x="360" y="356" text-anchor="middle">interviewers.js</text>
+            <rect class="box-add" x="434" y="336" width="124" height="32" rx="6"/><text x="496" y="356" text-anchor="middle">delivery.js</text>
+            <rect class="box-add" x="26" y="382" width="124" height="32" rx="6"/><text x="88" y="402" text-anchor="middle">progress.js</text>
+            <rect class="box-add" x="162" y="382" width="124" height="32" rx="6"/><text x="224" y="402" text-anchor="middle">demoset.js</text>
+            <rect class="box-add" x="298" y="382" width="124" height="32" rx="6"/><text x="360" y="402" text-anchor="middle">recordings.js</text>
           </g>
-          <text class="t-mut" x="590" y="308">Decides things: what counts as a</text>
-          <text class="t-mut" x="590" y="326">question, no repeats, who</text>
-          <text class="t-mut" x="590" y="344">interviews you, how a score adds up,</text>
-          <text class="t-mut" x="590" y="362">filler words and pace, your streak.</text>
-          <text class="t-mut" x="590" y="388">Covered by 62 unit tests (npm test).</text>
+          <text class="t-mut" x="590" y="300">Decides things: what counts as a</text>
+          <text class="t-mut" x="590" y="318">question, no repeats, who</text>
+          <text class="t-mut" x="590" y="336">interviews you, how a score adds up,</text>
+          <text class="t-mut" x="590" y="354">filler words, your streak, recording rules.</text>
+          <text class="t-mut" x="590" y="380">Covered by 88 unit tests (npm test).</text>
 
-          <rect class="band" x="10" y="498" width="850" height="148" rx="10"/>
-          <text class="t-b" x="26" y="522">Adapters</text><text class="t-mut" x="100" y="522">wrap the browser and outside services</text>
+          <rect class="band" x="10" y="482" width="850" height="186" rx="10"/>
+          <text class="t-b" x="26" y="506">Adapters</text><text class="t-mut" x="100" y="506">wrap the browser and outside services</text>
           <g class="t-mono">
-            <rect class="box-ext" x="26" y="540" width="124" height="32" rx="6"/><text x="88" y="560" text-anchor="middle">storage.js</text>
-            <rect class="box-ext" x="162" y="540" width="124" height="32" rx="6"/><text x="224" y="560" text-anchor="middle">speech.js</text>
-            <rect class="box-ext" x="298" y="540" width="124" height="32" rx="6"/><text x="360" y="560" text-anchor="middle">claude.js</text>
-            <rect class="box-ext" x="434" y="540" width="124" height="32" rx="6"/><text x="496" y="560" text-anchor="middle">avatar.js</text>
-            <rect class="box-ext" x="26" y="586" width="124" height="32" rx="6"/><text x="88" y="606" text-anchor="middle">selfview.js</text>
-            <rect class="box-ext" x="162" y="586" width="124" height="32" rx="6"/><text x="224" y="606" text-anchor="middle">miccheck.js</text>
+            <rect class="box-ext" x="26" y="526" width="124" height="32" rx="6"/><text x="88" y="546" text-anchor="middle">storage.js</text>
+            <rect class="box-ext" x="162" y="526" width="124" height="32" rx="6"/><text x="224" y="546" text-anchor="middle">speech.js</text>
+            <rect class="box-ext" x="298" y="526" width="124" height="32" rx="6"/><text x="360" y="546" text-anchor="middle">claude.js</text>
+            <rect class="box-ext" x="434" y="526" width="124" height="32" rx="6"/><text x="496" y="546" text-anchor="middle">avatar.js</text>
+            <rect class="box-ext" x="26" y="572" width="124" height="32" rx="6"/><text x="88" y="592" text-anchor="middle">selfview.js</text>
+            <rect class="box-ext" x="162" y="572" width="124" height="32" rx="6"/><text x="224" y="592" text-anchor="middle">miccheck.js</text>
+            <rect class="box-add" x="298" y="572" width="124" height="32" rx="6"/><text x="360" y="592" text-anchor="middle">recorder.js</text>
+            <rect class="box-add" x="434" y="572" width="124" height="32" rx="6"/><text x="496" y="592" text-anchor="middle">recordstore.js</text>
+            <rect class="box-add" x="26" y="618" width="124" height="32" rx="6"/><text x="88" y="638" text-anchor="middle">playback.js</text>
           </g>
-          <text class="t-mut" x="590" y="552">The only files that touch</text>
-          <text class="t-mut" x="590" y="570">localStorage, voices, the API,</text>
-          <text class="t-mut" x="590" y="588">the camera and the network.</text>
+          <text class="t-mut" x="590" y="536">The only files that touch</text>
+          <text class="t-mut" x="590" y="554">localStorage, IndexedDB, voices,</text>
+          <text class="t-mut" x="590" y="572">the microphone, the API, the camera</text>
+          <text class="t-mut" x="590" y="590">and the network.</text>
 
-          <line class="edge" x1="700" y1="204" x2="700" y2="254" marker-end="url(#a2)"/>
-          <text class="t-mut" x="708" y="234">calls</text>
-          <polyline class="edge" points="860,85 884,85 884,570 860,570" marker-end="url(#a2)"/>
-          <text class="t-mut" transform="translate(874,330) rotate(-90)" text-anchor="middle">calls</text>
-          <line class="edge" x1="700" y1="498" x2="700" y2="448" marker-end="url(#a2)"/>
-          <text class="t-mut" x="708" y="478">reuse small helpers</text>
+          <line class="edge" x1="700" y1="196" x2="700" y2="246" marker-end="url(#a2)"/>
+          <text class="t-mut" x="708" y="226">calls</text>
+          <polyline class="edge" points="860,85 884,85 884,542 860,542" marker-end="url(#a2)"/>
+          <text class="t-mut" transform="translate(874,286) rotate(-90)" text-anchor="middle">calls</text>
+          <line class="edge" x1="700" y1="482" x2="700" y2="432" marker-end="url(#a2)"/>
+          <text class="t-mut" x="708" y="462">reuse small helpers</text>
 
-          <rect class="box-add" x="26" y="660" width="26" height="16" rx="4"/>
-          <text class="t-mut" x="60" y="672">dashed: added in v1.1</text>
+          <rect class="box-add" x="26" y="694" width="26" height="16" rx="4"/>
+          <text class="t-mut" x="60" y="706">dashed: added in v1.1 to v1.3</text>
         </svg>
       </div>
       <figcaption>Presentation calls down into both lower layers. Adapters may reuse a small helper from the domain layer, such as the shape of a question set. Domain modules never reach back up.</figcaption>
@@ -377,8 +384,9 @@
           <text class="t-mut" x="448" y="162" text-anchor="middle">a snapshot, not a link</text>
           <text class="t-mut" x="30" y="218">Unique within a set. Repeats across sets are dropped at session start.</text>
           <text class="t-mut" x="510" y="218">delivery: filler words, pace, timer use (numbers only, no audio).</text>
+          <text class="t-mut" x="30" y="236">Saved recordings (v1.3) live apart, in IndexedDB: details and audio in two stores.</text>
 
-          <text class="t-b" x="10" y="248">Four localStorage keys, for this browser and this address only</text>
+          <text class="t-b" x="10" y="248">Four localStorage keys (and recordings in IndexedDB), for this browser and this address only</text>
           <rect class="box" x="10" y="258" width="205" height="62" rx="8"/>
           <text class="t-mono" x="112" y="280" text-anchor="middle">interviewpal.sets</text><text class="t-mut" x="112" y="300" text-anchor="middle">question sets</text>
           <rect class="box" x="235" y="258" width="205" height="62" rx="8"/>

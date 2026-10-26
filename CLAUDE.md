@@ -8,6 +8,8 @@ Build and maintain the app described in `docs/requirements.md`. Read that file f
 
 **v1.1 ("make it publishable") is complete** (steps 12 to 16 in `docs/requirements.md`): published interviewers with a NOTICE, the demo set, delivery analytics, the progress view and streak, and repo polish (tests, GitHub Action, README opening, changelog, pre-publish checklist). Tags `v1.0.0` (commit `7417913`) and `v1.1.0` are pushed, the site is live, and the README has its screenshots (the demo GIF was skipped).
 
+**v1.3 (record and replay answers) is built** (steps 20 to 25 in `docs/requirements.md`): optional recording with a target length, an unsaved-recording panel on every tab, saving to IndexedDB, and a Recordings card on the History tab. Not yet tagged or pushed. The browser checks were done in headless Chromium with a fake microphone; real-microphone checks are the owner's (listed in the requirements).
+
 **Also done: a start/stop script** (`scripts/interviewpal.sh` and `scripts/devserver.py`) so the owner can run the app without remembering commands. Documented in the README under "Start and stop". The owner confirmed it opens Chrome on the Windows side, and added the optional `interviewpal` alias to `~/.bashrc`.
 
 For any new work: agree the change with the owner, update `docs/requirements.md` first (and `README.md` if users will notice it), then build it in small steps and commit after each one.
@@ -48,14 +50,14 @@ Also built, beyond Practice and Coach: question sets with JSON export and import
 
 - `scripts/interviewpal.sh` starts, stops and reports on the local server; `scripts/devserver.py` is the small standard-library server behind it (127.0.0.1 only, `Cache-Control: no-store`). Its process ID and log live in `.run/`, which is git-ignored.
 - `index.html` holds all four screens (Interview, Questions, History, Settings); `src/ui.js` switches between them. `styles.css` holds all styles.
-- Logic that needs no page lives in small modules that can be tested on their own with Node: `parser.js` (the text rules), `sets.js`, `session.js`, `history.js`, `vocabulary.js`, `interviewers.js`, `phrases.js`, and from v1.1 `delivery.js` and `progress.js`.
+- Logic that needs no page lives in small modules that can be tested on their own with Node: `parser.js` (the text rules), `sets.js`, `session.js`, `history.js`, `vocabulary.js`, `interviewers.js`, `phrases.js`, and from v1.1 `delivery.js`, `progress.js` and `recordings.js`.
 - Everything saved in the browser goes through `src/storage.js`, except recordings, which go through `src/recordstore.js` (IndexedDB, because audio does not fit localStorage). Settings are saved with `saveSettings({ key: value })`, which merges, so never save a whole copy of the settings object.
 - Anything a user's notes, answers or Claude's replies put on screen must be set with `textContent`, never as HTML.
 - `src/claude.js` is the only file that talks to the Anthropic API, and Practice mode never loads it (Coach loads it on demand).
 
 ## Testing
 
-- Unit tests are in `tests/` (Node's built-in test runner) for the pure modules: parser, sets, session, history, vocabulary, delivery and progress. Run `npm test` (same as `node --test tests/*.test.js`) and `npm run check`. `package.json` has no dependencies; it only sets `"type": "module"` and the two scripts. A GitHub Action runs both on every push. Add or update tests whenever a pure module changes. The speech recogniser and the screens are checked by hand in Chrome.
+- Unit tests are in `tests/` (Node's built-in test runner) for the pure modules: parser, sets, session, history, vocabulary, delivery, progress and recordings. Run `npm test` (same as `node --test tests/*.test.js`) and `npm run check`. `package.json` has no dependencies; it only sets `"type": "module"` and the two scripts. A GitHub Action runs both on every push. Add or update tests whenever a pure module changes. The speech recogniser and the screens are checked by hand in Chrome.
 - Syntax check: `npm run check` (or `for f in src/*.js; do node --check $f; done`).
 - Voice, microphone and camera behaviour can only be checked in a real browser.
 

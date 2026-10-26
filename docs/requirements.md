@@ -4,7 +4,7 @@ A daily mock-interview practice tool. You load your own Q&A notes and an animate
 
 ## Status
 
-**v1 is complete.** All eleven build steps are done (see "Build order"). The owner tested the app in Chrome on a laptop (Practice and Coach modes, question sets, History, the interviewer faces, self-view and voice answers). It is also tried on a real phone and works well, and it is published on GitHub Pages at https://mehulp.github.io/interview-pal/. Not yet verified: Safari and iPhone. Items in "Deferred to v2" and "Later" are not built. **v1.1 ("make it publishable") is complete**; see the section of that name below. It is tagged `v1.1.0`, and the end of v1 is tagged `v1.0.0` (commit `7417913`). The README screenshots are in (the demo GIF was skipped). **v1.3 (record and replay answers) is being built**; see "v1.3" below. **v1.2 is built** (not yet tagged or pushed): the model answer on the Interview screen, the tidier "Try the demo" card, and the same question in more than one set. See "v1.2" below.
+**v1 is complete.** All eleven build steps are done (see "Build order"). The owner tested the app in Chrome on a laptop (Practice and Coach modes, question sets, History, the interviewer faces, self-view and voice answers). It is also tried on a real phone and works well, and it is published on GitHub Pages at https://mehulp.github.io/interview-pal/. Not yet verified: Safari and iPhone. Items in "Deferred to v2" and "Later" are not built. **v1.1 ("make it publishable") is complete**; see the section of that name below. It is tagged `v1.1.0`, and the end of v1 is tagged `v1.0.0` (commit `7417913`). The README screenshots are in (the demo GIF was skipped). **v1.3 (record and replay answers) is built** (not yet tagged or pushed); see "v1.3" below. **v1.2 is built** (not yet tagged or pushed): the model answer on the Interview screen, the tidier "Try the demo" card, and the same question in more than one set. See "v1.2" below.
 
 ## Decisions (defaults confirmed)
 
@@ -379,16 +379,21 @@ An attempt is linked to a question by the question's **normalised text** (the sa
 - Audio and details are saved together in one step, so there is no half-saved attempt. The details are in a separate store from the audio so lists stay light.
 - **The recording feature adds no audio upload and no network request.** It is separate from voice answers: when the user presses 🎤 Answer, the browser's speech recogniser works exactly as before, and in Chrome that sends audio to Google's speech service (see the notes above and the README). The app makes no claim that audio never leaves the browser.
 - Delivery analytics are unchanged: they use only the answer text and timings and never process audio.
-- Recording and voice answers can be used at the same time. Both use the microphone; this has not been tested with every headset.
+- Recording and voice answers can be used at the same time. Both use the microphone; this has not been tested with every headset. **Repeat question** while recording would record the interviewer's voice too, so record after the question has been asked.
 
 ### Build steps
 
 20. **Docs and rules** for this feature (this section, README, CLAUDE.md, architecture). (done)
-21. **`src/recordings.js` and tests.** Pure: choosing a supported audio format, recorder states, time and target maths, question snapshot, retry rule, validation, file names, grouping.
-22. **`src/recordstore.js`.** The IndexedDB adapter: details and audio in separate stores, saved and deleted together, listing without audio, plain error kinds (unavailable, full, other), persistent-storage request.
-23. **`src/recorder.js` and the recorder panel** (record, stop, timer and target alert, device name, errors, late permission answers).
-24. **Review panel, saving and lifecycle:** shared panel, Save, Discard, Download, Retry rules, failed-save retry, page-exit warning, hooks into the practice flow, saved attempts for the current question.
-25. **History "Recordings" card and playback** (seeking, one player at a time, object URLs released), docs, changelog and architecture updates.
+21. (done) **`src/recordings.js` and tests.** Pure: choosing a supported audio format, recorder states, time and target maths, question snapshot, retry rule, validation, file names, grouping.
+22. (done) **`src/recordstore.js`.** The IndexedDB adapter: details and audio in separate stores, saved and deleted together, listing without audio, plain error kinds (unavailable, full, other), persistent-storage request.
+23. (done) **`src/recorder.js` and the recorder panel** (record, stop, timer and target alert, device name, errors, late permission answers).
+24. (done) **Review panel, saving and lifecycle:** shared panel, Save, Discard, Download, Retry rules, failed-save retry, page-exit warning, hooks into the practice flow, saved attempts for the current question.
+25. (done) **History "Recordings" card and playback** (seeking, one player at a time, object URLs released), docs, changelog and architecture updates.
+
+### How it was checked, and what is still open (v1.3)
+
+- **Checked in headless Chromium with a fake microphone:** record, target alert, stop, replay, seeking, save, reload, History listing, playback, download, delete; question association (Next while recording, Retry only for the original question); Skip, End session and tab switching; the page-exit warning; pending permission answered late, repeated clicks, Cancel; permission denied and no microphone; a chosen microphone that is missing (fallback named); microphone lost mid-recording; the 10-minute limit; failed save (quota) then retry; unavailable storage; object URLs released on discard, replace, delete and redraw; reduced motion; phone width; no network requests. Both the WebM/Opus format (Chrome's default) and the MP4 format (forced, as Safari would use) were recorded and replayed with seeking.
+- **Still needs a real microphone and browser:** how a real headset sounds and behaves; recording and voice dictation together; a Bluetooth headset in call mode; Safari, Firefox and phones (only Chromium was run); a very long (10-minute) recording; persistent storage on a real profile.
 
 ### Acceptance criteria for v1.3
 

@@ -235,6 +235,7 @@ Things to know:
 - **They can be lost.** Clearing your browser's site data deletes them, and a browser can also clear storage when the disk is nearly full. The app asks the browser to keep them (persistent storage) but the browser may say no, and the Recordings card tells you which. **Use Download for any attempt you want to keep.**
 - **An unsaved recording is not recovered** after a crash or if the browser is closed. The browser warns you before you leave the page, but that is only a warning.
 - **The recording feature does not upload anything.** It is separate from voice answers: when you use the 🎤 **Answer** button, the browser's recogniser works as it always did, and in Chrome that sends your speech to Google. You can use both at once.
+- Press **Repeat question** only when you are not recording: the interviewer's voice would be recorded too.
 - Recordings are not part of **Export sets**. Questions you edit or delete keep their recordings, which stay under the original wording.
 
 ## Your data and backups
@@ -322,6 +323,7 @@ src/
   recordstore.js       saved recordings in IndexedDB
   recpanel.js          the recorder panel and the shared review panel
   recordingsview.js    the Recordings card and playback
+  playback.js          plays a recording and lets go of its audio afterwards
   parser.js            reads files and finds the questions (no AI)
   sets.js              question set rules (no repeats within a set, move, import)
   session.js           question order, difficulty rules, timer
@@ -363,7 +365,7 @@ There is no build step. The code is plain JavaScript modules, loaded directly by
 
 ## Tests
 
-The pure logic (reader, sets, sessions, history, vocabulary, delivery, progress) has unit tests that need only Node 20 or newer, no install:
+The pure logic (reader, sets, sessions, history, vocabulary, delivery, progress, recording rules) has unit tests that need only Node 20 or newer, no install:
 
 ```bash
 npm run check   # syntax check of every source file
