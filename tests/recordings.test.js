@@ -4,6 +4,8 @@ import {
   MIME_CANDIDATES, MAX_AUDIO_BYTES, pickMimeType, extensionFor, clampTarget, targetLabel, formatClock, timeState,
   questionKey, makeSnapshot, canRetry, recordAvailability, nextRecorderState, canRecorderDo, describeMicError,
   describeStoreError, describePersistence, validateAttempt, downloadName, groupByQuestion,
+  kindOf, mimeCandidatesFor, maxDurationMs, canSaveInBrowser, isAtRisk, describeMediaError,
+  MAX_RECORDING_MS, MAX_VIDEO_MS, VIDEO_MIME_CANDIDATES,
 } from '../src/recordings.js';
 
 test('the first supported format is used, in order, and nothing is hard-coded', () => {
@@ -144,4 +146,60 @@ test('attempts are grouped by question, newest first, joined by the normalised k
   assert.deepEqual(groups.map((g) => g.attempts.map((x) => x.id)), [[2, 4], [3, 1]]);
   assert.equal(groups[1].questionText, 'one?  '); // the newest attempt's wording is shown
   assert.deepEqual(groupByQuestion([]), []);
+});
+
+/* ---------- Video (v1.4) ---------- */
+
+test('the kind comes from the format the browser really used', () => {
+  assert.equal(kindOf('video/webm;codecs=vp9,opus'), 'video');
+  assert.equal(kindOf('video/mp4'), 'video');
+  assert.equal(kindOf('audio/webm;codecs=opus'), 'audio');
+  assert.equal(kindOf(''), 'audio');
+  assert.equal(kindOf(undefined), 'audio');
+});
+
+test('video uses its own format list and the first supported one wins', () => {
+  assert.equal(mimeCandidatesFor('video'), VIDEO_MIME_CANDIDATES);
+  assert.equal(mimeCandidatesFor('audio'), MIME_CANDIDATES);
+  assert.equal(pickMimeType((t) => t === 'video/webm', VIDEO_MIME_CANDIDATES), 'video/webm');
+  assert.equal(pickMimeType((t) => t.startsWith('video/mp4'), VIDEO_MIME_CANDIDATES), 'video/mp4;codecs=avc1.42E01E,mp4a.40.2');
+  assert.equal(pickMimeType(() => false, VIDEO_MIME_CANDIDATES), '');
+});
+
+test('video is limited to 7 minutes, audio to 10', () => {
+  assert.equal(maxDurationMs('video'), 7 * 60 * 1000);
+  assert.equal(maxDurationMs('audio'), 10 * 60 * 1000);
+  assert.equal(MAX_VIDEO_MS < MAX_RECORDING_MS, true);
+});
+
+test('video is never saved in the browser, and is refused if something tries', () => {
+  assert.equal(canSaveInBrowser('video'), false);
+  assert.equal(canSaveInBrowser('audio'), true);
+  const refused = validateAttempt({ mimeType: 'video/webm;codecs=vp9,opus', size: 1000, durationMs: 5000 });
+  assert.equal(refused.ok, false);
+  assert.match(refused.message, /Download/);
+  assert.equal(validateAttempt({ mimeType: 'audio/webm', size: 1000, durationMs: 5000 }).ok, true);
+});
+
+test('file extensions for video follow the real format', () => {
+  assert.equal(extensionFor('video/webm;codecs=vp9,opus'), 'webm');
+  assert.equal(extensionFor('video/mp4'), 'mp4');
+  assert.equal(extensionFor('audio/mp4'), 'm4a');
+  assert.equal(downloadName({ questionText: 'Why?', createdAt: new Date(2026, 9, 26, 9, 5).getTime(), mimeType: 'video/mp4' }), 'interviewpal-why-2026-10-26-0905.mp4');
+});
+
+test('camera messages are specific; audio messages are unchanged', () => {
+  assert.match(describeMediaError('NotAllowedError', 'video'), /Camera or microphone/);
+  assert.match(describeMediaError('NotAllowedError', 'video'), /Audio-only/);
+  assert.match(describeMediaError('NotFoundError', 'video'), /camera or microphone/);
+  assert.match(describeMediaError('NotReadableError', 'video'), /another program/i);
+  assert.equal(describeMediaError('NotAllowedError', 'audio'), describeMicError('NotAllowedError'));
+  assert.match(describeMediaError('Whatever', 'video'), /could not be used/);
+});
+
+test('an attempt is at risk until it has been saved or downloaded', () => {
+  assert.equal(isAtRisk(null), false);
+  assert.equal(isAtRisk({ downloaded: false }), true);
+  assert.equal(isAtRisk({}), true);
+  assert.equal(isAtRisk({ downloaded: true }), false);
 });

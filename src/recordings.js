@@ -3,7 +3,10 @@
 // saved audio is in recordstore.js.
 import { normalize } from './sets.js';
 
-export const MAX_RECORDING_MS = 10 * 60 * 1000; // a recording stops by itself after 10 minutes
+export const MAX_RECORDING_MS = 10 * 60 * 1000; // an audio recording stops by itself after 10 minutes
+export const MAX_VIDEO_MS = 7 * 60 * 1000; // a video recording stops by itself after 7 minutes
+export const AUDIO_BITS_PER_SECOND = 64000;
+export const VIDEO_BITS_PER_SECOND = 1000000; // modest quality: about 7 MB a minute
 export const MAX_AUDIO_BYTES = 25 * 1024 * 1024; // refuse to save anything bigger than this
 export const TARGET_PRESETS = [0, 60, 90, 120, 180]; // seconds; 0 = no target
 export const MIN_CUSTOM_TARGET = 10;
@@ -12,6 +15,20 @@ export const MAX_CUSTOM_TARGET = 600;
 // Formats to try, best first. The first one this browser can record is used; the browser's own
 // default is the last resort. Nothing is hard-coded: the format that was really used is saved.
 export const MIME_CANDIDATES = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
+export const VIDEO_MIME_CANDIDATES = [
+  'video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm',
+  'video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4',
+];
+
+// 'audio' or 'video', from the format the browser really used.
+export const kindOf = (mimeType) => (String(mimeType || '').toLowerCase().startsWith('video/') ? 'video' : 'audio');
+export const mimeCandidatesFor = (kind) => (kind === 'video' ? VIDEO_MIME_CANDIDATES : MIME_CANDIDATES);
+export const maxDurationMs = (kind) => (kind === 'video' ? MAX_VIDEO_MS : MAX_RECORDING_MS);
+// Videos are never kept by the app: the only way to keep one is the user's own Download.
+export const canSaveInBrowser = (kind) => kind !== 'video';
+// Something the user would lose by leaving the page or discarding: anything not yet saved or downloaded.
+export const isAtRisk = (attempt) => Boolean(attempt) && !attempt.downloaded;
+
 
 // isSupported(type) is MediaRecorder.isTypeSupported. Returns '' to let the browser choose.
 export function pickMimeType(isSupported, candidates = MIME_CANDIDATES) {
@@ -22,6 +39,7 @@ export function pickMimeType(isSupported, candidates = MIME_CANDIDATES) {
 export function extensionFor(mimeType) {
   const type = String(mimeType || '').toLowerCase();
   if (type.includes('webm')) return 'webm';
+  if (type.startsWith('video/') && type.includes('mp4')) return 'mp4';
   if (type.includes('mp4') || type.includes('m4a') || type.includes('aac')) return 'm4a';
   if (type.includes('ogg')) return 'ogg';
   if (type.includes('wav')) return 'wav';
@@ -104,6 +122,24 @@ export const canRecorderDo = (state, event) => Boolean(TRANSITIONS[state]?.[even
 
 /* ---------- Plain messages for failures ---------- */
 
+// The same, when the camera was being opened as well.
+export function describeMediaError(name, kind = 'audio') {
+  if (kind !== 'video') return describeMicError(name);
+  switch (name) {
+    case 'NotAllowedError':
+    case 'SecurityError':
+      return 'Camera or microphone access was blocked. Allow both in the address bar, then try again. Audio-only recording is still available.';
+    case 'NotFoundError':
+    case 'OverconstrainedError':
+      return 'No camera or microphone was found. Connect one, or record audio only.';
+    case 'NotReadableError':
+    case 'AbortError':
+      return 'The camera or microphone could not be started. Another program may be using it.';
+    default:
+      return describeMicError(name);
+  }
+}
+
 // error name -> something safe to show. `name` is the DOMException name.
 export function describeMicError(name) {
   switch (name) {
@@ -144,6 +180,7 @@ export function describePersistence(status) {
 
 // Check a finished recording before it is saved. Returns { ok: true } or { ok: false, message }.
 export function validateAttempt({ mimeType, size, durationMs }) {
+  if (!canSaveInBrowser(kindOf(mimeType))) return { ok: false, message: 'Videos are not stored in this browser. Download it to keep it.' };
   if (!String(mimeType || '').toLowerCase().startsWith('audio/')) return { ok: false, message: 'That is not an audio recording, so it was not saved.' };
   if (!size || size <= 0) return { ok: false, message: 'The recording is empty, so there is nothing to save.' };
   if (size > MAX_AUDIO_BYTES) return { ok: false, message: 'The recording is too big to save (over 25 MB).' };
