@@ -2,6 +2,17 @@
 
 All notable changes to InterviewPal. Dates are when the work was finished.
 
+## Unreleased (UX redesign — Step 6: Question library and import preview)
+
+- **A library instead of a page of forms:** pick a set, search and filter its questions (text, topic, complexity, including untagged), read the whole question and reference in a detail view, and edit with an explicit **Edit → Save / Cancel**. On a phone: list first, then the question with a Back button.
+- **Honest saving:** "Saved" appears only after the browser really stored the change. If it cannot, your draft stays, with Try again, Copy and Download. Switching question, set or tab with unsaved edits asks Save, Discard or Stay.
+- **Validation:** a question can't be empty or repeat another in the same set; the same question is fine in different sets.
+- **Delete with Undo** (same ID, content and position; no timer), and a **warning before moving** a question into a set that already has it.
+- **Practise this set** opens setup with just that set ticked, without starting anything or touching other choices.
+- **Import preview:** notes are read, then every found question is listed (duplicates marked, unrecognised text shown) for you to select and confirm. The destination is fixed when you start, and checked again at confirmation. Cancel changes nothing.
+- **Set actions** (rename, clear, delete, **Export all sets**) moved into a menu. Backup file format unchanged; backup import and the demo are now kept only if saving succeeds.
+- Test helper: when "Start answer" does not reach "Finish answer" the lifecycle check now prints what the page looked like.
+
 ## Unreleased (UX redesign — Step 5: Simpler interview setup)
 
 - **One setup screen, three sections:** Questions, Practice approach, and Response and devices, with the less common options under **More options**. A summary above Start says what you are about to do, including the time limit and feedback.

@@ -819,6 +819,31 @@ Unit (`tests/library.test.js`): filtering and search (topic, complexity, untagge
 
 Browser zoom is emulated with a narrow window at device scale 2 (not the real zoom feature), and the phone is an emulated viewport. Clipboard behaviour and a real mobile keyboard need a person. A saved recording is still linked to a question by its text: editing the text means earlier recordings may no longer appear under it (they stay in History and on the Recordings card), and the screen says so when the text of a question is changed.
 
+### How it was checked (Step 6)
+
+- **Unit tests** (`npm test`, 157; 16 new in `tests/library.test.js`): filtering and search, validation and the duplicate rules, dirty detection, edit/add/delete/undo/move/clear on copies (the originals are never mutated), undo refusals, the import preview and the re-checked commit. **Syntax** (`npm run check`) is clean.
+- **Scripted browser checks** (`npm run test:browser`, headless Chromium): all nine suites pass (624 checks) on the final code. The new `tests/browser/library.mjs` (139 checks) covers browsing and selection by ID, search and every filter, Edit/Save/Cancel and focus, validation, a failed save with retry, copy and download, the guards (Save, Discard, Stay, Escape, and a failed Save that does not navigate), a filter hiding a question being edited, delete and Undo (no timer, failures, a refused conflicting Undo), move conflicts, the Set actions menu from the keyboard, Practise this set (no media request, no preset or other setup change, no session), the import preview (destination fixed while another set is opened, duplicates, unrecognised text, selection, Cancel, three quick clicks on Confirm, a duplicate made meanwhile, a deleted destination, a failed save, a file that cannot be read), backup compatibility (merge, within-set duplicates, same question across sets, invalid and unsaveable files change nothing), old data without IDs, keyboard order, a 390px phone (list, detail, Back, editor), a 640px window at double scale, and the contrast audit in all four themes. The Step 1 questions check was adapted to the new markup, and the other suites were updated where they used the old forms.
+- **Representative screenshots** (desktop list and detail, editor, import preview; phone list, detail and editor) are in `docs/images/library/`.
+- **Simulated, not real:** the phone is an emulated viewport, "200% zoom" is a narrow window at device scale 2 (not the browser's zoom), the clipboard is stubbed to refuse (so the copy fallback is what is tested), and no real mobile keyboard was used.
+
+### The intermittent Step 4 lifecycle failure (unresolved)
+
+It showed once in a full run under load: "Start answer" did not reach "Finish answer" within 10 seconds in the Coach scenario. It did not reproduce in ten later runs of the lifecycle check (three repeats in a row and seven full runs). Nothing was hidden: the assertion is unchanged (same selector, same 10 second wait, no retry, no extra sleep). What was added: if it happens again, the helper now throws with what the page looked like just before the click and at the failure (the main button's HTML, the hint, the progress, the clocks, the speech and recording lines, whether a pending recording blocked the start, which screen was open, the focused element) and the page errors. The cause is **not known**. Reported separately here rather than fixed.
+
+### Still to check by hand (Step 6)
+
+1. Add, edit, save and cancel questions; try an empty question and a repeated one. Reload and check they are still there.
+2. With some unsaved text in the editor, try to switch question, set and tab, and choose Save, Discard and Stay in turn.
+3. Delete a question, wait a while, and Undo: it returns in the same place. Delete a few and use Undo only on the last.
+4. Move a question into a set that already has it and read the warning.
+5. Press **Practise this set**: setup opens with only that set ticked, nothing starts, and no microphone or camera prompt appears.
+6. Import a real Word, PDF and Markdown file: the preview lists the questions, duplicates are marked, and nothing is added until you confirm.
+7. On your phone: the list, the question view with Back, the editor with the keyboard open, and the preview are all usable.
+8. In Chrome's zoom at 200%: the library stays usable with no sideways scrolling.
+9. Use a screen reader or keyboard only through Add, Save, Delete and Undo, and check that focus lands sensibly each time.
+10. In a private window (where storage may be limited) check that a failed save shows the Try again, Copy and Download options.
+11. Safari and iPhone remain untested.
+
 ## Acceptance criteria for v1
 
 - With no API key, load a .docx with 10 questions, review the extracted pairs, and run a Practice session with difficulty, timer and order.
