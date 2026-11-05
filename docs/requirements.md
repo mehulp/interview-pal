@@ -478,6 +478,12 @@ First step of the redesign proposed in `docs/InterviewPal_UX_Code_Review.md`. It
 
 Unit: the leave rule and the unfinished-answer rule (`session.js`), the incomplete flag and its exclusion from scores, self-mark totals, weak-topic analysis and delivery totals (`history.js`, `progress.js`, `delivery.js`), and self-view with a deferred permission (`selfview.js`). Browser (scripted, headless Chromium): Cancel keeps answer, timer and recording; OK saves an incomplete answer; no duplicate History after leaving twice; End while speech is still arriving; Next then End (original outcome, no advance, no Coach request); double End; a recording with no text; startup cancelled and double-clicked; late camera permission; failed save and retry; import with a changed or deleted destination, and button restoration.
 
+### How it was checked (Step 1)
+
+Unit tests (113 in all) and scripted headless-Chromium checks passed for: Cancel keeping answer, timer and recording; OK saving an incomplete draft with the words that arrived late; no duplicate History when leaving again or from the summary or setup (no prompt there); Next, Skip and time-limit expiry followed by End (original outcome kept, no next question, no marking, no Coach request, score left unset, late Coach reply ignored); a double-clicked End and Start; a recording with no words (no result, recording kept with its original question, microphone released); startup cancelled by leaving; a late camera permission released; a failed save reported with retry; notes import with the set changed or deleted during reading, and a read failure. The recording, video, model-answer and shared-question features were re-checked as regression.
+
+**Still needs a real browser and hardware:** the confirmation box as Chrome shows it; ending while really speaking into a microphone (the speech engine was replaced by a stand-in whose last words arrive late); allowing a real camera prompt after ending; a blocked or full real browser storage.
+
 ### Limits of this step
 
 The confirmation is the browser's plain OK/Cancel box (labelled buttons come with the later layout work). A session that was ended cannot be resumed. Exact links between recordings and individual session results are not added. Summary wording such as "questions asked" is unchanged.

@@ -329,6 +329,7 @@
     </figure>
     <div class="cols">
       <div class="card"><h3>The finishing phase</h3><p>Chrome delivers the last words a moment after you stop. Next waits up to about 1.5 seconds so nothing is cut off, and blocks double clicks while it waits.</p></div>
+      <div class="card"><h3>Ending happens once</h3><p>Every way of ending goes through one function that returns the same promise if it is already running. An answer already being handed in finishes first, with its own outcome, and does not go on to mark, ask Coach or ask the next question. An answer that was started but not handed in is saved as incomplete and is never scored.</p></div>
       <div class="card"><h3>The epoch token</h3><p>Every question run gets an id. If you skip, end the session or the timer fires, older waiting code sees a stale id and quietly stops. The recogniser uses the same idea, so an old timeout cannot end a newer listening session.</p></div>
     </div>
   </section>

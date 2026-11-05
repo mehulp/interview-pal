@@ -119,6 +119,7 @@ The four tabs at the top are **Interview**, **Questions**, **History** and **Set
    - You get a short pause, then the interviewer asks the first question. The question also appears as a caption.
    - Press **🎤 Answer** and speak, or just type. The words appear in the box, and you can correct them. Press **Stop** (or just **Next**) when you finish.
    - **Repeat question** and **Skip** are available except on Hard. The timer counts down when the difficulty has one, and the interviewer moves on when it runs out.
+   - **Leaving mid-session asks first.** If you click another tab during an interview, you are asked: **Cancel** carries on exactly as it was (answer, timer and recording untouched), **OK** ends the session and leaves. **End session** works the same way. An answer you had started but not handed in is kept in History as **incomplete** (it is not scored or counted in your self-marks, weak topics or delivery figures).
    - **Show answer / Hide answer** shows your saved model answer in a panel under the question (it is never read aloud, and the timer keeps running). The button only affects the current session. If you used it, the session is marked in History as "model answer visible", so you can tell those sessions from closed-book ones.
 4. **After the session.** You see the summary straight away, and the session is saved to the **History** tab. Open any past session to read your answers and feedback, delete one, or clear the history.
 

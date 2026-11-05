@@ -12,6 +12,8 @@ Build and maintain the app described in `docs/requirements.md`. Read that file f
 
 **v1.4 (record video, download only) is built** (steps 26 to 30): an unticked-by-default Include video box, a small mirrored preview in the recorder panel while recording (the screen is never taken over; the file holds only the camera and microphone; up to 7 minutes), and a review with Download only. Videos are never stored by the app. Not yet tagged or pushed; real-camera checks are the owner's (listed in the requirements).
 
+**UX redesign Step 1 (reliability) is built** (unreleased, no version assigned; see `docs/InterviewPal_UX_Code_Review.md` and the matching section in `docs/requirements.md`): leaving a session asks first, one idempotent end path, unfinished answers kept as `incomplete`, guarded startup, camera requests that cannot reopen late, honest save and import on the Questions screen. Steps 2 to 6 of the review (theme, layout, answer lifecycle, setup, question library) are not started.
+
 **Also done: a start/stop script** (`scripts/interviewpal.sh` and `scripts/devserver.py`) so the owner can run the app without remembering commands. Documented in the README under "Start and stop". The owner confirmed it opens Chrome on the Windows side, and added the optional `interviewpal` alias to `~/.bashrc`.
 
 For any new work: agree the change with the owner, update `docs/requirements.md` first (and `README.md` if users will notice it), then build it in small steps and commit after each one.

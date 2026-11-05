@@ -126,10 +126,11 @@ stateDiagram-v2
     finished --> setup: Practise again, or leave the tab
 ```
 
-Two details keep this safe:
+Three details keep this safe:
 
 - **`finishing`** is a short phase while the app waits (up to about 1.5 seconds) for the last spoken words to arrive. It blocks double clicks.
 - **An "epoch token".** Every question run gets an id (`runId`). If the user skips, ends the session or the timer fires, any older waiting code sees a stale id and quietly stops. The recogniser uses the same idea (`sessionId`), so an old timeout can't end a newer listening session.
+- **Ending happens once, and finishes what is under way.** Every way of ending (the End buttons, leaving the tab, the last question) goes through one `finishSession`, which returns the same promise if it is already running. If an answer was being handed in (Next, Skip or time up), ending waits for that to become a result with its own outcome, and the hand-in does not go on to mark, ask Coach or ask the next question. Then the phase becomes `ending` (buttons off, last spoken words awaited), an answer that was started but not handed in is saved as `incomplete`, and the summary is shown. Starting is guarded the same way (a start token and a `starting` flag), and `selfview.js` numbers its camera requests so a late permission is released.
 
 ## 7. One Coach answer, end to end
 
