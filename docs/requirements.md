@@ -653,7 +653,7 @@ Incomplete answers stay out of scores, self-marks, weak topics and delivery figu
 
 ### Pending recordings
 
-There is still only one pending (unsaved) recording at a time, and it is **never overwritten**. If a recording is chosen and one is still pending when Start answer is pressed, the answer does **not** start; the screen explains that the earlier recording must be saved, downloaded or discarded first, and offers **Continue without recording** (for this answer only, the Recording choice itself is not changed). Audio is still saved only with Save; video still has Download only; the loss warnings and the camera and microphone rules are unchanged. **Record again** (formerly Retry) replaces **the recording only**, while that question is still being answered; it never changes the written or spoken answer, and there is no answer retake in this step. Pressing Download only starts a download: the screen says to check the Downloads folder, because the app cannot know the file arrived.
+There is still only one pending (unsaved) recording at a time, and it is **never overwritten**. If a recording is chosen and one is still pending when Start answer is pressed, the answer does **not** start; the screen explains that the earlier recording must be saved, downloaded or discarded first, and offers **Continue without recording** (for this answer only, the Recording choice itself is not changed). Audio is still saved only with Save; video still has Download only; the loss warnings and the camera and microphone rules are unchanged. **Record again** (formerly Retry) replaces **the recording only**, while that question is still on screen (being answered, or in its review); it never changes the written or spoken answer, and there is no answer retake in this step. Pressing Download only starts a download: the screen says to check the Downloads folder, because the app cannot know the file arrived.
 
 ### Data
 
@@ -666,6 +666,28 @@ Unit: the phases, the outcome rules and counts, the new fields' defaults, old-re
 ### Limits of this step
 
 No Guided or Mock presets, no setup changes, no pause or resume, no answer retakes or retake history. Real microphone, camera and speech-recognition behaviour needs a person with real hardware.
+
+### How it was checked (Step 4)
+
+- **Unit tests** (`npm test`, 132): the phase rules, the main-button states, Repeat and Skip rules, outcome labels, the `noResponse` count and old-record defaults.
+- **Syntax** (`npm run check`) is clean.
+- **Scripted browser checks** (`npm run test:browser`, headless Chromium with a fake microphone and camera and a stand-in speech recogniser): all seven suites pass (390 checks). The new `tests/browser/lifecycle.mjs` covers the verification list: every phase and main-button state; nothing captured while the interviewer speaks; Speak and Type; recording Off, Audio and Video; recognition failing with a good recording and the reverse; a refused and a slow permission (the hard countdown is not paused, Finish does not hang, a late grant leaves no microphone on); a recorder that never reports stopping (the review opens within the bound, tracks released); triple-clicked Finish and Next; the hard limit with a fake clock (hands in once, opens the review, no auto-advance); End during Finishing with a recording (one result, original outcome, no review, no Coach request); empty, skipped and incomplete outcomes in History and the summary; one pending recording across questions with Continue without recording and Record again; Coach error then Try again, Skip feedback, and an empty transcript (no request, no 0; typing it afterwards gives feedback once); self-marking that does not advance; assisted flags; Repeat only in Ready; an old History record; the phone layout and keyboard focus. The earlier suites (reliability, themes, workspace, regression) were updated to the new buttons and still pass, including the contrast audit in all four themes.
+- **A bug found by these checks and fixed:** a late result from the speech recogniser could overwrite words typed while it was listening. Typing now wins (the transcript no longer touches the box once you have typed).
+
+Representative screenshots (desktop and phone: Ready, Answering, Review) are in `docs/images/lifecycle/`.
+
+### Still to check by hand in real Chrome (hardware the scripts cannot reach)
+
+1. Speak with your real microphone: Start answer begins listening, words appear, Finish answer waits for the last words. Try Listen again after a pause.
+2. Choose Audio: the browser's microphone prompt appears after Start answer, the answer carries on while it is open, and the Recording line and the countdown behave. Allow it, finish, and play, Save and Download the recording.
+3. Choose Video with a real camera: the small preview shows, Finish answer stops it, only Download is offered, the camera light goes off.
+4. Deny the microphone in the prompt (and, separately, block it in the address bar): the Recording line explains it, typing carries on, nothing is recorded, and the next Start answer asks again only when you press it.
+5. Let the Hard timer run out while you are speaking: the review opens once, with your words, and does not move on by itself.
+6. Press Next question twice quickly, and Finish answer twice quickly: only one step happens.
+7. Self-mark: nothing advances until Next question.
+8. On the phone (Android Chrome): the Start / Finish button, the Speak and Type choice, the recording choice and the review are all reachable; the keyboard does not hide the main button.
+9. In Coach mode with a real key: an answer gets feedback in the review; switch the network off for one answer to see Try again and Skip feedback.
+10. Safari and iPhone are still untested.
 
 ## Acceptance criteria for v1
 

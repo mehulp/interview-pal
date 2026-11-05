@@ -11,6 +11,7 @@ All notable changes to InterviewPal. Dates are when the work was finished.
 - **Honest empty responses:** a recording alone is "No response", Coach is not asked and nothing is scored zero; you can type your response or continue without feedback. Outcomes are Answered, No response, Skipped, Timed out or Incomplete.
 - **Pending recordings:** never overwritten; starting an answer with recording while one is pending explains your options and offers Continue without recording. Retry is now "Record again" (recording only).
 - Repeat question is now available only before you start answering.
+- Fixed: words typed while the microphone was listening could be overwritten by a late speech result. Typing now always wins.
 
 ## Unreleased (UX redesign — Step 3: Interview workspace and recording review)
 

@@ -492,9 +492,9 @@ export function initPractice(avatar) {
     primaryBtn.disabled = act.disabled || endRequested;
     primaryBtn.dataset.kind = act.kind;
     $('primary-hint').textContent = $('primary-hint').dataset.lead || HINTS[phase] || '';
-    repeatBtn.hidden = !rules.allowRepeat;
+    repeatBtn.hidden = !rules.allowRepeat || phase === 'review'; // nothing to repeat or skip once it is handed in
     repeatBtn.disabled = !canRepeat(phase, rules.allowRepeat);
-    skipBtn.hidden = !rules.allowSkip;
+    skipBtn.hidden = !rules.allowSkip || phase === 'review';
     skipBtn.disabled = !canSkip(phase, rules.allowSkip);
     micBtn.hidden = !(phase === 'answering' && method === 'speak' && isRecognitionSupported());
     micBtn.textContent = listening ? '⏹ Stop listening' : '🎤 Listen again';
