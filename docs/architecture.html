@@ -415,6 +415,7 @@
       <div class="card"><h3>Validate before mutating</h3><p>An import is parsed and checked completely, then merged. A bad file cannot damage saved data.</p></div>
       <div class="card"><h3>Snapshot</h3><p>A session record copies what it needs, so history stays correct when questions change.</p></div>
       <div class="card"><h3>Derive, do not store twice</h3><p>The progress view (trend, streak, weak topics) is worked out from the saved history each time it is opened. There is no second copy to keep in step.</p></div>
+      <div class="card"><h3>Theme by variables</h3><p>Every interface colour is a CSS variable with a role name (page, surface, text, accent, focus and so on). Each of the four themes defines the same list once, so a screen looks right in all of them. A small script in the head sets the saved theme before the first paint, and a test reads the stylesheet to check every theme defines every role and meets its contrast targets.</p></div>
       <div class="card"><h3>Safe output</h3><p>Anything from your notes or from the AI is set as text, never as HTML, so it cannot inject markup.</p></div>
     </div>
   </section>
