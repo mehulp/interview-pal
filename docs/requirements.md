@@ -767,6 +767,58 @@ The microphone and camera checks are simulated with fake devices in the scripts.
 8. In Chrome's zoom (Ctrl +) at 200%: setup stays usable without sideways scrolling.
 9. Safari and iPhone remain untested.
 
+## UX redesign — Step 6: Question library and import preview (unreleased)
+
+Sixth and last step of the redesign in `docs/InterviewPal_UX_Code_Review.md`. The Questions tab changes from a page of expanded forms into a library you can browse, search, read and edit one question at a time, with a safer notes import. Steps 1 to 5 are kept. The backup file format, import validation, same-name set merging and within-set duplicate rule are **unchanged**; there are no new dependencies, no framework, and no change to recordings or History (editing a question never rewrites History or the link to saved recordings).
+
+### Browse and detail
+
+- **Header:** a compact **set selector** (a drop-down, so it collapses on any width) with **New set**; the set title and count; **Add question**, **Import questions** and **Practise this set** beside the title; and a **Set actions** menu holding Rename, Delete set, Clear all questions in this set and **Export all sets** (it exports every set, and says so).
+- **Two panes, never three:** a searchable **question list** and the selected question's **detail**. Wide windows show them side by side; on a phone the list comes first, then a full-screen detail with a **Back** button.
+- **Rows** show the question (shortened to a title), its topic, its complexity (Easy / Hard / Not tagged) and **Reference answer** or **No reference**. The detail shows the **whole** question and the whole reference answer in a readable, wrapping view.
+- Selection is by the question's **stable ID**, never by its position in the list. Questions that somehow lack an ID get one when the screen opens (saved on the next save).
+
+### Search and filters
+
+Search matches the question text and the topic within the open set. A **topic** filter (including *No topic*) and a **complexity** filter (All, Easy, Hard, *Not tagged*) narrow the list. The screen says how many match and, if none do, why. **Clear filters** restores the full list in its saved order. Filtering never changes saved questions. If the selected question is filtered out: when it is only being viewed the selection clears and focus stays where the person is typing; when it is being **edited**, the editor stays open, says it is hidden by the filters, and the draft is kept.
+
+### Editing, validation and saving
+
+- **Edit** opens the selected question in a form with labelled fields (Question, Reference answer, Topic, Complexity); **Save** and **Cancel** end it. **Add question** opens an empty draft in the same form; nothing is added until Save, and Cancel discards it.
+- **Validation:** the question must not be empty, and must not already be in **this set** (the same normalisation as imports: ignoring capitals and extra spaces). The same question may exist in a different set. A problem is shown next to the field and announced.
+- **Honest saving:** the success message appears only after the browser has really stored the change. The live data is updated only after a successful store, so a failed save never leaves the library half-changed. On failure the draft stays open, the screen says it was **not saved**, and offers **Try again**, **Copy unsaved text** and **Download as a file**.
+- **Unsaved edits are guarded.** Switching to another question, set, Add, Practise this set, or leaving the Questions tab (which also covers starting practice) asks **Save**, **Discard** or **Stay**. If Save fails the person stays. Closing the page warns too. User text is always shown as text, never as markup.
+
+### Delete, move and set actions
+
+- **Delete a question** removes it at once and shows **Undo**. Undo restores the same ID, content and position. It stays available until the person deletes another question, opens another set, leaves the Questions tab, or reloads the page: there is **no timer**, so it never expires while someone is editing, and the bar says so. If saving the delete or the undo fails, the screen says exactly what did (or did not) happen and nothing is changed.
+- **Move to set** keeps the existing behaviour, but first warns when the other set already has the same question: the existing copy there is kept, and this one only leaves the current set.
+- Deleting a set and clearing a set's questions keep their confirmations. Rename, Delete set, Clear and Export sit in the Set actions menu (keyboard-operable: Escape closes it and returns focus), away from the routine actions.
+
+### Practise this set
+
+Switches to the Interview tab with **only this set ticked** in setup. It does not start a session, does not request the microphone or camera, does not apply a preset, and leaves every other setup choice as it was (Recording is Off, as always on opening setup). The unsaved-edit guard applies first.
+
+### Importing notes (preview before anything is added)
+
+Separate from the JSON backup restore. **Import questions** opens a panel: choose files or paste text, press **Find questions**. The **destination set is fixed at that moment** and shown throughout, so opening another set while reading cannot redirect it. The result is a **preview**: each detected question (with its reference answer, topic and complexity) with a checkbox, **duplicates** marked (already in the destination, or repeated in these notes) and not selectable, a count line ("12 found · 10 selected · 2 already in "Technical" · 3 unrecognised"), and the **unrecognised text** where it can be read, copied, or turned into a proposed question. **Add N questions to "Set"** confirms; **Cancel** changes nothing. At confirmation the destination must still exist and duplicates are checked again against the **current** data. Repeated clicks cannot commit twice. If reading fails the input stays and the controls work again; if saving fails nothing was added, the preview stays, and the screen says so. Success is announced only after the store succeeds.
+
+### Backup (unchanged format)
+
+Export all sets and Import sets files work as before (same-name sets merge; within-set duplicates skipped; the same question allowed in different sets; an invalid file changes nothing). Import and the demo now also apply to a copy and are kept only if saving succeeds. Existing sets, IDs, History and recordings stay usable.
+
+### Accessibility and appearance
+
+All colours come from the existing theme roles. Fields and messages are labelled; the list, menus and dialogs work with the keyboard. Focus is moved deliberately: to the editor after Add or Edit, to the question after Save or Cancel, to the neighbouring row after Delete, to the restored row after Undo, to the row after Back, to the preview heading after Find questions. Long references wrap and scroll within the page; the layout works at phone width and at a 200% zoom width.
+
+### Tests
+
+Unit (`tests/library.test.js`): filtering and search (topic, complexity, untagged, order restored), validation and duplicate rules, edit/add/delete/undo/move on copies (the originals are never mutated), import preview and the confirmation re-check. Browser (`tests/browser/library.mjs`, with the Step 1 questions check adapted): browse and select by ID, search and filters, hiding a selected question, edit/save/cancel, validation, failed save with retry and copy, guards (Save, Discard, Stay, failed Save), delete and undo (including failure), move conflicts, Practise this set (no media, no preset change), the import preview (selection, duplicates, unrecognised text, cancel, destination deleted, repeated clicks, failed read and failed save), backup compatibility, keyboard focus, phone width, a 200% layout and all four themes. The known intermittent Step 4 lifecycle failure keeps its assertion and gains failure diagnostics in the test helper (see the notes at the end of this step).
+
+### Limits of this step
+
+Browser zoom is emulated with a narrow window at device scale 2 (not the real zoom feature), and the phone is an emulated viewport. Clipboard behaviour and a real mobile keyboard need a person. A saved recording is still linked to a question by its text: editing the text means earlier recordings may no longer appear under it (they stay in History and on the Recordings card), and the screen says so when the text of a question is changed.
+
 ## Acceptance criteria for v1
 
 - With no API key, load a .docx with 10 questions, review the extracted pairs, and run a Practice session with difficulty, timer and order.
