@@ -504,3 +504,14 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .summary-card .sum-answer, .summary-card .sum-body p { max-width: 75ch; }
 .summary-card h2:focus { outline: none; }
 .summary-card h2:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+
+/* Reference answer / Your response tabs (shown only while the reference is on) */
+.reply-tabs { display: flex; gap: 4px; margin: 0 0 12px; border-bottom: 1px solid var(--border); }
+.reply-tabs [role="tab"] {
+  margin-bottom: -1px; padding: 8px 14px; border: 0; border-bottom: 3px solid transparent; border-radius: 8px 8px 0 0;
+  background: transparent; color: var(--text-muted); font: inherit; cursor: pointer;
+}
+.reply-tabs [role="tab"]:hover { background: var(--surface-subtle); color: var(--text); }
+.reply-tabs [role="tab"][aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.reply-count { font-weight: 400; color: var(--text-muted); }
+.reply-tabs:not([hidden]) ~ .model-answer .panel-title { display: none; } /* the tab already names it */

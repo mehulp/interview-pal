@@ -75,6 +75,7 @@ export function initPractice(avatar) {
   let finalising = null; // { promise } while an answer is being handed in (Next, Skip or time up)
   let submittedThisQuestion = false; // the answer to the question on screen has already become a result
   let questionToken = 0; // a new number for every question asked, so a recording is never tied to the wrong one
+  let replyTab = 'reference'; // which panel is open while the reference is on: 'reference' or 'response'
   let answerVisible = false; // is the model answer showing? (this session only; the saved setting only sets the start)
   let answerShownNow = false; // was it visible at any point while the current question was open?
 
@@ -350,12 +351,27 @@ export function initPractice(avatar) {
   function refreshAnswerPanel() {
     syncRecorder();
     const q = session && session.current();
-    const open = phase === 'asking' || phase === 'answering' || phase === 'finishing' || phase === 'marking';
-    const show = Boolean(q) && answerVisible && open;
+    const answering = phase === 'asking' || phase === 'answering' || phase === 'finishing';
+    const marking = phase === 'marking';
+    // With the reference on there are two panels to choose between while answering; when marking there is only the reference
+    const tabs = Boolean(q) && answerVisible && answering;
+    const show = Boolean(q) && answerVisible && (marking || (answering && replyTab === 'reference'));
+    $('reply-tabs').hidden = !tabs;
     $('model-answer').hidden = !show;
+    $('response-panel').hidden = tabs && replyTab === 'reference';
+    $('model-answer').setAttribute('role', tabs ? 'tabpanel' : 'region');
+    $('model-answer').setAttribute('aria-labelledby', 'tab-reference');
+    $('response-panel').setAttribute('role', tabs ? 'tabpanel' : 'group');
+    $('response-panel').setAttribute('aria-labelledby', 'tab-response');
+    for (const id of ['reference', 'response']) {
+      const tab = $(`tab-${id}`);
+      tab.setAttribute('aria-selected', String(replyTab === id));
+      tab.tabIndex = replyTab === id ? 0 : -1;
+    }
     if (show) {
       $('model-answer-text').textContent = q.answer?.trim() || 'No model answer saved for this question.';
-      // It counts as seen only while the answer is still being given (not during marking or feedback)
+      // "Viewed" means actually on screen: the Reference panel open, while the answer is still being given.
+      // Having the reference available but never opened does not count; once seen, it stays recorded.
       if (phase === 'asking' || phase === 'answering') answerShownNow = true;
     }
     const toggle = $('answer-toggle');
@@ -367,8 +383,34 @@ export function initPractice(avatar) {
   $('answer-toggle').addEventListener('click', () => {
     if (phase !== 'asking' && phase !== 'answering') return;
     answerVisible = !answerVisible; // this session only: the saved setting is not touched
+    if (answerVisible) replyTab = 'reference'; // switching it on shows it
     refreshAnswerPanel();
   });
+
+  // The two tabs. Choosing one only changes what is shown: the draft stays in its box and focus is not moved
+  // into it. Arrow keys, Home and End move between the tabs, as in any tab list.
+  function chooseReplyTab(id, { focus = false } = {}) {
+    replyTab = id;
+    refreshAnswerPanel();
+    if (focus) $(`tab-${id}`).focus();
+  }
+  $('tab-reference').addEventListener('click', () => chooseReplyTab('reference'));
+  $('tab-response').addEventListener('click', () => chooseReplyTab('response'));
+  $('reply-tabs').addEventListener('keydown', (event) => {
+    const order = ['reference', 'response'];
+    const at = order.indexOf(replyTab);
+    const to = { ArrowRight: order[(at + 1) % 2], ArrowLeft: order[(at + 1) % 2], Home: 'reference', End: 'response' }[event.key];
+    if (!to) return;
+    event.preventDefault();
+    chooseReplyTab(to, { focus: true });
+  });
+
+  // "Your response" shows how many words there are, so progress is visible while the reference is open
+  function updateReplyCount() {
+    const words = answerBox.value.trim() ? answerBox.value.trim().split(/\s+/).length : 0;
+    $('reply-count').textContent = words ? ` · ${words} word${words === 1 ? '' : 's'}` : '';
+  }
+  answerBox.addEventListener('input', updateReplyCount);
 
   /* ---------- Showing and hiding parts of the controls ---------- */
   function showAnswerArea() {
@@ -399,9 +441,11 @@ export function initPractice(avatar) {
     showAnswerArea();
     answerShownNow = false;
     submittedThisQuestion = false;
+    replyTab = 'reference'; // each question opens on the reference, when it is on
     refreshAnswerPanel();
     $('progress').textContent = `Question ${session.position()} of ${session.total}`;
     answerBox.value = '';
+    updateReplyCount();
     voice = { chunks: [], live: '', ms: 0, since: 0 }; // what the speech recogniser heard for this answer
     status.textContent = '';
     timerEl.hidden = true;
@@ -722,6 +766,7 @@ export function initPractice(avatar) {
     onText: (finalText, interim) => {
       // The live transcript goes straight into the box, so you can correct it
       answerBox.value = joinText(textBefore, finalText, interim);
+      updateReplyCount();
       voice.live = joinText(finalText, interim);
     },
     onEnd: () => {

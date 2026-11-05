@@ -146,7 +146,12 @@
         </div>
 
         <div class="workspace-body">
-          <!-- The reference answer, when it is switched on -->
+          <!-- With the reference switched on there are two labelled panels to choose between -->
+          <div class="reply-tabs" role="tablist" id="reply-tabs" aria-label="Reference answer or your response" hidden>
+            <button type="button" role="tab" id="tab-reference" aria-controls="model-answer" aria-selected="true" tabindex="0">Reference answer</button>
+            <button type="button" role="tab" id="tab-response" aria-controls="response-panel" aria-selected="false" tabindex="-1">Your response<span class="reply-count" id="reply-count"></span></button>
+          </div>
+
           <section class="model-answer" id="model-answer" aria-label="Reference answer" hidden>
             <h3 class="panel-title">Reference answer</h3>
             <div class="model-answer-text" id="model-answer-text" tabindex="0" role="region" aria-label="Reference answer text"></div>
