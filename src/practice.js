@@ -17,7 +17,12 @@ import {
 } from './session.js';
 import { loadInterviewers, pickInterviewer } from './interviewers.js';
 import { createSelfView } from './selfview.js';
-import { loadSets, loadQuestions, loadSettings, saveSettings, getApiKey, saveSession } from './storage.js';
+import { loadSets, loadQuestions, loadSettings, saveSettings, getApiKey, saveSession, readSavedSettings } from './storage.js';
+import { createMicChecker } from './miccheck.js';
+import {
+  PRESETS, isPreset, presetSettings, isNewInstall, presetStatus, feedbackFromSettings, feedbackToSettings,
+  describePressure, PRESSURE_LABELS, countNote, startBlock, summaryLines,
+} from './setup.js';
 import { buildSessionRecord, outcomeOf } from './history.js';
 import { analyzeAnswer } from './delivery.js';
 import { recPanel } from './recpanel.js';
@@ -26,6 +31,9 @@ import { renderSummary } from './summary.js';
 const $ = (id) => document.getElementById(id);
 
 export function initPractice(avatar) {
+  // A genuinely new installation (no practice settings saved yet) starts on Guided rehearsal. A returning user's
+  // saved choices are never overwritten here.
+  if (isNewInstall(readSavedSettings())) saveSettings(presetSettings('guided'));
   const settings = loadSettings();
 
   // Setup controls
@@ -34,7 +42,6 @@ export function initPractice(avatar) {
   const optDifficulty = $('opt-difficulty');
   const optCount = $('opt-count');
   const optEasyTimer = $('opt-easy-timer');
-  const optSelfMark = $('opt-selfmark');
   const optCoachSpeak = $('opt-coach-speak');
   const optSelfView = $('opt-selfview');
   const optOnDevice = $('opt-ondevice');
@@ -44,8 +51,9 @@ export function initPractice(avatar) {
   recPanel.setCameraSource(() => selfView.getVideoTrack()); // video recording can copy self-view's camera
   const selfViewBtn = $('selfview-btn');
   const startBtn = $('start-btn');
-  const modeRadios = document.querySelectorAll('input[name="mode"]');
-  const modeCoach = $('mode-coach');
+  const optShowAnswer = $('opt-show-answer');
+  const feedbackCoach = $('fbk-coach');
+  const previewCam = createSelfView($('setup-cam')); // the setup camera preview: its own camera owner, stopped before a session starts
 
   // Interview controls
   const answerBox = $('answer');
@@ -104,13 +112,18 @@ export function initPractice(avatar) {
   });
 
   /* ---------- Setup screen ---------- */
+  const radioValue = (name) => document.querySelector(`input[name="${name}"]:checked`)?.value || '';
+  function setRadio(name, value) {
+    document.querySelectorAll(`input[name="${name}"]`).forEach((r) => { r.checked = r.value === value; });
+  }
   optOrder.value = settings.practiceOrder;
   optLevel.value = settings.practiceLevel;
   optDifficulty.value = settings.practiceDifficulty;
   optCount.value = settings.practiceCount;
   optEasyTimer.checked = settings.practiceEasyTimer;
-  optSelfMark.checked = settings.practiceSelfMark;
-  $('opt-show-answer').checked = settings.showModelAnswer;
+  optShowAnswer.checked = settings.showModelAnswer;
+  setRadio('feedback', feedbackFromSettings(settings, Boolean(getApiKey())));
+  if (isPreset(settings.preset)) setRadio('preset', settings.preset);
   optCoachSpeak.checked = settings.coachSpeak;
   optSelfView.checked = settings.selfView;
 
@@ -191,35 +204,57 @@ export function initPractice(avatar) {
     }));
   }
 
-  const selectedMode = () => document.querySelector('input[name="mode"]:checked').value;
-  modeRadios.forEach((r) => { r.checked = r.value === settings.mode; });
+  const selectedFeedback = () => radioValue('feedback') || 'none';
+  const selectedPreset = () => radioValue('preset');
+  const selectedRecording = () => radioValue('setup-rec') || 'off';
+  const currentChoices = () => ({
+    difficulty: optDifficulty.value, easyTimer: optEasyTimer.checked, showAnswer: optShowAnswer.checked, feedback: selectedFeedback(),
+  });
 
   function readOptions() {
+    const feedback = selectedFeedback();
     return {
-      mode: selectedMode(),
+      mode: feedback === 'coach' ? 'coach' : 'practice',
+      feedback,
+      preset: selectedPreset(),
       order: optOrder.value,
       level: optLevel.value,
       difficulty: optDifficulty.value,
       count: Math.max(1, parseInt(optCount.value, 10) || 10),
       easyTimer: optEasyTimer.checked,
-      selfMark: optSelfMark.checked,
-      showAnswer: $('opt-show-answer').checked,
+      selfMark: feedback === 'self',
+      showAnswer: optShowAnswer.checked,
       coachSpeak: optCoachSpeak.checked,
       selfView: optSelfView.checked,
+      recording: selectedRecording(), // the starting value of the workspace's Recording choice; never saved
     };
   }
 
-  // Update the "how many questions" line, the difficulty note and the Start button.
+  // Choosing a preset (an explicit click) sets the controls to its defaults and saves them. Nothing else ever
+  // applies a preset: not a refresh, not changing sets, count or feedback.
+  function applyPreset(id) {
+    const p = PRESETS[id];
+    if (!p) return;
+    optDifficulty.value = p.difficulty;
+    optEasyTimer.checked = p.easyTimer;
+    optShowAnswer.checked = p.showAnswer;
+    setRadio('feedback', p.feedback);
+    saveSettings(presetSettings(id)); // merged: only these settings change
+    refreshSetup();
+  }
+  document.querySelectorAll('input[name="preset"]').forEach((r) => r.addEventListener('change', () => applyPreset(r.value)));
+
+  // Update everything that depends on the choices: counts, notes, the preset status, the summary and Start.
+  // It only reads the controls (and never applies preset defaults).
   function refreshSetup() {
-    // Coach mode needs an API key. Without one it is switched off, with a pointer to Settings.
+    // AI Coach needs an API key. Without one it is switched off, with a pointer to Settings.
     const hasKey = Boolean(getApiKey());
-    modeCoach.disabled = !hasKey;
-    if (!hasKey && modeCoach.checked) document.querySelector('input[value="practice"]').checked = true;
-    $('mode-note').hidden = hasKey;
-    const coach = selectedMode() === 'coach';
+    feedbackCoach.disabled = !hasKey;
+    if (!hasKey && feedbackCoach.checked) setRadio('feedback', feedbackFromSettings({ mode: 'practice', practiceSelfMark: loadSettings().practiceSelfMark }, false));
+    $('coach-unavailable').hidden = hasKey;
+    const feedback = selectedFeedback();
+    const coach = feedback === 'coach';
     startBtn.textContent = coach ? 'Start coaching' : 'Start practice';
-    // Coach mode: the AI marks you, so self-marking is replaced by the "speak feedback" choice
-    $('selfmark-row').hidden = coach;
     $('coach-speak-row').hidden = !coach;
     $('coach-note').hidden = !coach;
 
@@ -228,19 +263,96 @@ export function initPractice(avatar) {
     const usable = usableQuestions(loadQuestions(setIds));
     const all = removeRepeats(usable); // a question in two ticked sets counts once
     const matching = removeRepeats(filterByLevel(usable, o.level));
+    const everything = usableQuestions(loadQuestions()).length;
+    const note = countNote({ everything, setsTicked: setIds.length, all: all.length, matching: matching.length, requested: o.count, level: o.level });
+    $('available').textContent = note.text;
+    $('questions-link-row').hidden = !note.needsQuestions;
 
-    $('available').textContent = !usableQuestions(loadQuestions()).length
-      ? 'No questions saved yet. Add some on the Questions tab first.'
-      : !setIds.length
-        ? 'Tick at least one set.'
-        : `${all.length} question(s) in the ticked set(s). ${matching.length} match your choices.`;
-    $('difficulty-note').textContent = `${DIFFICULTY[o.difficulty].label}: ${describeDifficulty(o.difficulty, o.easyTimer)}`;
+    $('difficulty-note').textContent = `Interview pressure: ${PRESSURE_LABELS[o.difficulty]}. ${describePressure(o.difficulty, o.easyTimer)}`;
     $('easy-timer-row').hidden = o.difficulty !== 'easy';
-    startBtn.disabled = matching.length === 0 || starting;
-    $('setup-status').textContent = '';
+
+    // The preset line: chosen preset, and "customised" once the choices differ from it
+    const status = presetStatus(o.preset, currentChoices());
+    $('preset-status').textContent = isPreset(o.preset)
+      ? (status.customised ? `${PRESETS[o.preset].label}, customised: some choices differ from the preset. They stay as you set them.` : `${PRESETS[o.preset].label} selected.`)
+      : 'Your own settings (no preset applied). Choose a preset to start from its defaults; you can still change everything.';
+
+    // Respond by: Speak needs speech recognition
+    const canSpeak = isRecognitionSupported();
+    $('setup-method-speak').disabled = !canSpeak;
+    $('setup-speech-note').textContent = canSpeak
+      ? "Speaking uses your browser's speech recognition (in Chrome, your speech is sent to Google). Typing never sends anything."
+      : 'This browser cannot recognise speech, so you will type your response. Everything else works.';
+    if (!canSpeak) setRadio('setup-method', 'type');
+
+    const block = startBlock({ everything, setsTicked: setIds.length, matching: matching.length });
+    const names = loadSets().filter((set) => setIds.includes(set.id)).map((set) => set.name);
+    const lines = summaryLines({
+      count: note.session, setNames: names, preset: o.preset, customised: status.customised,
+      method: radioValue('setup-method') || 'type', recording: o.recording, difficulty: o.difficulty, easyTimer: o.easyTimer, feedback,
+    });
+    $('start-summary-1').textContent = block.ok ? lines.first : '';
+    $('start-summary-2').textContent = block.ok ? lines.second : '';
+    startBtn.disabled = !block.ok || starting;
+    $('setup-status').textContent = block.reason;
   }
-  [optOrder, optLevel, optDifficulty, optCount, optEasyTimer, optSelfMark, optCoachSpeak, ...modeRadios].forEach((control) =>
+  [optOrder, optLevel, optDifficulty, optCount, optEasyTimer, optShowAnswer, optCoachSpeak, optSelfView,
+    ...document.querySelectorAll('input[name="feedback"], input[name="setup-rec"]')].forEach((control) =>
     control.addEventListener('change', refreshSetup));
+  optCount.addEventListener('input', refreshSetup);
+  document.querySelectorAll('input[name="setup-method"]').forEach((radio) => radio.addEventListener('change', () => {
+    saveSettings({ answerMethod: radio.value }); // the same setting the interview uses: one source of truth
+    refreshSetup();
+  }));
+  $('to-questions').addEventListener('click', (e) => { e.preventDefault(); document.querySelector('.tabs [data-screen="questions"]').click(); });
+
+  /* ---------- Device checks on the setup screen ---------- */
+  // Both are explicit, never record or transcribe, and are ended before a session starts, when setup is left, or when
+  // the page is hidden. The microphone test reuses the checker from Settings; the camera preview has its own camera owner.
+  const meterWidth = (db) => `${Math.max(0, Math.min(100, ((db + 60) / 60) * 100))}%`;
+  const setupMic = createMicChecker({
+    onState: (state) => {
+      $('setup-mic-btn').textContent = state === 'idle' ? 'Test microphone' : state === 'opening' ? 'Cancel' : 'Stop test';
+      if (state === 'idle') $('setup-mic-meter').style.width = '0';
+      if (state === 'opening') $('setup-mic-status').textContent = 'Waiting for the microphone. Allow it in the browser prompt.';
+      if (state === 'checking') $('setup-mic-status').textContent = 'Listening for 15 seconds… speak normally. Nothing is recorded.';
+    },
+    onLevel: (db) => { $('setup-mic-meter').style.width = meterWidth(db); },
+    onDone: ({ device, advice }) => {
+      $('setup-mic-status').textContent = `Microphone: ${device || 'unknown'}.`;
+      $('setup-mic-advice').replaceChildren(...advice.map((text) => { const li = document.createElement('li'); li.textContent = text; return li; }));
+    },
+    onError: () => { $('setup-mic-status').textContent = 'The microphone could not be opened. Allow it in the browser address bar and check that one is connected. You can still type your responses.'; },
+  });
+  $('setup-mic-btn').addEventListener('click', () => {
+    if (setupMic.isBusy()) { setupMic.stop(); if ($('setup-mic-status').textContent.startsWith('Waiting')) $('setup-mic-status').textContent = 'Cancelled.'; return; }
+    $('setup-mic-advice').replaceChildren();
+    setupMic.start({ deviceId: optMic.value });
+  });
+  async function setCameraPreview(on) {
+    $('setup-cam-note').textContent = '';
+    if (on) {
+      $('setup-cam-btn').setAttribute('aria-pressed', 'true');
+      $('setup-cam-btn').textContent = 'Stop preview';
+      const result = await previewCam.start();
+      if (!result.ok && result.message) $('setup-cam-note').textContent = result.message; // a cancelled request has no message
+      if (!result.ok) { $('setup-cam-btn').setAttribute('aria-pressed', 'false'); $('setup-cam-btn').textContent = 'Preview camera'; }
+    } else {
+      previewCam.stop();
+      $('setup-cam-btn').setAttribute('aria-pressed', 'false');
+      $('setup-cam-btn').textContent = 'Preview camera';
+    }
+  }
+  $('setup-cam-btn').addEventListener('click', () => setCameraPreview($('setup-cam-btn').getAttribute('aria-pressed') !== 'true'));
+  // End every setup device check now (microphone light and camera light go off; a late permission is released)
+  function stopSetupDevices() {
+    setupMic.cancel();
+    previewCam.stop();
+    $('setup-cam-btn').setAttribute('aria-pressed', 'false');
+    $('setup-cam-btn').textContent = 'Preview camera';
+  }
+  window.addEventListener('pagehide', stopSetupDevices);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) stopSetupDevices(); });
 
   // Forget a start that is still loading (the user left the Interview tab): it must not open a session later.
   function cancelStartup() {
@@ -249,7 +361,10 @@ export function initPractice(avatar) {
   }
 
   function showSetup() {
-    setSelfView(false); // the camera is off whenever you are on the setup screen
+    stopSetupDevices();
+    setSelfView(false); // the interview's self-view is off whenever you are on the setup screen
+    setRadio('setup-rec', 'off'); // Recording is Off every time setup opens: it is never remembered
+    setRadio('setup-method', isRecognitionSupported() && loadSettings().answerMethod !== 'type' ? 'speak' : 'type');
     $('setup').hidden = false;
     $('interview').hidden = true;
     $('finished').hidden = true;
@@ -262,6 +377,7 @@ export function initPractice(avatar) {
 
   startBtn.addEventListener('click', async () => {
     if (starting || startBtn.disabled) return; // a second click while the first is still loading does nothing
+    stopSetupDevices(); // any setup microphone test or camera preview ends before the session starts its own media
     const token = ++startToken;
     starting = true;
     startBtn.disabled = true; // stays off until the first question begins
@@ -269,13 +385,13 @@ export function initPractice(avatar) {
     try {
       options = readOptions();
       saveSettings({
-        mode: options.mode,
+        ...feedbackToSettings(options.feedback),
+        preset: options.preset,
         practiceOrder: options.order,
         practiceLevel: options.level,
         practiceDifficulty: options.difficulty,
         practiceCount: options.count,
         practiceEasyTimer: options.easyTimer,
-        practiceSelfMark: options.selfMark,
         showModelAnswer: options.showAnswer,
         coachSpeak: options.coachSpeak,
         practiceSets: selectedSetIds(),
@@ -308,7 +424,7 @@ export function initPractice(avatar) {
       $('voice-note').textContent = describeVoice();
       sessionStartedAt = Date.now();
       answerVisible = options.showAnswer;
-      recPanel.resetMode(); // recording is Off at the start of every session
+      recPanel.setMode(options.recording); // the setup choice (Off unless chosen for this session); it starts nothing
       initMethod();
       $('setup').hidden = true;
       $('interview').hidden = false;
@@ -1024,7 +1140,7 @@ export function initPractice(avatar) {
     const saved = loadSettings().micDeviceId;
     optMic.value = real.some((d) => d.deviceId === saved) ? saved : '';
   }
-  optMic.addEventListener('change', () => saveSettings({ micDeviceId: optMic.value }));
+  optMic.addEventListener('change', () => { saveSettings({ micDeviceId: optMic.value }); setupMic.cancel(); }); // a test of the old microphone is no longer the right test
   navigator.mediaDevices?.addEventListener?.('devicechange', refreshMicList); // a headset was connected or removed
 
   /* ---------- On-device recognition (optional, experimental) ---------- */

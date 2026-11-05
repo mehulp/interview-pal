@@ -44,9 +44,8 @@ async function open(p, { count = 3, difficulty = 'medium', coach = false, selfMa
   await tab(p, 'practice');
   await p.evaluate(() => document.querySelectorAll('#set-choices input').forEach((i) => { i.checked = i.parentElement.textContent.includes('Demo'); i.dispatchEvent(new Event('change', { bubbles: true })); }));
   await p.selectOption('#opt-order', 'serial'); await p.selectOption('#opt-difficulty', difficulty); await p.fill('#opt-count', String(count));
-  if (coach) await p.check('#mode-coach');
-  if (selfMark) await p.check('#opt-selfmark');
-  if (showAnswer) await p.check('#opt-show-answer');
+  await p.check(coach ? '#fbk-coach' : selfMark ? '#fbk-self' : '#fbk-none'); // (a new installation starts on Guided: say what we want)
+  await p.setChecked('#opt-show-answer', showAnswer);
   await p.click('#start-btn');
 }
 const gumCount = (p) => p.evaluate(() => window.__stats.gum);

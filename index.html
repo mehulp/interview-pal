@@ -31,78 +31,138 @@
   <main class="app-main single" id="screen-practice">
     <section class="card" id="setup" aria-label="Practice setup">
       <h2>Interview setup</h2>
-      <fieldset class="mode-picker">
-        <legend>Mode</legend>
-        <label class="mode-opt">
-          <input type="radio" name="mode" value="practice" checked>
-          <span><strong>Practice</strong><br>No AI, no API key. The interviewer asks, you answer.</span>
+
+      <!-- A. Questions -->
+      <section class="setup-section" aria-labelledby="sec-questions">
+        <h3 id="sec-questions">1. Questions</h3>
+        <fieldset class="mode-picker">
+          <legend>Question sets (tick one or more)</legend>
+          <div id="set-choices"></div>
+        </fieldset>
+        <p class="hint" id="available" aria-live="polite"></p>
+        <p class="hint" id="questions-link-row" hidden><a href="#" id="to-questions">Go to Questions to add some</a></p>
+        <div class="form-grid">
+          <label class="field">Number of questions
+            <input type="number" id="opt-count" min="1" max="200">
+          </label>
+          <label class="field">Order
+            <select id="opt-order">
+              <option value="serial">In order (serial)</option>
+              <option value="random">Random</option>
+            </select>
+          </label>
+          <label class="field">Question complexity
+            <select id="opt-level">
+              <option value="all">All questions</option>
+              <option value="easy">Easy ones only</option>
+              <option value="hard">Hard ones only</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <!-- B. Practice approach -->
+      <section class="setup-section" aria-labelledby="sec-approach">
+        <h3 id="sec-approach">2. Practice approach</h3>
+        <fieldset class="mode-picker preset-picker">
+          <legend>Start from a preset</legend>
+          <label class="mode-opt">
+            <input type="radio" name="preset" value="guided" id="preset-guided">
+            <span><strong>Guided rehearsal</strong><br>Reference answer shown, relaxed pace with no time limit, self-review.</span>
+          </label>
+          <label class="mode-opt">
+            <input type="radio" name="preset" value="mock" id="preset-mock">
+            <span><strong>Mock interview</strong><br>Reference answer hidden at first, standard time limit, self-review.</span>
+          </label>
+        </fieldset>
+        <p class="hint" id="preset-status" aria-live="polite"></p>
+        <fieldset class="mode-picker">
+          <legend>Feedback</legend>
+          <label class="mode-opt"><input type="radio" name="feedback" value="none" id="fbk-none"><span><strong>No feedback</strong><br>Just practise.</span></label>
+          <label class="mode-opt"><input type="radio" name="feedback" value="self" id="fbk-self"><span><strong>Self-review</strong><br>Compare with your reference answer and mark yourself.</span></label>
+          <label class="mode-opt"><input type="radio" name="feedback" value="coach" id="fbk-coach"><span><strong>AI Coach</strong><br>The AI scores each answer. Needs an API key.</span></label>
+        </fieldset>
+        <p class="hint" id="coach-unavailable">AI Coach needs an API key. Add one in <a href="#" id="to-settings">Settings</a>.</p>
+        <p class="hint" id="coach-note" hidden>
+          AI Coach sends each question, your reference answer and your typed or spoken text (never a recording) to the Anthropic API for marking.
+        </p>
+        <label class="check" id="show-answer-row">
+          <input type="checkbox" id="opt-show-answer"> Show the reference answer while I answer (you can also turn it on or off during the interview)
         </label>
-        <label class="mode-opt">
-          <input type="radio" name="mode" value="coach" id="mode-coach">
-          <span><strong>Coach</strong><br>AI scores your answers and gives feedback.</span>
+        <p class="hint" id="difficulty-note"></p>
+      </section>
+
+      <!-- C. Response and devices -->
+      <section class="setup-section" aria-labelledby="sec-devices">
+        <h3 id="sec-devices">3. Response and devices</h3>
+        <fieldset class="seg" id="setup-method-seg">
+          <legend class="seg-legend">Respond by</legend>
+          <label class="seg-opt"><input type="radio" name="setup-method" id="setup-method-speak" value="speak"> Speak</label>
+          <label class="seg-opt"><input type="radio" name="setup-method" id="setup-method-type" value="type"> Type</label>
+        </fieldset>
+        <p class="hint" id="setup-speech-note"></p>
+        <div class="form-grid">
+          <label class="field" id="mic-row">Microphone <select id="opt-mic"></select></label>
+        </div>
+        <div class="buttons device-row">
+          <button type="button" class="small" id="setup-mic-btn">Test microphone</button>
+          <div class="meter" aria-hidden="true"><div class="meter-fill" id="setup-mic-meter"></div></div>
+        </div>
+        <p class="status" id="setup-mic-status" aria-live="polite"></p>
+        <ul id="setup-mic-advice"></ul>
+        <p class="hint">Tip: a headset microphone close to your mouth works much better than the laptop's built-in one. The test only measures loudness: nothing is recorded, transcribed or sent.</p>
+        <div class="buttons device-row">
+          <button type="button" class="small" id="setup-cam-btn" aria-pressed="false">Preview camera</button>
+        </div>
+        <video id="setup-cam" class="setup-cam" muted playsinline hidden aria-label="Preview of your camera, shown only on this screen"></video>
+        <p class="status" id="setup-cam-note" aria-live="polite"></p>
+        <p class="hint">The preview is only on this screen and stops when you leave setup or start. Allowing the camera for a preview does not record video: that is the Recording choice below.</p>
+        <label class="check">
+          <input type="checkbox" id="opt-selfview"> Keep my camera on during the interview (self-view: only on your screen, never recorded or sent)
         </label>
-      </fieldset>
-      <p class="hint" id="mode-note">Coach mode needs an API key. Add one in <a href="#" id="to-settings">Settings</a>.</p>
-      <fieldset class="mode-picker">
-        <legend>Question sets (tick one or more)</legend>
-        <div id="set-choices"></div>
-      </fieldset>
-      <p class="hint" id="available"></p>
-      <div class="form-grid">
-        <label class="field">Order
-          <select id="opt-order">
-            <option value="serial">In order (serial)</option>
-            <option value="random">Random</option>
-          </select>
+        <fieldset class="seg" id="setup-rec-seg">
+          <legend class="seg-legend">Recording</legend>
+          <label class="seg-opt"><input type="radio" name="setup-rec" id="setup-rec-off" value="off" checked> Off</label>
+          <label class="seg-opt"><input type="radio" name="setup-rec" id="setup-rec-audio" value="audio"> Audio</label>
+          <label class="seg-opt"><input type="radio" name="setup-rec" id="setup-rec-video" value="video"> Video</label>
+        </fieldset>
+        <p class="hint" id="setup-rec-note">Not remembered: Recording is Off every time you open setup, unless you choose it here for this session. Nothing is recorded until you press Start answer. Audio is saved only if you press Save; video is only ever downloaded.</p>
+      </section>
+
+      <details class="more-options" id="more-options">
+        <summary>More options</summary>
+        <div class="form-grid">
+          <label class="field">Interview pressure
+            <select id="opt-difficulty">
+              <option value="easy">Relaxed</option>
+              <option value="medium">Standard</option>
+              <option value="hard">Challenging</option>
+            </select>
+          </label>
+          <label class="field">Interviewer accent <select id="voice-lang"></select></label>
+          <label class="field">My accent <select id="recognition-lang"></select></label>
+          <label class="field" id="interviewer-row" hidden>Interviewer face <select id="opt-interviewer"></select></label>
+        </div>
+        <p class="hint" id="pressure-note"></p>
+        <p class="status" id="interviewer-status" aria-live="polite"></p>
+        <label class="check" id="easy-timer-row">
+          <input type="checkbox" id="opt-easy-timer"> Add a time limit on Relaxed (5 minutes per answer)
         </label>
-        <label class="field">Question level
-          <select id="opt-level">
-            <option value="all">All questions</option>
-            <option value="easy">Easy ones only</option>
-            <option value="hard">Hard ones only</option>
-          </select>
+        <label class="check" id="coach-speak-row" hidden>
+          <input type="checkbox" id="opt-coach-speak"> Speak the AI Coach feedback aloud (it is always shown as text too)
         </label>
-        <label class="field">Difficulty
-          <select id="opt-difficulty">
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-          </select>
+        <label class="check" id="ondevice-row">
+          <input type="checkbox" id="opt-ondevice"> Try the on-device speech recogniser with vocabulary hints (experimental, Chrome only)
         </label>
-        <label class="field">Number of questions
-          <input type="number" id="opt-count" min="1" max="200">
-        </label>
-        <label class="field">Interviewer accent <select id="voice-lang"></select></label>
-        <label class="field">My accent <select id="recognition-lang"></select></label>
-        <label class="field" id="mic-row">Microphone <select id="opt-mic"></select></label>
-        <label class="field" id="interviewer-row" hidden>Interviewer face <select id="opt-interviewer"></select></label>
+        <p class="status" id="ondevice-status" aria-live="polite"></p>
+        <p class="hint">Speech recognition is done by your browser. In Chrome it normally sends your speech to Google, so Practice is not guaranteed to work offline. Typing never sends anything.</p>
+        <p class="hint">Tip: place this window so the interviewer's eyes sit just below your webcam, and look at them while you answer.</p>
+      </details>
+
+      <div class="start-summary" aria-live="polite">
+        <p class="start-line" id="start-summary-1"></p>
+        <p class="start-line sub" id="start-summary-2"></p>
       </div>
-      <p class="status" id="interviewer-status" aria-live="polite"></p>
-      <p class="hint">Tip: speak into a microphone close to your mouth, such as a headset. The laptop's built-in microphone is usually further away and picks up more room noise, which makes recognition much worse.</p>
-      <p class="hint" id="difficulty-note"></p>
-      <label class="check" id="easy-timer-row">
-        <input type="checkbox" id="opt-easy-timer"> Use a timer on Easy (about 5 minutes per answer)
-      </label>
-      <label class="check" id="selfmark-row">
-        <input type="checkbox" id="opt-selfmark"> After each answer, show my reference answer and let me mark myself
-      </label>
-      <label class="check" id="show-answer-row">
-        <input type="checkbox" id="opt-show-answer"> Show model answer with each question (you can also turn it on or off during a session)
-      </label>
-      <label class="check" id="coach-speak-row" hidden>
-        <input type="checkbox" id="opt-coach-speak"> Speak the feedback aloud (it is always shown as text too)
-      </label>
-      <p class="hint" id="coach-note" hidden>
-        Coach mode sends each question, your reference answer and your answer to the Anthropic API for marking.
-      </p>
-      <label class="check" id="ondevice-row">
-        <input type="checkbox" id="opt-ondevice"> Try the on-device speech recogniser with vocabulary hints (experimental, Chrome only)
-      </label>
-      <p class="status" id="ondevice-status" aria-live="polite"></p>
-      <label class="check">
-        <input type="checkbox" id="opt-selfview"> Show my camera while I practise (only on your screen, never recorded or sent)
-      </label>
-      <p class="hint">Tip: place this window so the interviewer's eyes sit just below your webcam, and look at them while you answer.</p>
       <p class="status" id="setup-status" aria-live="polite"></p>
       <button type="button" class="big" id="start-btn">Start practice</button>
     </section>
@@ -247,7 +307,7 @@
               <label class="seg-opt"><input type="radio" name="rec-mode" id="rec-mode-video" value="video"> Video</label>
             </fieldset>
             <div class="rec-row">
-              <label class="field rec-field">Target length
+              <label class="field rec-field">Recording target length (a cue only)
                 <select id="rec-target">
                   <option value="0">No target</option>
                   <option value="60">1 min</option>

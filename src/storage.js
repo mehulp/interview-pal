@@ -18,6 +18,7 @@ const DEFAULTS = {
   practiceCount: 10,
   practiceSelfMark: false,
   theme: DEFAULT_THEME, // colour theme ID (see themes.js); anything not valid is ignored
+  preset: '', // the setup preset last chosen: 'guided', 'mock' or '' (none: your own settings)
   answerMethod: '', // how you respond: 'speak', 'type' or '' (not chosen yet: Speak where the browser supports it)
   answerTargetSec: 0, // optional target length for recorded answers (0 = none)
   showModelAnswer: false, // show the model answer with each question (can be toggled during a session)
@@ -30,6 +31,17 @@ const DEFAULTS = {
   micDeviceId: '', // chosen microphone ('' = the browser's default)
   onDeviceSpeech: false, // try the on-device recogniser with vocabulary hints (experimental)
 };
+
+// The settings exactly as saved (null if nothing was ever saved). Used only to tell a genuinely new
+// installation from a returning user: loadSettings() fills in defaults, so it cannot.
+export function readSavedSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+    return saved && typeof saved === 'object' ? saved : null;
+  } catch {
+    return null;
+  }
+}
 
 export function loadSettings() {
   try {

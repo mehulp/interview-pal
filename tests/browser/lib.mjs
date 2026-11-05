@@ -46,6 +46,9 @@ export const INIT = () => {
   const create = URL.createObjectURL.bind(URL); const revoke = URL.revokeObjectURL.bind(URL);
   URL.createObjectURL = (b) => { const u = create(b); window.__stats.created++; window.__stats.liveUrls.add(u); return u; };
   URL.revokeObjectURL = (u) => { if (window.__stats.liveUrls.delete(u)) window.__stats.revoked++; revoke(u); };
+  // Setup keeps uncommon options in a More options disclosure. Most checks just need its controls, so open it
+  // (setup.mjs sets window.__keepMoreClosed to test the real disclosure).
+  document.addEventListener('DOMContentLoaded', () => { const d = document.getElementById('more-options'); if (d && !window.__keepMoreClosed) d.open = true; });
   window.__downloads = [];
   document.addEventListener('click', (e) => { const a = e.target.closest?.('a[download]'); if (a) { window.__downloads.push(a.download); e.preventDefault(); } }, true);
 };
@@ -69,6 +72,7 @@ export async function startSession(p, { count = 3, difficulty = 'medium' } = {})
   await p.click('.tabs button[data-screen="practice"]');
   await p.evaluate(() => document.querySelectorAll('#set-choices input').forEach((i) => { i.checked = i.parentElement.textContent.includes('Demo'); i.dispatchEvent(new Event('change', { bubbles: true })); }));
   await p.selectOption('#opt-order', 'serial'); await p.selectOption('#opt-difficulty', difficulty); await p.fill('#opt-count', String(count));
+  await p.setChecked('#opt-show-answer', false); await p.check('#fbk-none'); // a new installation starts on Guided rehearsal: say what these checks want
   await p.click('#start-btn');
   await ready(p); // the first question has been asked; Start answer has not been pressed
 }

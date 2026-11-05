@@ -31,37 +31,85 @@ export function adviseOnLevels(samples, device = '') {
   return advice;
 }
 
-// Start a check. onLevel(db) is called about 10 times a second, onDone({ device, advice }) at the end.
-// Returns { stop }. Rejects (before returning) if the microphone cannot be opened.
-export async function startMicCheck({ onLevel, onDone, seconds = 15, deviceId = '' }) {
-  const audio = deviceId ? { deviceId: { exact: deviceId } } : true; // a chosen microphone, or the default
-  const stream = await navigator.mediaDevices.getUserMedia({ audio });
-  const device = stream.getAudioTracks()[0]?.label || '';
-  const context = new AudioContext();
-  const analyser = context.createAnalyser();
-  analyser.fftSize = 2048;
-  context.createMediaStreamSource(stream).connect(analyser);
-  const buffer = new Float32Array(analyser.fftSize);
-  const samples = [];
-  let finished = false;
+// One shared checker, used by the Settings tab and by the setup screen. It only measures loudness: it never
+// records, saves, transcribes or sends anything. States: 'idle' -> 'opening' (waiting for the microphone
+// permission) -> 'checking' -> 'idle'.
+//   onState(state)             every change of state
+//   onLevel(db)                about 10 times a second while checking
+//   onDone({ device, advice }) the check ended normally (time ran out, or stop() was called while checking)
+//   onError()                  the microphone could not be opened
+// start({ deviceId }) returns true if a check began. stop() ends a running check with advice (or cancels a waiting
+// one). cancel() ends everything silently: used when the person leaves, starts a session, or changes the
+// microphone. A permission answered after a cancel is released the moment it arrives (a numbered request).
+export function createMicChecker({ onState, onLevel, onDone, onError, seconds = 15 } = {}) {
+  let state = 'idle';
+  let generation = 0;
+  let active = null; // the running check: { stream, context, timer, limit, samples, device }
 
-  const timer = setInterval(() => {
-    analyser.getFloatTimeDomainData(buffer);
-    const rms = Math.sqrt(buffer.reduce((sum, x) => sum + x * x, 0) / buffer.length);
-    const db = rms > 0 ? 20 * Math.log10(rms) : -100;
-    samples.push(db);
-    onLevel?.(db);
-  }, 100);
+  const setState = (next) => { if (state !== next) { state = next; onState?.(state); } };
 
-  function stop() {
-    if (finished) return;
-    finished = true;
-    clearInterval(timer);
-    clearTimeout(limit);
-    stream.getTracks().forEach((t) => t.stop()); // the microphone light goes off
-    context.close();
-    onDone?.({ device, advice: adviseOnLevels(samples, device) });
+  function teardown(run) {
+    clearInterval(run.timer);
+    clearTimeout(run.limit);
+    run.stream.getTracks().forEach((t) => t.stop()); // the microphone light goes off
+    run.context.close().catch(() => {});
+    if (active === run) active = null;
   }
-  const limit = setTimeout(stop, seconds * 1000);
-  return { stop };
+
+  const api = {
+    getState: () => state,
+    isBusy: () => state !== 'idle',
+
+    async start({ deviceId = '' } = {}) {
+      if (state !== 'idle') return false; // repeated clicks do nothing
+      if (!navigator.mediaDevices?.getUserMedia) { onError?.(); return false; }
+      const mine = ++generation;
+      setState('opening');
+      const audio = deviceId ? { deviceId: { exact: deviceId } } : true; // a chosen microphone, or the default
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio });
+      } catch {
+        if (mine === generation) { setState('idle'); onError?.(); }
+        return false;
+      }
+      // Cancelled or replaced while the prompt was open: let the microphone go at once
+      if (mine !== generation) { stream.getTracks().forEach((t) => t.stop()); return false; }
+
+      const device = stream.getAudioTracks()[0]?.label || '';
+      const context = new AudioContext();
+      const analyser = context.createAnalyser();
+      analyser.fftSize = 2048;
+      context.createMediaStreamSource(stream).connect(analyser);
+      const buffer = new Float32Array(analyser.fftSize);
+      const run = { stream, context, samples: [], device };
+      run.timer = setInterval(() => {
+        analyser.getFloatTimeDomainData(buffer);
+        const rms = Math.sqrt(buffer.reduce((sum, x) => sum + x * x, 0) / buffer.length);
+        const db = rms > 0 ? 20 * Math.log10(rms) : -100;
+        run.samples.push(db);
+        onLevel?.(db);
+      }, 100);
+      run.limit = setTimeout(() => api.stop(), seconds * 1000);
+      active = run;
+      setState('checking');
+      return true;
+    },
+
+    stop() {
+      if (state === 'opening') { generation++; setState('idle'); return; } // never opened: nothing to report
+      if (state !== 'checking' || !active) return;
+      const run = active;
+      teardown(run);
+      setState('idle');
+      onDone?.({ device: run.device, advice: adviseOnLevels(run.samples, run.device) });
+    },
+
+    cancel() {
+      generation++;
+      if (active) teardown(active);
+      setState('idle');
+    },
+  };
+  return api;
 }

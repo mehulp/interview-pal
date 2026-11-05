@@ -90,7 +90,7 @@ alias interviewpal='/home/mehul/projects/interviewpal/scripts/interviewpal.sh'
 - **A realistic interviewer.** Photos or short clips of a real-looking person who blinks, listens and talks. Several interviewers can be installed, and a stern one can be used for hard rounds. The drawn face is the fallback.
 - **Spoken questions.** The browser reads each question aloud, in an Indian, US or UK English voice that matches the interviewer.
 - **Voice answers** with a live transcript you can correct, or just type.
-- **Difficulty.** Easy, medium or hard change the answer timer, the interviewer's tone, the speaking speed, and whether you can repeat or skip a question.
+- **Interview pressure** (formerly Difficulty). Relaxed, Standard or Challenging (stored as easy, medium and hard) change the answer timer, the interviewer's tone, the speaking speed, and whether you can repeat or skip a question.
 - **Coach mode (optional).** Claude gives a score out of 10, what you covered, what you missed and one tip, compared with your reference answer, and can speak the feedback.
 - **Summary and History.** A summary after every session, with topics to revisit, and a History tab of past sessions.
 - **Progress view.** On the History tab: a daily streak, your score and self-mark trend, sessions per day and a heat map of your weakest topics. Drawn on your device from your saved history.
@@ -110,13 +110,12 @@ The four tabs at the top are **Interview**, **Questions**, **History** and **Set
    - Choose a file or paste text, then click **Find questions**. They are added to the open set.
    - Check each card. Fix the question or answer, add a topic, tag it **Easy** or **Hard**, or delete it. Text the reader could not place appears under "Not recognised".
    - The same question can be in more than one set (for example your own notes and the demo). Inside one set a question can appear only once: loading a question that is already in the open set skips it, and you are told how many. **Move to set…** on a card moves it. If the other set already has that question, it just leaves this set. When you tick several sets, a question that appears in more than one is asked only once.
-2. **Interview tab: set up a session.**
-   - Pick a **mode**: Practice (the default) or Coach.
-   - Tick the **question sets** to draw from.
-   - Choose the **order** (in sequence or random), **question level** (all, only easy, or only hard), **difficulty** and **number of questions**.
-   - Pick the **accent** for the interviewer's voice and for your own speech, your **microphone**, and the **interviewer face** (Automatic is the default).
-   - Optional: self-marking (Practice), spoken feedback (Coach), **Show model answer with each question** (off by default), self-view, and the on-device recogniser.
-   - Click **Start practice** (or **Start coaching**).
+2. **Interview tab: set up a session.** One screen, three short sections and a **More options** drawer. Nothing starts until you press **Start**.
+   - **1. Questions.** Tick the **question sets** to draw from. The screen tells you how many questions are available after the filter and after repeats are removed (a question that is in two ticked sets counts once), and warns you if you asked for more than that ("You asked for 10, but only 6 match, so the session will have 6."). Then choose the **number of questions**, the **order** (in sequence or random) and the **question complexity** (all, only easy, or only hard: the tags on your questions). If you have no questions yet, a link takes you to the Questions tab.
+   - **2. Practice approach.** Start from a preset if you like: **Guided rehearsal** (reference answer shown, relaxed pace with no time limit, self-review) or **Mock interview** (reference hidden at first, standard time limit, self-review). A preset is applied only when you choose it (and once on a brand-new installation, which starts on Guided rehearsal): it never overwrites your saved choices by itself. You can change anything afterwards; the screen then says the preset is **customised**. **Feedback** is separate: **No feedback**, **Self-review** (compare with your reference and mark yourself) or **AI Coach** (needs an API key; it is the same Coach as before, and only your text is ever sent, never a recording). A checkbox shows or hides the reference answer while you answer.
+   - **3. Response and devices.** Choose **Speak** or **Type**, pick your **microphone** and press **Test microphone** to see a level meter (it measures loudness only: nothing is recorded, transcribed or sent, and it stops by itself). **Preview camera** shows your picture on this screen only, and stops when you leave setup or press Start; allowing a preview is not recording. **Recording: Off / Audio / Video** is the starting choice for this session only: it is **not remembered**, and it is Off every time you open setup. Nothing is recorded until you press Start answer in the interview.
+   - **More options** holds **Interview pressure** (Relaxed, Standard or Challenging: the old Easy, Medium and Hard, with the same rules), the interviewer's and your own accent, the interviewer face, speaking the Coach feedback aloud, and the experimental on-device recogniser. The screen always says what the chosen pressure means: the time limit, and whether you can repeat or skip.
+   - Above **Start practice** (or **Start coaching**) a summary says what you are about to do, for example "10 questions · Introduction & HR · Guided rehearsal · Speak · Recording off", with the time limit and feedback on a second line. Start is off only when practice is not possible (no sets ticked, or no questions match), and the screen says what to change.
 3. **During the interview.**
    - **The screen.** On a laptop or desktop the interviewer is on the left, large, and the **answer workspace** is on the right: progress and the countdown, the question as a heading, your reference answer (if it is on) and your response, the buttons, the recorder, and **End session** kept apart at the bottom. On a phone everything stacks in one column. The self-view button is under the interviewer's picture.
    - You get a short pause, then the interviewer asks the first question. Nothing is listened to or recorded while they speak.
@@ -174,9 +173,9 @@ I score items by impact and effort ...
 | Scoring | None. Optional self-marking: Got it, Partly or Missed | Score out of 10, covered, missed and a tip, spoken or text |
 | Cost | Free | A few cents per 10-question session on a Sonnet model |
 
-**Difficulty settings**
+**Interview pressure settings** (Relaxed = easy, Standard = medium, Challenging = hard)
 
-| | Easy | Medium | Hard |
+| | Relaxed (easy) | Standard (medium) | Challenging (hard) |
 |---|---|---|---|
 | Answer timer | None (optional 5 minutes) | About 2 minutes | About 90 seconds |
 | Tone | Warm, encouraging | Neutral, professional | Brisk, challenging |

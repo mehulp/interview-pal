@@ -93,7 +93,7 @@ const spoken = (p) => p.evaluate(() => window.__spokenLog.length);
 {
   const p = await newPage(b, { init: SPEECH });
   await startSession(p, { count: 3 });
-  await p.check('#opt-selfmark').catch(() => {});
+  await p.check('#fbk-self').catch(() => {});
   await p.evaluate(() => { window.__voice = 'I check in weekly'; window.__late = ['and', 'give', 'feedback']; window.__stopDelay = 900; });
   await startAnswer(p); await p.waitForFunction(() => document.getElementById('answer').value.includes('weekly'));
   const spokenBefore = await spoken(p);

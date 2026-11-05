@@ -8,7 +8,7 @@ const tab = (p, n) => p.click(`.tabs button[data-screen="${n}"]`);
 {
   const p = await newPage(b);
   await startSession(p, { count: 2 });
-  await p.check('#opt-selfmark').catch(() => {});
+  await p.check('#fbk-self').catch(() => {});
   await typeAndNext(p, 'first answer');
   await ready(p); await typeAndNext(p, 'second answer');
   await p.waitForSelector('#finished:not([hidden])');
@@ -34,7 +34,7 @@ const tab = (p, n) => p.click(`.tabs button[data-screen="${n}"]`);
   await tab(p, 'practice');
   await p.evaluate(() => document.querySelectorAll('#set-choices input').forEach((i) => { i.checked = true; i.dispatchEvent(new Event('change', { bubbles: true })); }));
   check('setup counts the shared question once', (await text(p, '#available')).startsWith('20 question(s)'));
-  await p.selectOption('#opt-order', 'serial'); await p.fill('#opt-count', '2'); await p.check('#opt-selfmark'); await p.check('#opt-show-answer');
+  await p.selectOption('#opt-order', 'serial'); await p.fill('#opt-count', '2'); await p.check('#fbk-self'); await p.check('#opt-show-answer');
   await p.click('#start-btn'); await ready(p);
   check('model answer visible from the start, and it is my copy', (await text(p, '#model-answer-text')) === 'MY ANSWER');
   await startAnswer(p); await p.fill('#answer', 'x'); await finish(p);

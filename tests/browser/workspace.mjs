@@ -35,9 +35,8 @@ async function begin(p, { count = 2, showAnswer = false, selfMark = false, coach
   await p.reload();
   await p.evaluate(() => document.querySelectorAll('#set-choices input').forEach((i) => { i.checked = i.parentElement.textContent.includes('Workspace set'); i.dispatchEvent(new Event('change', { bubbles: true })); }));
   await p.selectOption('#opt-order', 'serial'); await p.selectOption('#opt-difficulty', difficulty); await p.fill('#opt-count', String(count));
-  if (showAnswer) await p.check('#opt-show-answer');
-  if (selfMark) await p.check('#opt-selfmark');
-  if (coach) await p.check('#mode-coach');
+  await p.setChecked('#opt-show-answer', showAnswer); // (a new installation starts on Guided: say what we want)
+  await p.check(coach ? '#fbk-coach' : selfMark ? '#fbk-self' : '#fbk-none');
   if (selfView) await p.check('#opt-selfview');
   await p.click('#start-btn'); await ready(p); // asked, and waiting for Start answer
 }

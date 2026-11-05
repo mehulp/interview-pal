@@ -200,6 +200,8 @@ function updatePanel() {
 
 const readMode = () => document.querySelector('input[name="rec-mode"]:checked')?.value || 'off';
 function resetMode() { $('rec-mode-off').checked = true; }
+// The setup screen's Recording choice becomes the starting value here. It starts nothing: only Start answer does.
+function setMode(mode) { const radio = $(`rec-mode-${mode}`); if (radio) radio.checked = true; else resetMode(); }
 
 function startRecording(video) {
   const avail = recordAvailability({ supported: !recordingProblem(), recState: recorder.getState(), hasPending: Boolean(pending), current: context });
@@ -508,6 +510,7 @@ export const recPanel = {
   beginForAnswer,
   finishForAnswer,
   resetMode,
+  setMode,
   mode: readMode,
   onContinueWithout: (fn) => { continueWithout = fn; },
   hasUnsaved: () => Boolean(pending),

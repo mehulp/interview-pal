@@ -161,7 +161,7 @@ async function walk(theme) {
   await tab(p, 'questions'); await p.click('#demo-btn'); n += await state('questions');
   await tab(p, 'practice');
   await p.evaluate(() => document.querySelectorAll('#set-choices input').forEach((i) => { i.checked = i.parentElement.textContent.includes('Demo'); i.dispatchEvent(new Event('change', { bubbles: true })); }));
-  await p.selectOption('#opt-order', 'serial'); await p.fill('#opt-count', '2'); await p.check('#opt-selfmark'); await p.check('#opt-show-answer');
+  await p.selectOption('#opt-order', 'serial'); await p.fill('#opt-count', '2'); await p.check('#fbk-self'); await p.check('#opt-show-answer');
   n += await state('setup');
   await p.click('#start-btn'); await ready(p);
   await p.check('#rec-mode-audio'); await startAnswer(p);
@@ -192,7 +192,7 @@ async function walk(theme) {
   await p.click('.history-row'); n += await state('history-detail');
   await tab(p, 'practice');
   await p.evaluate(() => document.querySelectorAll('#set-choices input').forEach((i) => { i.checked = i.parentElement.textContent.includes('Demo'); i.dispatchEvent(new Event('change', { bubbles: true })); }));
-  await p.check('#mode-coach'); await p.fill('#opt-count', '1');
+  await p.check('#fbk-coach'); await p.fill('#opt-count', '1');
   await p.click('#start-btn'); await ready(p); await startAnswer(p);
   await p.fill('#answer', 'I delegate with clear outcomes and weekly check-ins.'); await finish(p);
   await p.waitForSelector('#fb-result:not([hidden])');

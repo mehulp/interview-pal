@@ -27,7 +27,7 @@ async function coachPage(delayMs = 1500) {
   await p.click('.tabs button[data-screen="questions"]'); await p.click('#demo-btn');
   await p.click('.tabs button[data-screen="practice"]');
   await p.evaluate(() => document.querySelectorAll('#set-choices input').forEach((i) => { i.checked = i.parentElement.textContent.includes('Demo'); i.dispatchEvent(new Event('change', { bubbles: true })); }));
-  await p.check('#mode-coach'); await p.fill('#opt-count', '3'); await p.selectOption('#opt-order', 'serial');
+  await p.check('#fbk-coach'); await p.fill('#opt-count', '3'); await p.selectOption('#opt-order', 'serial');
   await p.click('#start-btn'); await ready(p);
   return p;
 }

@@ -5,7 +5,7 @@ import { getApiKey, saveApiKey, clearApiKey, loadSettings, saveSettings, DEFAULT
 import { THEMES } from './themes.js';
 import { applyTheme } from './appearance.js';
 import { testConnection, ClaudeError } from './claude.js';
-import { startMicCheck } from './miccheck.js';
+import { createMicChecker } from './miccheck.js';
 
 const $ = (id) => document.getElementById(id);
 const keyInput = $('key-input');
@@ -113,40 +113,38 @@ testBtn.addEventListener('click', async () => {
 showKeyStatus('');
 
 /* ---------- Microphone check ---------- */
+// The same checker as the setup screen uses (miccheck.js). It only measures loudness; nothing is recorded.
 const micBtn = $('mic-check-btn');
-let micCheck = null; // the running check, if any
 
 // Map a level in dB (about -60 quiet ... 0 loudest) to a bar width.
 const meterWidth = (db) => `${Math.max(0, Math.min(100, ((db + 60) / 60) * 100))}%`;
 
-function endMicCheck() {
-  micCheck = null;
-  micBtn.textContent = 'Start microphone check';
-  $('mic-meter').style.width = '0';
-}
+const micChecker = createMicChecker({
+  onState: (state) => {
+    micBtn.textContent = state === 'idle' ? 'Start microphone check' : 'Stop check';
+    if (state === 'idle') $('mic-meter').style.width = '0';
+    if (state === 'checking') $('mic-check-status').textContent = 'Listening for 15 seconds… speak normally, as if answering a question.';
+  },
+  onLevel: (db) => { $('mic-meter').style.width = meterWidth(db); },
+  onDone: ({ device, advice }) => {
+    $('mic-check-status').textContent = `Microphone: ${device || 'unknown'}.`;
+    $('mic-check-advice').replaceChildren(...advice.map((text) => {
+      const li = document.createElement('li');
+      li.textContent = text;
+      return li;
+    }));
+  },
+  onError: () => {
+    $('mic-check-status').textContent = 'The microphone could not be opened. Allow it in the browser address bar and check that one is connected.';
+  },
+});
 
-micBtn.addEventListener('click', async () => {
-  if (micCheck) { micCheck.stop(); return; } // pressed again: stop early
+micBtn.addEventListener('click', () => {
+  if (micChecker.isBusy()) { micChecker.stop(); return; } // pressed again: stop early
   $('mic-check-advice').replaceChildren();
   $('mic-check-status').textContent = 'Opening the microphone…';
-  try {
-    micCheck = await startMicCheck({
-      deviceId: loadSettings().micDeviceId, // the microphone chosen on the Interview screen
-      onLevel: (db) => { $('mic-meter').style.width = meterWidth(db); },
-      onDone: ({ device, advice }) => {
-        endMicCheck();
-        $('mic-check-status').textContent = `Microphone: ${device || 'unknown'}.`;
-        $('mic-check-advice').replaceChildren(...advice.map((text) => {
-          const li = document.createElement('li');
-          li.textContent = text;
-          return li;
-        }));
-      },
-    });
-    micBtn.textContent = 'Stop check';
-    $('mic-check-status').textContent = 'Listening for 15 seconds… speak normally, as if answering a question.';
-  } catch {
-    endMicCheck();
-    $('mic-check-status').textContent = 'The microphone could not be opened. Allow it in the browser address bar and check that one is connected.';
-  }
+  micChecker.start({ deviceId: loadSettings().micDeviceId }); // the microphone chosen on the Interview screen
 });
+window.addEventListener('pagehide', () => micChecker.cancel());
+// Leaving the Settings tab ends a running check (the microphone light must not stay on)
+document.querySelectorAll('.tabs button').forEach((tab) => tab.addEventListener('click', () => { if (tab.dataset.screen !== 'settings') micChecker.cancel(); }));

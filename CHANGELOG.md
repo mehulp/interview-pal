@@ -2,6 +2,17 @@
 
 All notable changes to InterviewPal. Dates are when the work was finished.
 
+## Unreleased (UX redesign — Step 5: Simpler interview setup)
+
+- **One setup screen, three sections:** Questions, Practice approach, and Response and devices, with the less common options under **More options**. A summary above Start says what you are about to do, including the time limit and feedback.
+- **Guided rehearsal and Mock interview presets.** Applied only when you choose one (and once on a brand-new installation); your saved choices are never overwritten. The screen says **customised** when you change something afterwards.
+- **Clearer names:** Question level → **Question complexity**; Difficulty → **Interview pressure** (Relaxed, Standard, Challenging), with the same rules and stored values, and a plain explanation of the time limit, repeat and skip.
+- **Feedback is its own choice:** No feedback, Self-review or AI Coach (the same Coach; unavailable without a key, with a link to Settings).
+- **Test microphone and Preview camera in setup.** Neither records or transcribes; both stop when you leave setup or press Start, and a late permission is released. Allowing a camera preview is not consent to record video.
+- **Recording is chosen per session:** Off / Audio / Video in setup, never remembered, Off every time setup opens.
+- **Honest counts:** how many questions match after the complexity filter and removing repeats, a note when you ask for more than exist, and a link to Questions when there are none.
+- The microphone check on the Settings tab now shares the same checker and also releases a late permission.
+
 ## Unreleased (UX redesign — Step 4: Coordinated answer and review lifecycle)
 
 - **A clear sequence for every question:** question spoken, Ready (**Start answer**), Answering (**Finish answer**), Finishing, then a stable **Review** with **Next question**. Nothing advances by itself, not even when the time runs out. End session stays available throughout.

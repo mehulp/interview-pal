@@ -500,6 +500,20 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .primary-actions { margin-top: 12px; }
 .secondary-actions { flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .session-end { display: flex; justify-content: flex-end; margin-top: 22px; padding-top: 12px; border-top: 1px solid var(--border); }
+/* Setup (Step 5): three sections, a More options disclosure, device checks and the start summary */
+.setup-section { margin: 0 0 22px; padding: 0 0 6px; border-bottom: 1px solid var(--border); }
+.setup-section h3 { margin: 0 0 10px; font-size: 1.1rem; }
+.device-row { align-items: center; gap: 12px; margin: 8px 0 4px; flex-wrap: wrap; }
+.device-row .meter { flex: 1 1 140px; min-width: 100px; }
+#setup-mic-advice { margin: 4px 0 8px; padding-left: 20px; }
+.setup-cam { display: block; width: 180px; max-width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 10px; border: 1px solid var(--border); transform: scaleX(-1); background: var(--surface-subtle); margin: 8px 0 4px; }
+.more-options { margin: 0 0 18px; border: 1px solid var(--border); border-radius: 10px; padding: 8px 14px 12px; background: var(--surface-subtle); }
+.more-options > summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
+.more-options > summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
+.start-summary { margin: 4px 0 10px; padding: 10px 14px; border-left: 4px solid var(--accent); background: var(--selected-bg); border-radius: 0 8px 8px 0; }
+.start-summary .start-line { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.start-summary .start-line.sub { font-weight: 400; color: var(--text-muted); margin-top: 2px; }
+.start-summary:has(.start-line:empty) { display: none; }
 /* Answer lifecycle (Step 4): response method, two separate status lines, clocks, review */
 .seg { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin: 0 0 10px; padding: 0; border: 0; min-width: 0; }
 .seg-legend { float: left; margin-right: 12px; padding: 0; font-weight: 600; color: var(--text-muted); font-size: 0.95rem; }
