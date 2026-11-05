@@ -112,27 +112,39 @@ This is a "pure core, thin shell" design. The rules that matter (parsing, no rep
 stateDiagram-v2
     [*] --> setup
     setup --> asking: Start
-    asking --> answering: question spoken
+    asking --> ready: question spoken
+    ready --> answering: Start answer
+    answering --> finishing: Finish answer
+    ready --> finishing: time limit
+    answering --> finishing: time limit
+    ready --> finishing: Skip
     asking --> finishing: Skip
-    answering --> finishing: Next, timer ends, Skip
-    finishing --> asking: next question (no marking)
-    finishing --> marking: Practice with self-marking
-    finishing --> feedback: Coach mode
-    marking --> asking: Got it, Partly or Missed
-    feedback --> asking: Next question
-    marking --> finished: last question
-    feedback --> finished: last question
-    finishing --> finished: last question
+    answering --> finishing: Skip
+    finishing --> review: handed in once
+    finishing --> asking: Skip (straight to the next question)
+    review --> asking: Next question
+    review --> finished: Finish session (last question)
+    finishing --> finished: last question skipped
     asking --> finished: End session
+    ready --> finished: End session
     answering --> finished: End session
+    finishing --> finished: End session
+    review --> finished: End session
     finished --> setup: Practise again, or leave the tab
 ```
 
-Three details keep this safe:
+The phases of one question are **asking** (the interviewer speaks; nothing is captured), **ready** (think or type; the countdown and the "Preparing" clock run), **answering** (the chosen Speak or Type method and the chosen recording are on), **finishing** (the answer is being handed in) and **review** (what was handed in, the recording, the reference, then self-marking or Coach feedback). The pure rules live in `session.js` and are unit-tested: `nextPhase(phase, event)` says which event is allowed where (an event that does not fit changes nothing), `primaryAction(...)` says what the one main button reads (Start answer, Finish answer, a disabled Finishing…, Next question or Finish session), and `canRepeat` / `canSkip` say when those buttons work (Repeat only in ready, so the interviewer's voice can never reach the microphone).
 
-- **`finishing`** is a short phase while the app waits (up to about 1.5 seconds) for the last spoken words to arrive. It blocks double clicks.
+Details that keep this safe:
+
+- **`finishing` awaits real completion.** Finish answer stops the recogniser (up to about 1.5 seconds for the last words), then calls `recPanel.finishForAnswer()`, which stops the recorder and awaits a promise from `recorder.js` (`stop()` settles once the result or an error has been handed over, with the recorder's own 3-second safety timer and a 5-second outer bound). Only then is the response snapshotted into a result and the review opened. Nothing sleeps and guesses. If the recording fails, the response is still handed in and the review says so.
+- **Transcription and recording are independent.** The `Speech to text` and `Recording` status lines are separate. A refused microphone for recording leaves speech working, and a failed recogniser leaves the recording running. Nothing restarts a failed capture without a button press (Listen again, Record again). Typing while listening stops listening and a late transcript never overwrites the box.
+- **Start answer does not wait for permission.** The recorder is started and the answer begins at once; the hard countdown is never paused or reset. If Finish answer is pressed while the prompt is still open, the recorder request is cancelled (a generation counter releases the microphone if it is answered later) and the review says the permission was still waiting.
+- **A hard timeout hands in once and stops.** The timeout runs the same finishing path as Finish answer, then opens the review; it does not advance to the next question.
 - **An "epoch token".** Every question run gets an id (`runId`). If the user skips, ends the session or the timer fires, any older waiting code sees a stale id and quietly stops. The recogniser uses the same idea (`sessionId`), so an old timeout can't end a newer listening session.
-- **Ending happens once, and finishes what is under way.** Every way of ending (the End buttons, leaving the tab, the last question) goes through one `finishSession`, which returns the same promise if it is already running. If an answer was being handed in (Next, Skip or time up), ending waits for that to become a result with its own outcome, and the hand-in does not go on to mark, ask Coach or ask the next question. Then the phase becomes `ending` (buttons off, last spoken words awaited), an answer that was started but not handed in is saved as `incomplete`, and the summary is shown. Starting is guarded the same way (a start token and a `starting` flag), and `selfview.js` numbers its camera requests so a late permission is released.
+- **Ending happens once, and finishes what is under way.** Every way of ending (the End buttons, leaving the tab, the last question) goes through one `finishSession`, which returns the same promise if it is already running. If an answer was being handed in (Finish, Skip or time up), ending waits for that to become a result with its own outcome, and the hand-in does not go on to review, ask Coach or ask the next question. Then the phase becomes `ending` (buttons off, last spoken words awaited, a recording in progress stopped), an answer that was started but not handed in is saved as `incomplete`, and the summary is shown. Starting is guarded the same way (a start token and a `starting` flag), and `selfview.js` numbers its camera requests so a late permission is released.
+- **The review never advances by itself.** Choosing a self-mark only records it (`aria-pressed`); Next question is a separate button. Coach feedback loads inside the review; Try again re-marks the same result (never a second one) and Skip feedback keeps the result without a score. With no text there is no Coach request at all (a recording is never sent anywhere): the review explains and offers typing the response or continuing without feedback.
+- **One pending recording at a time.** If one is still unsaved when the next answer would record, `beginForAnswer` returns `blocked` and the panel explains save, download or discard, with an explicit "Continue without recording" for that answer only.
 
 ## 7. One Coach answer, end to end
 

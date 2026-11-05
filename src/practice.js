@@ -71,6 +71,7 @@ export function initPractice(avatar) {
   let listening = false;
   let onDeviceReady = false; // the on-device recogniser is switched on and works here
   let textBefore = '';
+  let speechProblem = false; // the recogniser reported a problem: its message stays on the Speech to text line
   let typedWhileListening = false; // you typed while the microphone was on: later transcript text is not put in the box
   // Starting and ending are asynchronous, so each is guarded against happening twice or arriving late
   let starting = false; // Start was pressed and the first question has not begun yet
@@ -559,6 +560,7 @@ export function initPractice(avatar) {
       await pause(START_DELAY_MS);
       if (run !== runId) return; // you ended the session during the pause
       $('primary-hint').dataset.lead = '';
+      setButtons();
     }
 
     const lead = kind === 'none' ? '' : pickPhrase(options.difficulty, kind);
@@ -978,10 +980,10 @@ export function initPractice(avatar) {
       voice.live = '';
       listening = false;
       if (avatar.getState() === 'listening') avatar.setState('idle');
-      if (phase === 'answering' && !typedWhileListening) { status.textContent = 'Stopped listening. Press Listen again to speak, or type.'; }
+      if (phase === 'answering' && !typedWhileListening && !speechProblem) { status.textContent = 'Stopped listening. Press Listen again to speak, or type.'; }
       setButtons();
     },
-    onError: (message) => { status.textContent = `${message} You can type your response instead.`; },
+    onError: (message) => { speechProblem = true; status.textContent = `${message} You can type your response instead.`; },
     onNote: (message) => { status.textContent = message; },
   });
 
@@ -990,6 +992,7 @@ export function initPractice(avatar) {
     hush(); // the mic should not hear the interviewer
     textBefore = answerBox.value;
     typedWhileListening = false;
+    speechProblem = false;
     voice.since = Date.now();
     voice.live = '';
     listening = true;

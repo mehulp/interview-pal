@@ -291,46 +291,50 @@
   <!-- 3. STATES -->
   <section id="states">
     <h2>The interview is a small state machine</h2>
-    <p>Each question moves through the same few phases. Two details keep it safe: a short <code>finishing</code> phase while the app waits for the last spoken words, and a token that makes late timers and late speech results harmless.</p>
+    <p>Each question moves through the same phases: asked, <strong>Ready</strong>, <strong>Answering</strong>, <strong>Finishing</strong> and <strong>Review</strong>. The pure rules (which event is allowed in which phase, what the main button says) live in <code>session.js</code> and are unit-tested; an event that does not fit the phase changes nothing, which is what makes double clicks and late callbacks harmless.</p>
     <figure>
       <div class="fig-scroll">
-        <svg viewBox="0 0 880 350" role="img" aria-label="Phases of one question: setup, asking, answering, finishing, then marking or feedback, then back to asking, or finished." style="color: var(--fg-soft)">
+        <svg viewBox="0 0 880 360" role="img" aria-label="Phases of one question: setup, asking, ready, answering, finishing, review, then back to asking, or finished." style="color: var(--fg-soft)">
           <defs>
             <marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker>
           </defs>
-          <rect class="box" x="20" y="40" width="140" height="56" rx="8"/>
-          <text class="t-b" x="90" y="64" text-anchor="middle">setup</text><text class="t-mut" x="90" y="82" text-anchor="middle">your choices</text>
-          <rect class="box-in" x="210" y="40" width="140" height="56" rx="8"/>
-          <text class="t-b" x="280" y="64" text-anchor="middle">asking</text><text class="t-mut" x="280" y="82" text-anchor="middle">interviewer speaks</text>
-          <rect class="box-in" x="400" y="40" width="140" height="56" rx="8"/>
-          <text class="t-b" x="470" y="64" text-anchor="middle">answering</text><text class="t-mut" x="470" y="82" text-anchor="middle">you speak or type</text>
-          <rect class="box-in" x="590" y="40" width="140" height="56" rx="8"/>
-          <text class="t-b" x="660" y="64" text-anchor="middle">finishing</text><text class="t-mut" x="660" y="82" text-anchor="middle">waits for last words</text>
-          <rect class="box-in" x="590" y="170" width="140" height="64" rx="8"/>
-          <text class="t-b" x="660" y="192" text-anchor="middle">marking</text>
-          <text class="t-mut" x="660" y="210" text-anchor="middle">Practice: self-mark</text><text class="t-mut" x="660" y="224" text-anchor="middle">Coach: AI feedback</text>
-          <rect class="box" x="590" y="280" width="140" height="56" rx="8"/>
-          <text class="t-b" x="660" y="304" text-anchor="middle">finished</text><text class="t-mut" x="660" y="322" text-anchor="middle">summary + History</text>
+          <rect class="box" x="10" y="50" width="110" height="56" rx="8"/>
+          <text class="t-b" x="65" y="74" text-anchor="middle">setup</text><text class="t-mut" x="65" y="92" text-anchor="middle">your choices</text>
+          <rect class="box-in" x="160" y="50" width="120" height="56" rx="8"/>
+          <text class="t-b" x="220" y="74" text-anchor="middle">asking</text><text class="t-mut" x="220" y="92" text-anchor="middle">nothing captured</text>
+          <rect class="box-in" x="320" y="50" width="120" height="56" rx="8"/>
+          <text class="t-b" x="380" y="74" text-anchor="middle">ready</text><text class="t-mut" x="380" y="92" text-anchor="middle">think, or type</text>
+          <rect class="box-in" x="480" y="50" width="120" height="56" rx="8"/>
+          <text class="t-b" x="540" y="74" text-anchor="middle">answering</text><text class="t-mut" x="540" y="92" text-anchor="middle">speak or type, record</text>
+          <rect class="box-in" x="640" y="50" width="120" height="56" rx="8"/>
+          <text class="t-b" x="700" y="74" text-anchor="middle">finishing</text><text class="t-mut" x="700" y="92" text-anchor="middle">awaits words + file</text>
+          <rect class="box-in" x="640" y="180" width="120" height="70" rx="8"/>
+          <text class="t-b" x="700" y="202" text-anchor="middle">review</text>
+          <text class="t-mut" x="700" y="220" text-anchor="middle">response, recording,</text><text class="t-mut" x="700" y="234" text-anchor="middle">reference, mark / AI</text>
+          <rect class="box" x="640" y="290" width="120" height="56" rx="8"/>
+          <text class="t-b" x="700" y="314" text-anchor="middle">finished</text><text class="t-mut" x="700" y="332" text-anchor="middle">summary + History</text>
 
-          <line class="edge" x1="160" y1="68" x2="210" y2="68" marker-end="url(#a3)"/><text class="t-mut" x="185" y="60" text-anchor="middle">Start</text>
-          <line class="edge" x1="350" y1="68" x2="400" y2="68" marker-end="url(#a3)"/><text class="t-mut" x="375" y="60" text-anchor="middle">spoken</text>
-          <line class="edge" x1="540" y1="68" x2="590" y2="68" marker-end="url(#a3)"/><text class="t-mut" x="565" y="60" text-anchor="middle">Next</text>
-          <path class="edge" d="M280 40 V14 H660 V40" marker-end="url(#a3)"/><text class="t-mut" x="470" y="10" text-anchor="middle">Skip (not on Hard)</text>
-          <line class="edge" x1="660" y1="96" x2="660" y2="170" marker-end="url(#a3)"/><text class="t-mut" x="668" y="138">Practice self-mark, or Coach</text>
-          <path class="edge" d="M620 96 V124 H290 V96" marker-end="url(#a3)"/><text class="t-mut" x="455" y="118" text-anchor="middle">next question (no marking)</text>
-          <path class="edge" d="M590 202 H250 V96" marker-end="url(#a3)"/><text class="t-mut" x="420" y="196" text-anchor="middle">next question</text>
-          <line class="edge" x1="660" y1="234" x2="660" y2="280" marker-end="url(#a3)"/><text class="t-mut" x="668" y="262">last question</text>
-          <path class="edge dash" d="M730 68 H796 V308 H730" marker-end="url(#a3)"/>
-          <text class="t-mut" x="804" y="184">End session</text><text class="t-mut" x="804" y="198">(any phase)</text>
-          <path class="edge" d="M590 308 H90 V96" marker-end="url(#a3)"/><text class="t-mut" x="340" y="302" text-anchor="middle">Practise again, or leave the tab</text>
+          <line class="edge" x1="120" y1="78" x2="160" y2="78" marker-end="url(#a3)"/><text class="t-mut" x="140" y="70" text-anchor="middle">Start</text>
+          <line class="edge" x1="280" y1="78" x2="320" y2="78" marker-end="url(#a3)"/><text class="t-mut" x="300" y="70" text-anchor="middle">spoken</text>
+          <line class="edge" x1="440" y1="78" x2="480" y2="78" marker-end="url(#a3)"/><text class="t-mut" x="460" y="70" text-anchor="middle">Start answer</text>
+          <line class="edge" x1="600" y1="78" x2="640" y2="78" marker-end="url(#a3)"/><text class="t-mut" x="620" y="70" text-anchor="middle">Finish</text>
+          <path class="edge" d="M380 50 V16 H700 V50" marker-end="url(#a3)"/><text class="t-mut" x="540" y="11" text-anchor="middle">time limit (hard timeout) from Ready or Answering</text>
+          <line class="edge" x1="700" y1="106" x2="700" y2="180" marker-end="url(#a3)"/><text class="t-mut" x="708" y="148">handed in once</text>
+          <path class="edge" d="M640 110 V144 H220 V106" marker-end="url(#a3)"/><text class="t-mut" x="430" y="138" text-anchor="middle">Skip: straight to the next question</text>
+          <path class="edge" d="M640 215 H190 V106" marker-end="url(#a3)"/><text class="t-mut" x="415" y="209" text-anchor="middle">Next question</text>
+          <line class="edge" x1="700" y1="250" x2="700" y2="290" marker-end="url(#a3)"/><text class="t-mut" x="708" y="274">Finish session</text>
+          <path class="edge dash" d="M760 78 H826 V318 H760" marker-end="url(#a3)"/>
+          <text class="t-mut" x="834" y="190">End session</text><text class="t-mut" x="834" y="204">(any phase)</text>
+          <path class="edge" d="M640 318 H65 V106" marker-end="url(#a3)"/><text class="t-mut" x="350" y="312" text-anchor="middle">Practise again, or leave the tab</text>
         </svg>
       </div>
-      <figcaption>The timer ending and the Next button both move answering to finishing. Without self-marking, Practice mode goes straight from finishing back to asking. Leaving the tab mid-session saves what was answered and returns to setup.</figcaption>
+      <figcaption>Finish answer and the time limit both move to finishing, and the answer is handed in exactly once; the review then waits for Next question. Skip hands in nothing and moves straight on. Leaving the tab mid-session saves what was answered and returns to setup.</figcaption>
     </figure>
     <div class="cols">
-      <div class="card"><h3>The finishing phase</h3><p>Chrome delivers the last words a moment after you stop. Next waits up to about 1.5 seconds so nothing is cut off, and blocks double clicks while it waits.</p></div>
-      <div class="card"><h3>Ending happens once</h3><p>Every way of ending goes through one function that returns the same promise if it is already running. An answer already being handed in finishes first, with its own outcome, and does not go on to mark, ask Coach or ask the next question. An answer that was started but not handed in is saved as incomplete and is never scored.</p></div>
+      <div class="card"><h3>The finishing phase</h3><p>Finish answer stops the speech recogniser and the recorder and <em>awaits</em> both: the last words, and the recording as a promise from <code>recorder.js</code> (no sleeps). Each wait is bounded (about 1.5 s for words, 3 to 5 s for the file), so a stuck recorder cannot freeze the interview: the response is kept and the review says nothing was recorded. The main button reads Finishing… and is off meanwhile.</p></div>
+      <div class="card"><h3>Ending happens once</h3><p>Every way of ending goes through one function that returns the same promise if it is already running. An answer already being handed in finishes first, with its own outcome, and does not go on to review, ask Coach or ask the next question. An answer that was started but not handed in is saved as incomplete and is never scored.</p></div>
       <div class="card"><h3>The epoch token</h3><p>Every question run gets an id. If you skip, end the session or the timer fires, older waiting code sees a stale id and quietly stops. The recogniser uses the same idea, so an old timeout cannot end a newer listening session.</p></div>
+      <div class="card"><h3>Four times, kept apart</h3><p><em>Preparing</em> (question asked to Start answer), <em>Answering</em> (Start answer to Finish answer), the <em>hard countdown</em> (never paused or reset by Start answer or a permission prompt) and the optional recording <em>target</em> (only a cue). They are stored as <code>prepSeconds</code>, <code>answerSeconds</code> and the existing <code>seconds</code>.</p></div>
     </div>
   </section>
 
