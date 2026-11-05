@@ -147,7 +147,7 @@ export function initPractice(avatar) {
     $('selfview-note').textContent = '';
     if (on) {
       const result = await selfView.start();
-      if (!result.ok) $('selfview-note').textContent = result.message;
+      if (!result.ok && result.message) $('selfview-note').textContent = result.message; // a cancelled request has no message
     } else {
       selfView.stop();
     }
