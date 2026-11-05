@@ -458,6 +458,30 @@ Approved by the owner. An optional extension of the v1.3 recorder: record the ca
 - Self-view still works afterwards if it was on. If self-view was on, no second camera open is needed.
 - No network requests are made by the feature.
 
+## UX redesign — Step 1: Reliability (unreleased)
+
+First step of the redesign proposed in `docs/InterviewPal_UX_Code_Review.md`. It changes how sessions end, how startup and the camera cope with things finishing late, and how the Questions screen reports saving and importing. **No appearance or layout change** and no change to the answer flow. Not assigned a version yet.
+
+### Behaviour
+
+- **Leaving a session asks first.** Clicking another tab (Questions, History, Settings, or the Settings link) during a session shows a confirmation. **Cancel** carries on with the interview and leaves the answer, the timer and any recording exactly as they were. **OK** ends the session and leaves. Nothing is asked when no session is running, on the summary screen, or while startup is still in progress (that is simply cancelled).
+- **One way to end a session.** The End session button, the Coach screen's End button and the leave confirmation all use the same path, which runs once however many times it is triggered. It waits (briefly, as Next does) for the last spoken words, then ends the session and shows the summary. No new question is asked and no new Coach request is started.
+- **An answer already being submitted is finished first, once.** If Next, Skip or the time limit had already been triggered, that submission completes with its original outcome (answered, skipped or timed out) before the session ends. It is never relabelled incomplete. If Coach marking had not finished, the score stays unset.
+- **Unfinished answers are kept as incomplete.** If a non-empty answer (typed or spoken) had been started but not submitted when the session ends, it is saved as a result marked `incomplete: true`, with the text exactly as it stood after the final spoken words arrived. It is excluded from Coach scores and averages, self-mark totals, weak-topic analysis (topics to revisit, the Progress heat map) and delivery figures. It is never sent to Coach. The summary and the History list show it as "incomplete", with the words that were written. Old History records have no such flag and display as before.
+- **Recordings are unaffected by ending.** A recording in progress is stopped and becomes the pending attempt, still labelled with the question it was recorded for. A recording with no written or spoken text does not create a result: it is not mistaken for a submitted answer. Audio and video storage rules are unchanged.
+- **Startup is guarded.** Pressing Start stays disabled until the first question begins, so a double click cannot start two sessions. If the user leaves the Interview tab while the interviewer's face or the voice are still loading, startup is cancelled: no hidden session starts, nothing is spoken, and returning to the Interview tab shows the setup screen again.
+- **Camera self-view cannot reopen late.** If self-view is switched off, or the session ends, before the camera permission is answered, the camera that arrives is released immediately. Pressing self-view repeatedly never makes more than one camera request at a time.
+- **Questions are saved honestly.** If saving the sets fails (storage blocked or full), the Questions screen says so, keeps the edits on the page, and offers **Try saving again**. Messages such as "Moved" or "Renamed" never claim more than was done: when the change is not saved they say so.
+- **Loading notes keeps its destination.** The set is fixed when **Find questions** is pressed. Changing the open set while the notes are being read does not redirect them. If the set was deleted meanwhile, nothing is added and the message says why. The button and status are restored whether reading succeeds or fails, and a second click while reading is ignored.
+
+### Tests
+
+Unit: the leave rule and the unfinished-answer rule (`session.js`), the incomplete flag and its exclusion from scores, self-mark totals, weak-topic analysis and delivery totals (`history.js`, `progress.js`, `delivery.js`), and self-view with a deferred permission (`selfview.js`). Browser (scripted, headless Chromium): Cancel keeps answer, timer and recording; OK saves an incomplete answer; no duplicate History after leaving twice; End while speech is still arriving; Next then End (original outcome, no advance, no Coach request); double End; a recording with no text; startup cancelled and double-clicked; late camera permission; failed save and retry; import with a changed or deleted destination, and button restoration.
+
+### Limits of this step
+
+The confirmation is the browser's plain OK/Cancel box (labelled buttons come with the later layout work). A session that was ended cannot be resumed. Exact links between recordings and individual session results are not added. Summary wording such as "questions asked" is unchanged.
+
 ## Acceptance criteria for v1
 
 - With no API key, load a .docx with 10 questions, review the extracted pairs, and run a Practice session with difficulty, timer and order.

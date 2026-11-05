@@ -2,6 +2,13 @@
 
 All notable changes to InterviewPal. Dates are when the work was finished.
 
+## Unreleased (UX redesign — Step 1: Reliability)
+
+- **Leaving a session asks first.** Switching tab mid-interview now asks; Cancel carries on with the answer, timer and recording untouched, OK ends the session and leaves.
+- **Ending a session is safer.** One end path for End, Coach's End and leaving: it waits for the last spoken words, finishes a submission already under way (with its original outcome), and never starts a new question or Coach request. An answer you had started but not submitted is kept as **incomplete** (not scored, not counted in self-marks, weak topics or delivery figures); old history is unaffected.
+- **Startup and camera:** a double-clicked Start no longer starts two sessions, leaving during startup cancels it quietly, and a late camera permission after self-view was switched off is released at once.
+- **Questions screen:** failed saves are reported with a retry (edits stay on the page), and loading notes keeps the set you pressed Find questions on, handles that set being deleted, and always restores its button.
+
 ## Unreleased (v1.4)
 
 - **Record video (optional, download only).** An unticked-by-default Include video box in the recorder panel. While recording, a small mirrored preview of you appears in the recorder panel and the rest of the screen stays as it is; the file contains only your camera and microphone. Up to 7 minutes. A video is never stored in the browser: replay it, then Download it. Warnings before leaving or discarding until it has been downloaded. Nothing is uploaded.
