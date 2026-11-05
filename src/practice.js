@@ -304,6 +304,7 @@ export function initPractice(avatar) {
       answerVisible = options.showAnswer;
       $('setup').hidden = true;
       $('interview').hidden = false;
+      window.scrollTo(0, 0); // the setup screen may have been scrolled: begin at the top of the interview
       showAnswerArea();
       if (options.selfView) setSelfView(true);
       askQuestion('opening');
@@ -447,8 +448,7 @@ export function initPractice(avatar) {
     showAnswerArea();
     answerShownNow = false;
     submittedThisQuestion = false;
-    replyTab = 'reference'; // each question opens on the reference, when it is on
-    refreshAnswerPanel();
+    refreshAnswerPanel(); // (the open tab is kept from question to question on narrow screens: a typist stays on the response)
     $('progress').textContent = `Question ${session.position()} of ${session.total}`;
     answerBox.value = '';
     updateReplyCount();
