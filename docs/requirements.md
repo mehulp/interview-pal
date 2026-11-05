@@ -828,7 +828,7 @@ Browser zoom is emulated with a narrow window at device scale 2 (not the real zo
 
 ### The intermittent Step 4 lifecycle failure (unresolved)
 
-It showed once in a full run under load: "Start answer" did not reach "Finish answer" within 10 seconds in the Coach scenario. It did not reproduce in ten later runs of the lifecycle check (three repeats in a row and seven full runs). Nothing was hidden: the assertion is unchanged (same selector, same 10 second wait, no retry, no extra sleep). What was added: if it happens again, the helper now throws with what the page looked like just before the click and at the failure (the main button's HTML, the hint, the progress, the clocks, the speech and recording lines, whether a pending recording blocked the start, which screen was open, the focused element) and the page errors. The cause is **not known**. Reported separately here rather than fixed.
+It showed once in a full run under load: "Start answer" did not reach "Finish answer" within 10 seconds in the Coach scenario. It did not reproduce in six later runs of the lifecycle check (three repeats in a row and three full runs). Nothing was hidden: the assertion is unchanged (same selector, same 10 second wait, no retry, no extra sleep). What was added: if it happens again, the helper now throws with what the page looked like just before the click and at the failure (the main button's HTML, the hint, the progress, the clocks, the speech and recording lines, whether a pending recording blocked the start, which screen was open, the focused element) and the page errors. The cause is **not known**. Reported separately here rather than fixed.
 
 ### Still to check by hand (Step 6)
 
