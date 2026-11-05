@@ -4,7 +4,7 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { launch, newPage, answering, check, done, vis, text, stats, AUDIT, overflow } from './lib.mjs';
+import { launch, newPage, ready, startAnswer, finish, next, check, done, vis, text, stats, AUDIT, overflow } from './lib.mjs';
 
 const OUT = process.env.SHOTS_DIR || mkdtempSync(join(tmpdir(), 'interviewpal-themes-'));
 mkdirSync(OUT, { recursive: true });
@@ -163,19 +163,20 @@ async function walk(theme) {
   await p.evaluate(() => document.querySelectorAll('#set-choices input').forEach((i) => { i.checked = i.parentElement.textContent.includes('Demo'); i.dispatchEvent(new Event('change', { bubbles: true })); }));
   await p.selectOption('#opt-order', 'serial'); await p.fill('#opt-count', '2'); await p.check('#opt-selfmark'); await p.check('#opt-show-answer');
   n += await state('setup');
-  await p.click('#start-btn'); await answering(p);
+  await p.click('#start-btn'); await ready(p);
+  await p.check('#rec-mode-audio'); await startAnswer(p);
   await p.fill('#answer', 'I would agree the outcome, delegate the task and check in weekly.');
   n += await state('interview');                    // the reference answer is showing
-  await p.click('#rec-btn'); await p.waitForSelector('#rec-stop:not([hidden])'); await p.waitForTimeout(1500);
+  await p.waitForSelector('#rec-stop:not([hidden])'); await p.waitForTimeout(1500);
   const micBeforeReload = (await stats(p)).gum; // the one recording this test makes itself
   n += await state('recording');                    // recording in progress
   await p.click('#rec-stop'); await p.waitForSelector('#rec-dock:not([hidden])'); await p.waitForTimeout(500);
   n += await state('review');                       // the unsaved recording
   await p.click('#rec-discard');
-  await p.click('#next-btn'); await p.waitForSelector('#reveal:not([hidden])');
-  n += await state('marking');
-  await p.click('[data-mark="partly"]'); await answering(p);
-  await p.fill('#answer', 'Second answer.'); await p.click('#next-btn'); await p.waitForSelector('#reveal:not([hidden])'); await p.click('[data-mark="got"]');
+  await finish(p);
+  n += await state('marking');                      // the review with self-marking
+  await p.click('[data-mark="partly"]'); await next(p); await ready(p); await startAnswer(p);
+  await p.fill('#answer', 'Second answer.'); await finish(p); await p.click('[data-mark="got"]'); await next(p);
   await p.waitForSelector('#finished:not([hidden])'); await p.waitForTimeout(300);
   await p.click('.sum-questions summary');
   n += await state('summary');
@@ -192,11 +193,10 @@ async function walk(theme) {
   await tab(p, 'practice');
   await p.evaluate(() => document.querySelectorAll('#set-choices input').forEach((i) => { i.checked = i.parentElement.textContent.includes('Demo'); i.dispatchEvent(new Event('change', { bubbles: true })); }));
   await p.check('#mode-coach'); await p.fill('#opt-count', '1');
-  await p.click('#start-btn'); await answering(p);
-  await p.fill('#answer', 'I delegate with clear outcomes and weekly check-ins.'); await p.click('#next-btn');
+  await p.click('#start-btn'); await ready(p); await startAnswer(p);
+  await p.fill('#answer', 'I delegate with clear outcomes and weekly check-ins.'); await finish(p);
   await p.waitForSelector('#fb-result:not([hidden])');
   n += await state('feedback');
-  await p.click('#fb-next').catch(() => {});
   check(`${theme.name}: the only microphone request was the recording the test made itself; showing every screen asked for no camera or microphone`, micBeforeReload === 1 && (await stats(p)).gum === 0, `${micBeforeReload} then ${JSON.stringify(await stats(p))}`);
   check(`${theme.name}: ${n} pieces of text on 11 screens and states are readable (4.5:1, or 3:1 for large text), and nothing scrolls sideways`, problems.length === 0, problems.join('\n   '));
   check(`${theme.name}: no page errors`, p.errors.length === 0, p.errors.join());

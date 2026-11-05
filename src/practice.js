@@ -71,6 +71,7 @@ export function initPractice(avatar) {
   let listening = false;
   let onDeviceReady = false; // the on-device recogniser is switched on and works here
   let textBefore = '';
+  let typedWhileListening = false; // you typed while the microphone was on: later transcript text is not put in the box
   // Starting and ending are asynchronous, so each is guarded against happening twice or arriving late
   let starting = false; // Start was pressed and the first question has not begun yet
   let startToken = 0; // numbers each start, so one that was cancelled can tell it is out of date
@@ -962,10 +963,11 @@ export function initPractice(avatar) {
   /* ---------- Voice answers ---------- */
   const recognizer = createRecognizer({
     onText: (finalText, interim) => {
+      voice.live = joinText(finalText, interim);
+      if (typedWhileListening) return; // you typed: the box is yours now, so a late transcript never overwrites it
       // The live transcript goes straight into the box, so you can correct it
       answerBox.value = joinText(textBefore, finalText, interim);
       updateReplyCount();
-      voice.live = joinText(finalText, interim);
     },
     onEnd: () => {
       if (voice.since) { // keep what was heard, and how long the microphone was on
@@ -976,7 +978,7 @@ export function initPractice(avatar) {
       voice.live = '';
       listening = false;
       if (avatar.getState() === 'listening') avatar.setState('idle');
-      if (phase === 'answering') { status.textContent = 'Stopped listening. Press Listen again to speak, or type.'; }
+      if (phase === 'answering' && !typedWhileListening) { status.textContent = 'Stopped listening. Press Listen again to speak, or type.'; }
       setButtons();
     },
     onError: (message) => { status.textContent = `${message} You can type your response instead.`; },
@@ -987,6 +989,7 @@ export function initPractice(avatar) {
     if (phase !== 'answering') return;
     hush(); // the mic should not hear the interviewer
     textBefore = answerBox.value;
+    typedWhileListening = false;
     voice.since = Date.now();
     voice.live = '';
     listening = true;
@@ -1049,7 +1052,12 @@ export function initPractice(avatar) {
   if (recognizer) {
     micBtn.addEventListener('click', () => (listening ? stopListening() : startListening()));
     // Typing while listening stops the mic, so the transcript can't overwrite your edits
-    answerBox.addEventListener('input', stopListening);
+    answerBox.addEventListener('input', () => {
+      if (!listening) return;
+      typedWhileListening = true; // from here on the transcript cannot touch what is in the box
+      status.textContent = 'You typed, so listening stopped. Press Listen again to speak.';
+      stopListening();
+    });
   }
 
   initMethod();

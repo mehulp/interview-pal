@@ -1,4 +1,4 @@
-import { launch, newPage, startSession, answering, vis, text, stats, check, done } from './lib.mjs';
+import { launch, newPage, startSession, ready, startAnswer, finish, next, vis, text, stats, check, done } from './lib.mjs';
 const b = await launch();
 
 // Speech stand-in whose last words arrive LATE, after stop(), as a real recogniser's can.
@@ -29,8 +29,9 @@ const spoken = (p) => p.evaluate(() => window.__spokenLog.length);
 {
   const p = await newPage(b, { init: SPEECH });
   await startSession(p, { count: 3 });
+  await p.check('#method-type'); await p.check('#rec-mode-audio'); await startAnswer(p);
   await p.fill('#answer', 'my half written answer');
-  await p.click('#rec-btn'); await p.waitForSelector('#rec-stop:not([hidden])');
+  await p.waitForSelector('#rec-stop:not([hidden])');
   const t0 = await text(p, '#timer');
   let msg = null; p.once('dialog', async (d) => { msg = d.message(); await d.dismiss(); });
   await tab(p, 'history');
@@ -41,7 +42,7 @@ const spoken = (p) => p.evaluate(() => window.__spokenLog.length);
   check('Cancel: the timer kept running', (await text(p, '#timer')) !== t0);
   check('Cancel: the recording is still going', (await vis(p, '#rec-stop')) && (await vis(p, '#rec-clock')));
   check('Cancel: nothing was saved to History', (await history(p)).length === 0);
-  await p.click('#next-btn');
+  await finish(p); await next(p);
   await p.waitForSelector('#question-text:has-text("How do you run")', { timeout: 15000 }).catch(() => {});
   check('Cancel: the interview carries on normally afterwards', (await text(p, '#progress')).includes('2 of 3') || (await text(p, '#progress')).includes('Question'));
   check('no page errors', p.errors.length === 0, p.errors.join());
@@ -79,7 +80,8 @@ const spoken = (p) => p.evaluate(() => window.__spokenLog.length);
   const p = await newPage(b, { init: SPEECH });
   await startSession(p, { count: 3 });
   await p.evaluate(() => { window.__voice = 'I would delegate'; window.__late = ['and', 'review', 'weekly']; });
-  await p.click('#mic-btn'); await p.waitForFunction(() => document.getElementById('answer').value.includes('delegate'));
+  await startAnswer(p); // Speak is the default where speech is supported: Start answer begins listening
+  await p.waitForFunction(() => document.getElementById('answer').value.includes('delegate'));
   await p.click('#end-btn');
   await p.waitForSelector('#finished:not([hidden])');
   const h = await history(p);
@@ -93,10 +95,10 @@ const spoken = (p) => p.evaluate(() => window.__spokenLog.length);
   await startSession(p, { count: 3 });
   await p.check('#opt-selfmark').catch(() => {});
   await p.evaluate(() => { window.__voice = 'I check in weekly'; window.__late = ['and', 'give', 'feedback']; window.__stopDelay = 900; });
-  await p.click('#mic-btn'); await p.waitForFunction(() => document.getElementById('answer').value.includes('weekly'));
+  await startAnswer(p); await p.waitForFunction(() => document.getElementById('answer').value.includes('weekly'));
   const spokenBefore = await spoken(p);
-  await p.click('#next-btn'); // Next pressed: the last words are still on their way
-  await p.waitForFunction(() => document.getElementById('next-btn').disabled);
+  await p.click('#primary-btn'); // Finish answer pressed: the last words are still on their way
+  await p.waitForFunction(() => document.getElementById('primary-btn').disabled);
   await p.click('#end-btn');
   await p.waitForSelector('#finished:not([hidden])');
   const h = await history(p);
@@ -105,7 +107,7 @@ const spoken = (p) => p.evaluate(() => window.__spokenLog.length);
   check('it keeps its original outcome: a normal answer, not incomplete', r[0].incomplete === false && r[0].skipped === false && r[0].timedOut === false);
   check('and includes the last words that arrived', r[0].answer.endsWith('and give feedback'), r[0].answer);
   check('End did not ask the next question', (await spoken(p)) === spokenBefore && !(await text(p, '#finished-body')).includes('Question 2'));
-  check('no marking step was opened', !(await vis(p, '#reveal')));
+  check('no review or marking step was opened', !(await vis(p, '#review')));
   check('the session is saved once', h.length === 1);
   await p.context().close();
 }
@@ -128,7 +130,7 @@ const spoken = (p) => p.evaluate(() => window.__spokenLog.length);
   const p = await newPage(b, { init: SPEECH });
   await startSession(p, { count: 3 });
   const q1 = (await text(p, '#question-text')).trim();
-  await p.click('#rec-btn'); await p.waitForSelector('#rec-stop:not([hidden])'); await p.waitForTimeout(1500);
+  await p.check('#rec-mode-audio'); await p.check('#method-type'); await startAnswer(p); await p.waitForSelector('#rec-stop:not([hidden])'); await p.waitForTimeout(1500);
   await p.click('#end-btn');
   await p.waitForSelector('#rec-indicator:not([hidden])'); await p.waitForSelector('#finished:not([hidden])');
   const h = await history(p);
@@ -161,7 +163,7 @@ const spoken = (p) => p.evaluate(() => window.__spokenLog.length);
   check('back on Interview: setup is shown and Start works again', (await vis(p, '#setup')) && !(await p.locator('#start-btn').isDisabled()));
   // a double click starts one session only
   await p.evaluate(() => { const b = document.getElementById('start-btn'); b.click(); b.click(); b.click(); });
-  await answering(p);
+  await ready(p);
   await p.waitForTimeout(500);
   const log = await p.evaluate(() => window.__spokenLog);
   const questionSpoken = log.filter((t) => t.includes('Why did you move into engineering management?')).length;
@@ -180,7 +182,7 @@ const spoken = (p) => p.evaluate(() => window.__spokenLog.length);
   await tab(p, 'practice');
   await p.evaluate(() => document.querySelectorAll('#set-choices input').forEach((i) => { i.checked = i.parentElement.textContent.includes('Demo'); i.dispatchEvent(new Event('change', { bubbles: true })); }));
   await p.check('#opt-selfview'); await p.fill('#opt-count', '2');
-  await p.click('#start-btn'); await answering(p);
+  await p.click('#start-btn'); await ready(p);
   await p.click('#end-btn'); await p.waitForSelector('#finished:not([hidden])');
   await p.evaluate(() => window.__camRelease()); // the user clicks Allow, too late
   await p.waitForTimeout(600);

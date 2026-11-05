@@ -1,4 +1,4 @@
-import { launch, newPage, startSession, answering, vis, text, check, done, INIT, BASE } from './lib.mjs';
+import { launch, newPage, startSession, ready, startAnswer, vis, text, check, done, INIT, BASE } from './lib.mjs';
 const b = await launch();
 const SPEECH = () => {
   window.__late = []; window.__stopDelay = 900; window.__spokenLog = [];
@@ -28,7 +28,7 @@ async function coachPage(delayMs = 1500) {
   await p.click('.tabs button[data-screen="practice"]');
   await p.evaluate(() => document.querySelectorAll('#set-choices input').forEach((i) => { i.checked = i.parentElement.textContent.includes('Demo'); i.dispatchEvent(new Event('change', { bubbles: true })); }));
   await p.check('#mode-coach'); await p.fill('#opt-count', '3'); await p.selectOption('#opt-order', 'serial');
-  await p.click('#start-btn'); await answering(p);
+  await p.click('#start-btn'); await ready(p);
   return p;
 }
 
@@ -36,9 +36,9 @@ async function coachPage(delayMs = 1500) {
 {
   const p = await coachPage();
   await p.evaluate(() => { window.__voice = 'I check in weekly'; window.__late = ['and', 'give', 'feedback']; });
-  await p.click('#mic-btn'); await p.waitForFunction(() => document.getElementById('answer').value.includes('weekly'));
-  await p.click('#next-btn');
-  await p.waitForFunction(() => document.getElementById('next-btn').disabled);
+  await startAnswer(p); await p.waitForFunction(() => document.getElementById('answer').value.includes('weekly'));
+  await p.click('#primary-btn'); // Finish answer
+  await p.waitForFunction(() => document.getElementById('primary-btn').disabled);
   await p.click('#end-btn');
   await p.waitForSelector('#finished:not([hidden])');
   await p.waitForTimeout(2500); // long enough for a stray Coach request to be made and answered
@@ -54,8 +54,8 @@ async function coachPage(delayMs = 1500) {
 /* ===== B. Coach: End while the marking request is still in flight ===== */
 {
   const p = await coachPage(2000);
-  await p.fill('#answer', 'I would delegate with clear outcomes.');
-  await p.click('#next-btn');
+  await startAnswer(p); await p.fill('#answer', 'I would delegate with clear outcomes.');
+  await p.click('#primary-btn'); // Finish answer
   await p.waitForSelector('#feedback:not([hidden])');
   await p.waitForFunction(() => !document.getElementById('fb-loading').hidden);
   await p.click('#end-btn'); // the one End session button, kept apart from the routine buttons (Step 3 removed the duplicate in the feedback panel)
@@ -74,9 +74,9 @@ async function coachPage(delayMs = 1500) {
   const p = await newPage(b, { init: SPEECH });
   await startSession(p, { count: 3 });
   await p.evaluate(() => { window.__voice = 'not sure'; window.__late = ['really']; });
-  await p.click('#mic-btn'); await p.waitForFunction(() => document.getElementById('answer').value.includes('sure'));
+  await startAnswer(p); await p.waitForFunction(() => document.getElementById('answer').value.includes('sure'));
   await p.click('#skip-btn');
-  await p.waitForFunction(() => document.getElementById('skip-btn').disabled || document.getElementById('next-btn').disabled);
+  await p.waitForFunction(() => document.getElementById('skip-btn').disabled || document.getElementById('primary-btn').disabled);
   await p.click('#end-btn');
   await p.waitForSelector('#finished:not([hidden])');
   const r = (await history(p))[0].results;
@@ -100,14 +100,13 @@ async function coachPage(delayMs = 1500) {
   for (let i = 0; i < 20 && (await p.locator('#timer').isHidden()); i++) await p.clock.runFor(500); // through the pause and the spoken question
   check('(time test) the Hard session reached its answering phase (countdown visible)', !(await p.locator('#timer').isHidden()));
   await p.evaluate(() => { window.__voice = 'I would set clear goals'; window.__late = ['and', 'review']; window.__stopDelay = 900; });
-  await p.click('#mic-btn');
+  await p.click('#primary-btn'); // Start answer: the hard countdown carries on, untouched
   await p.clock.runFor(1500);
   const spokenBefore = await p.evaluate(() => window.__spokenLog.length);
-  const [, m, sec] = (await text(p, '#timer')).match(/(\d+):(\d+)/);
-  const left = Number(m) * 60 + Number(sec);
-  await p.clock.runFor(Math.max(0, (left - 1) * 1000)); // up to one second before the limit
-  await p.clock.runFor(1300); // the limit expires now, while the microphone is listening (its last words need 900 ms more)
-  check('(time test) the limit ended the answer: it is being handed in', await p.locator('#next-btn').isDisabled());
+  // Step the clock in small pieces until the limit expires and the answer starts being handed in
+  // (the microphone's last words need 900 ms more, so there is time to press End in between)
+  for (let i = 0; i < 1500 && !(await p.locator('#primary-btn').isDisabled()); i++) await p.clock.runFor(100);
+  check('(time test) the limit ended the answer: it is being handed in', await p.locator('#primary-btn').isDisabled());
   await p.click('#end-btn'); // End while the time-up submission waits for the last words
   await p.clock.runFor(3000);
   await p.waitForSelector('#finished:not([hidden])');

@@ -5,7 +5,7 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { launch, newPage, answering, check, done, vis, text, stats, AUDIT, overflow } from './lib.mjs';
+import { launch, newPage, ready, startAnswer, finish, next, check, done, vis, text, stats, AUDIT, overflow } from './lib.mjs';
 
 const OUT = process.env.SHOTS_DIR || mkdtempSync(join(tmpdir(), 'interviewpal-workspace-'));
 mkdirSync(OUT, { recursive: true });
@@ -39,8 +39,10 @@ async function begin(p, { count = 2, showAnswer = false, selfMark = false, coach
   if (selfMark) await p.check('#opt-selfmark');
   if (coach) await p.check('#mode-coach');
   if (selfView) await p.check('#opt-selfview');
-  await p.click('#start-btn'); await answering(p);
+  await p.click('#start-btn'); await ready(p); // asked, and waiting for Start answer
 }
+// Give a typed answer to the question on screen and open its review
+const answerQ = async (p, words) => { await startAnswer(p); await p.fill('#answer', words); await finish(p); };
 const DESKTOP = { width: 1366, height: 800 };
 const MOBILE = { width: 390, height: 800 };
 
@@ -64,8 +66,8 @@ const MOBILE = { width: 390, height: 800 };
   const quiet = await p.evaluate(() => parseFloat(getComputedStyle(document.getElementById('voice-note')).fontSize));
   check('voice and device notes are quiet supporting text', quiet <= 14.5, quiet);
   check('the Self-view button is with the portrait, End session is apart from the routine buttons',
-    (await box(p, '#selfview-btn')).x < col.r && (await box(p, '#end-btn')).y > (await box(p, '#next-btn')).b + 40 && (await p.evaluate(() => !!document.querySelector('.session-end #end-btn'))));
-  check('Answer and Next are the main pair; Repeat, Skip and Show/Hide are quieter secondary buttons', await p.evaluate(() => [...document.querySelectorAll('.primary-actions button')].every((x) => x.classList.contains('big')) && [...document.querySelectorAll('.secondary-actions button')].every((x) => x.classList.contains('small'))));
+    (await box(p, '#selfview-btn')).x < col.r && (await box(p, '#end-btn')).y > (await box(p, '#primary-btn')).b + 40 && (await p.evaluate(() => !!document.querySelector('.session-end #end-btn'))));
+  check('one main button (Start answer); Listen again, Repeat, Skip and Show/Hide are quieter secondary buttons', await p.evaluate(() => document.querySelector('.primary-actions #primary-btn').classList.contains('big') && [...document.querySelectorAll('.primary-actions button:not(#primary-btn), .secondary-actions button')].every((x) => x.classList.contains('small'))));
   check('the other screens keep their width', await (async () => { const w = []; for (const s of ['questions', 'history', 'settings']) { await tab(p, s); w.push((await box(p, `#screen-${s}`)).w); } return w.every((x) => x <= 900); })());
   await p.context().close();
 }
@@ -102,7 +104,7 @@ const MOBILE = { width: 390, height: 800 };
   const refText = await p.evaluate(() => { const e = document.getElementById('model-answer-text'); return { capped: getComputedStyle(e).maxHeight, over: e.scrollHeight > e.clientHeight }; });
   check('short screen: still two columns, the reference is not clipped (the page scrolls instead)', refText.capped === 'none' && !refText.over && (await box(p, '.interviewer-col')).x < (await box(p, '.workspace')).x, JSON.stringify(refText));
   await p.locator('#end-btn').scrollIntoViewIfNeeded();
-  check('End session and Next are reachable by scrolling', (await vis(p, '#end-btn')) && (await p.locator('#next-btn').isEnabled()));
+  check('End session and Next are reachable by scrolling', (await vis(p, '#end-btn')) && (await p.locator('#primary-btn').isEnabled()));
   const o = await p.evaluate(overflow);
   check('no sideways scroll', o.sw <= o.cw, JSON.stringify(o));
   await p.context().close();
@@ -143,9 +145,9 @@ const MOBILE = { width: 390, height: 800 };
   check('no bars are fixed or sticky on a phone (actions stay reachable with the keyboard open)', fixed.length === 0, fixed.join());
   await p.setViewportSize({ width: 390, height: 380 }); // roughly what is left with the software keyboard open
   await p.click('#tab-response'); await p.focus('#answer');
-  await p.locator('#next-btn').scrollIntoViewIfNeeded();
-  const nb = await box(p, '#next-btn');
-  check('with the keyboard open, Next and the answer box can still be reached by scrolling', nb.y >= 0 && nb.b <= 380 + 1 && (await p.locator('#next-btn').isEnabled()), JSON.stringify(nb));
+  await p.locator('#primary-btn').scrollIntoViewIfNeeded();
+  const nb = await box(p, '#primary-btn');
+  check('with the keyboard open, Start answer and the answer box can still be reached by scrolling', nb.y >= 0 && nb.b <= 380 + 1 && (await p.locator('#primary-btn').isEnabled()), JSON.stringify(nb));
   await p.context().close();
 }
 
@@ -177,7 +179,7 @@ async function answerShownAfter(label, steps, viewport = DESKTOP) {
   return { flags: h.results.map((r) => r.answerShown), session: h.answersVisible, note };
 }
 {
-  const finishTwo = async (p) => { await p.fill('#answer', 'one'); await p.click('#next-btn'); await answering(p); await p.fill('#answer', 'two'); await p.click('#next-btn'); };
+  const finishTwo = async (p) => { await answerQ(p, 'one'); await next(p); await ready(p); await answerQ(p, 'two'); await next(p); };
   let r = await answerShownAfter('off', async (p) => { await begin(p); check('with the reference off: no panels, no tabs, the response box only', !(await vis(p, '#model-answer')) && !(await vis(p, '#reply-tabs')) && (await vis(p, '#answer'))); await finishTwo(p); });
   check('never shown: History says no, in the data and on the summary', r.flags.join() === 'false,false' && r.session === false && r.note === false, JSON.stringify(r));
   r = await answerShownAfter('on', async (p) => { await begin(p, { showAnswer: true }); await finishTwo(p); });
@@ -187,19 +189,19 @@ async function answerShownAfter(label, steps, viewport = DESKTOP) {
     check('the Show answer button still toggles it, and its labels are unchanged', (await text(p, '#answer-toggle')) === 'Show answer');
     await p.click('#answer-toggle');
     check('(after the click) it says Hide answer, the panel is up, and the saved setting is untouched', (await text(p, '#answer-toggle')) === 'Hide answer' && (await vis(p, '#model-answer')) && (await settings(p)).showModelAnswer === false);
-    await p.fill('#answer', 'one'); await p.click('#next-btn'); await answering(p);
+    await answerQ(p, 'one'); await next(p); await ready(p);
     check('the choice carries on: question 2 opens with the reference still showing', await vis(p, '#model-answer'));
     await p.click('#answer-toggle'); // hidden during question 2
-    await p.fill('#answer', 'two'); await p.click('#next-btn'); await answering(p);
+    await answerQ(p, 'two'); await next(p); await ready(p);
     check('hiding it keeps it hidden on the next question', !(await vis(p, '#model-answer')));
-    await p.fill('#answer', 'three'); await p.click('#next-btn');
+    await answerQ(p, 'three'); await next(p);
   });
   check('shown for questions 1 and 2 (it was on screen when they opened), never for question 3', r.flags.join() === 'true,true,false' && r.session === true, JSON.stringify(r));
   r = await answerShownAfter('self-mark', async (p) => {
     await begin(p, { selfMark: true });
-    await p.fill('#answer', 'one'); await p.click('#next-btn'); await p.waitForSelector('#reveal:not([hidden])');
-    check('self-marking: the question stays on screen above the reference and the buttons', (await vis(p, '#question-text')) && (await vis(p, '#reference')) && (await p.locator('#reveal [data-mark]').count()) === 3);
-    await p.click('[data-mark="got"]'); await answering(p); await p.fill('#answer', 'two'); await p.click('#next-btn'); await p.waitForSelector('#reveal:not([hidden])'); await p.click('[data-mark="partly"]');
+    await answerQ(p, 'one');
+    check('self-marking: the question stays on screen above the reference and the buttons', (await vis(p, '#question-text')) && (await vis(p, '#reference')) && (await p.locator('#review [data-mark]').count()) === 3);
+    await p.click('[data-mark="got"]'); await next(p); await ready(p); await answerQ(p, 'two'); await p.click('[data-mark="partly"]'); await next(p);
   });
   check('seeing the reference only while self-marking does NOT count as having seen it while answering', r.flags.join() === 'false,false' && r.session === false && r.note === false, JSON.stringify(r));
   // narrow screen: shown in its tab counts; a draft survives
@@ -214,7 +216,7 @@ async function answerShownAfter(label, steps, viewport = DESKTOP) {
   await begin(p, { coach: true, count: 1, showAnswer: true });
   const qh = await box(p, '#question-text');
   check('a very long question wraps inside the workspace without overflow', qh.r <= (await box(p, '.workspace')).r && qh.h > 60 && (await p.evaluate(overflow)).sw <= 1366);
-  await p.fill('#answer', 'I would listen first and agree one visible goal.'); await p.click('#next-btn');
+  await answerQ(p, 'I would listen first and agree one visible goal.');
   await p.waitForSelector('#fb-result:not([hidden])');
   check('Coach feedback: the question stays on screen above it', (await vis(p, '#question-text')) && (await text(p, '#question-text')).startsWith('You have joined'));
   check('Coach feedback: the single End session button is still reachable', await vis(p, '#end-btn'));
@@ -230,7 +232,7 @@ async function answerShownAfter(label, steps, viewport = DESKTOP) {
   const dupes = await p.evaluate(() => { const ids = {}; document.querySelectorAll('[id]').forEach((e) => { ids[e.id] = (ids[e.id] || 0) + 1; }); return Object.entries(ids).filter(([, n]) => n > 1).map(([k]) => k); });
   check('no id is used twice in the page', dupes.length === 0, dupes.join());
   // video recording, with self-view on
-  await p.check('#rec-video'); await p.click('#rec-btn');
+  await p.check('#rec-mode-video'); await startAnswer(p);
   await p.waitForSelector('#rec-preview-box:not([hidden])'); await p.waitForFunction(() => document.getElementById('rec-preview').videoWidth > 0);
   const live = await p.evaluate(() => {
     const shown = [...document.querySelectorAll('video')].filter((v) => v.srcObject && v.getClientRects().length && getComputedStyle(v).display !== 'none' && getComputedStyle(v).visibility !== 'hidden');
@@ -253,18 +255,19 @@ async function answerShownAfter(label, steps, viewport = DESKTOP) {
   check('after stopping: the recording\'s own tracks are released; self-view\'s camera is still live and its picture is back', after.selfShown !== 'none' && after.selfLive === 'live' && after.tracks.filter((s) => s === 'live').length === 1, JSON.stringify(after));
   check('no live preview or Recording line remains', !(await vis(p, '#rec-preview-box')) && !(await vis(p, '#rec-live')));
   check('the video review has Download and Discard, no Save, and one video player', (await vis(p, '#rec-download')) && !(await vis(p, '#rec-save')) && (await p.locator('#rec-video-player').count()) === 1 && (await p.locator('audio#rec-audio').count()) === 1);
-  check('the review does not hide the controls: Next and the question are still there', (await vis(p, '#next-btn')) && (await vis(p, '#question-text')));
+  check('the review does not hide the controls: Finish answer and the question are still there', (await vis(p, '#primary-btn')) && (await vis(p, '#question-text')));
   // an earlier question's pending recording, shown while on the next question
   p.once('dialog', (d) => d.accept()); // an undownloaded video asks before it is discarded
   await p.click('#rec-discard');
   await p.waitForTimeout(300);
-  await p.uncheck('#rec-video'); // this one is audio
-  await p.click('#rec-btn'); await p.waitForSelector('#rec-stop:not([hidden])'); await p.waitForTimeout(1500);
+  await p.fill('#answer', 'video answer'); await finish(p); await next(p); await ready(p);
+  await p.check('#rec-mode-audio'); // the second question is recorded as audio
+  await startAnswer(p); await p.waitForSelector('#rec-stop:not([hidden])'); await p.waitForTimeout(1500);
   const q1 = (await text(p, '#question-text')).trim();
-  await p.fill('#answer', 'first answer'); await p.click('#next-btn');
-  await p.waitForSelector('#rec-dock:not([hidden])'); await answering(p);
+  await p.fill('#answer', 'first answer'); await finish(p);
+  await p.waitForSelector('#rec-dock:not([hidden])'); await next(p); await ready(p);
   check('on the next question the review is labelled as an earlier question, with that question\'s words', (await text(p, '#rec-dock h2')).includes('earlier question') && (await text(p, '#rec-dock-question')).includes(q1.slice(0, 60)) && (await text(p, '#rec-dock-meta')).includes('not the question on screen now'), await text(p, '#rec-dock h2'));
-  check('it is not displayed as belonging to the current question, and there is no Retry', !(await text(p, '#rec-dock-question')).includes('How do you give feedback') && !(await vis(p, '#rec-retry')));
+  check('it is not displayed as belonging to the current question, and there is no Retry', !(await text(p, '#rec-dock-question')).includes((await text(p, '#question-text')).trim().slice(0, 25)) && !(await vis(p, '#rec-retry')));
   check('it stays reachable, with Save audio and Discard', (await vis(p, '#rec-save')) && (await vis(p, '#rec-discard')));
   await p.click('#rec-save'); await p.waitForFunction(() => document.getElementById('rec-dock-status').textContent.startsWith('Saved'));
   const saved = await p.evaluate(`(async () => (await (await import('/src/recordstore.js')).listAttempts()).map((a) => a.questionText.slice(0, 40)))()`);
@@ -277,8 +280,9 @@ async function answerShownAfter(label, steps, viewport = DESKTOP) {
 {
   const p = await newPage(b, { viewport: DESKTOP, init: [() => { const real = window.setTimeout.bind(window); window.setTimeout = (fn, ms, ...a) => real(fn, ms === 600000 ? 3500 : ms, ...a); }] });
   await begin(p, { selfMark: true, showAnswer: true });
+  await p.check('#rec-mode-audio'); await startAnswer(p);
   await p.fill('#answer', 'typing while the recording finishes by itself');
-  await p.click('#rec-btn'); await p.waitForSelector('#rec-stop:not([hidden])');
+  await p.waitForSelector('#rec-stop:not([hidden])');
   await p.focus('#answer');
   await p.evaluate(() => window.scrollTo(0, 120));
   const y0 = await p.evaluate(() => scrollY);
@@ -288,7 +292,7 @@ async function answerShownAfter(label, steps, viewport = DESKTOP) {
   check('a recording that finishes in the background does not scroll the page', st.y === y0, `${y0} -> ${st.y}`);
   check('and does not take focus: the person is still typing in the box, draft intact', st.focus === 'answer' && st.value.startsWith('typing while'), JSON.stringify(st));
   check('its status is announced politely (a live region)', (await p.getAttribute('#rec-dock-status', 'aria-live')) === 'polite' && (await text(p, '#rec-dock-status')).includes('10-minute limit'));
-  await p.click('#next-btn'); await p.waitForSelector('#reveal:not([hidden])');
+  await finish(p);
   check('during self-marking the pending recording is still in the workspace, with the question above', (await vis(p, '#rec-dock')) && (await vis(p, '#question-text')) && (await p.evaluate(() => document.getElementById('rec-dock').parentElement.id)) === 'rec-review-slot');
   await shot(p, 'desktop-selfmark-with-review', { fullPage: true });
   await p.context().close();
@@ -298,10 +302,10 @@ async function answerShownAfter(label, steps, viewport = DESKTOP) {
 {
   const p = await newPage(b, { viewport: DESKTOP });
   await begin(p, { count: 1, sets: SHORT });
-  await p.click('#rec-btn'); await p.waitForSelector('#rec-stop:not([hidden])'); await p.waitForTimeout(1500);
+  await p.check('#rec-mode-audio'); await startAnswer(p); await p.waitForSelector('#rec-stop:not([hidden])'); await p.waitForTimeout(1500);
   await p.click('#rec-stop'); await p.waitForSelector('#rec-dock:not([hidden])');
   await shot(p, 'desktop-pending-audio', { fullPage: true });
-  await p.fill('#answer', 'my answer'); await p.click('#next-btn');
+  await p.fill('#answer', 'my answer'); await finish(p); await next(p);
   await p.waitForSelector('#finished:not([hidden])');
   const f = await box(p, '#finished'); const main = await box(p, '#screen-practice');
   check('the summary is full width', f.w >= main.w - 36, JSON.stringify({ f: f.w, main: main.w }));
@@ -333,12 +337,12 @@ async function answerShownAfter(label, steps, viewport = DESKTOP) {
   await shot(p, 'mobile-live-reference');
   await p.click('#tab-response'); await p.fill('#answer', 'My answer on the phone.');
   await shot(p, 'mobile-live-response');
-  await p.click('#rec-btn'); await p.waitForSelector('#rec-stop:not([hidden])'); await p.waitForTimeout(1500);
+  await p.check('#rec-mode-audio'); await startAnswer(p); await p.waitForSelector('#rec-stop:not([hidden])'); await p.waitForTimeout(1500);
   await p.click('#rec-stop'); await p.waitForSelector('#rec-dock:not([hidden])'); await p.waitForTimeout(400);
   const ro = await p.evaluate(overflow);
   check('phone, with a pending recording in the workspace: no sideways scroll, all review buttons reachable', ro.sw <= ro.cw && (await vis(p, '#rec-save')) && (await vis(p, '#rec-discard')), JSON.stringify(ro));
   await shot(p, 'mobile-review', { fullPage: true });
-  await p.click('#next-btn'); await p.waitForSelector('#finished:not([hidden])');
+  await finish(p); await next(p); await p.waitForSelector('#finished:not([hidden])');
   const o = await p.evaluate(overflow);
   check('phone summary: full width, no sideways scroll, indicator is one line', o.sw <= o.cw && (await vis(p, '#rec-indicator')));
   await shot(p, 'mobile-summary', { fullPage: true });
@@ -359,7 +363,7 @@ for (const id of ['sage', 'teal', 'plum', 'blue']) {
   const p = await newPage(b, { viewport: DESKTOP });
   await p.evaluate((t) => localStorage.setItem('interviewpal.settings', JSON.stringify({ theme: t })), id);
   await begin(p, { showAnswer: true });
-  await p.click('#rec-btn'); await p.waitForSelector('#rec-stop:not([hidden])'); await p.waitForTimeout(1200);
+  await p.check('#rec-mode-audio'); await startAnswer(p); await p.waitForSelector('#rec-stop:not([hidden])'); await p.waitForTimeout(1200);
   await p.click('#rec-stop'); await p.waitForSelector('#rec-dock:not([hidden])');
   const a = await p.evaluate(AUDIT);
   check(`${id}: the workspace, reference and review are readable (${a.checked} pieces of text)`, a.failures.length === 0, a.failures.slice(0, 3).join(' | '));
