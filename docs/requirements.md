@@ -590,6 +590,83 @@ Browser (`tests/browser/workspace.mjs`): the layout at desktop, a short laptop v
 
 Real browser zoom cannot be driven from the test tool, so 200% is checked as a window of half the width at double scale, which gives the same layout width but is not a true zoom. Real microphone and camera behaviour still needs a person. The standalone reference panel inside the summary and the History detail are not part of this step.
 
+## UX redesign — Step 4: Coordinated answer and review lifecycle (unreleased)
+
+Fourth step of the redesign in `docs/InterviewPal_UX_Code_Review.md`. Each question now follows one clear sequence, and the screen says plainly which step it is on. Setup, Guided/Mock presets, the question library, pause/resume and full answer retakes are **not** part of this step. Steps 1 to 3 (safe ending, themes, workspace) are kept. No version assigned yet.
+
+### The sequence
+
+**Question spoken → Ready → Answering → Finishing → Review → Next question.**
+
+| Step | Main button | What is happening |
+|---|---|---|
+| Question spoken | Start answer (switched off) | The interviewer is asking. Nothing is captured. |
+| Ready | **Start answer** | The question has been asked. The user thinks, or types. Nothing is captured until Start answer. |
+| Answering | **Finish answer** | The chosen response method and any chosen recording are on. |
+| Finishing | *Finishing…* (switched off) | Listening and recording are stopped and their last results awaited. |
+| Review | **Next question**, or **Finish session** on the last question | The handed-in response, any recording, the reference answer, self-marking or Coach feedback. Nothing advances by itself. |
+
+**End session** is available throughout and uses the safe ending from Step 1. While Finishing, the main button is switched off, so a double click cannot hand the answer in twice or move on early.
+
+**Skip** (where the difficulty allows it) hands in nothing and moves straight on, as before; it still waits for listening and recording to stop first.
+
+### Response method and recording (in the workspace)
+
+- **Respond by: Speak or Type.** Speak is the default where the browser supports speech recognition, otherwise Type (Speak is switched off with a note). The last choice is remembered in the settings as `answerMethod`. The response box is always there, in both methods: spoken words appear in it, and typing in it is always possible. Typing while listening stops listening, so the transcript cannot overwrite the typed words, and nothing already written is ever lost by switching method.
+- **Recording: Off, Audio or Video.** **Off for every new session**, chosen in the workspace (it is not saved as a setting, so a recording never starts because of an earlier session). The target length keeps its saved setting. Changing the choice is possible before Start answer; the choice is shown but never silently changed afterwards.
+- **Start answer starts what was chosen.** If Speak is chosen it starts listening; if Audio or Video is chosen it starts recording. The answer begins at once: these permission requests happen in the background and never delay, pause or reset anything. If the microphone or camera is refused, or is slow to answer, the screen says what is wrong in the right place, and typing carries on.
+- **Two separate status lines**: *Speech to text* (listening, stopped, not available, why) and *Recording* (off, recording with the time, kept, failed, why). Either can work while the other fails: a recording is kept even if no text was heard, and the text is kept if the recording failed.
+- **No automatic restarting.** A capture that failed is never started again by the app. The user can press **Listen again** (speech) or use **Record again** (recording).
+- **Nothing is captured while the interviewer speaks**, because capture only starts at Start answer. **Repeat question** is therefore only available in Ready (before Start answer, where nothing is being captured); it does not touch the countdown, and pressing Start answer while it is speaking cuts it off first. This is a change from before, when Repeat could be used mid-answer.
+
+### Timing: four different things
+
+1. **Preparation time**: from the end of the spoken question until Start answer.
+2. **Answer time**: from Start answer until Finish answer (shown on screen as "Preparing" or "Answering" with a clock).
+3. **The interview countdown** (the hard limit, only where the difficulty has one: unchanged rules): starts when the question has been spoken, keeps running through preparation, permission questions and answering, and stops when the answer is handed in. Pressing Start answer or a browser permission box never pauses or resets it.
+4. **The recording target and the recording cap.** The target (shown in the recorder) is only a cue and never hands in the answer. The cap (10 minutes for audio, 7 for video) stops the *recording* only; the interview and the answer carry on.
+
+**When the countdown runs out** the current response is handed in once, with whatever has been written or heard, marked **timed out**, and the screen goes to Review. It does not move on by itself. If the user had not started, the response is a timed-out **No response**.
+
+### Finishing is awaited, and bounded
+
+Finish answer (and the time limit) stop listening and recording **together** and wait for both: the last spoken words, and the recording result. There are no fixed sleeps. Each wait has a limit: the recogniser's own (about 1.5 seconds) and the recorder's (3 seconds), with an overall cap of 5 seconds on the recording; if a result never arrives, the microphone is released, the recording is reported as failed, and the screen goes on to Review. It can never stay on "Finishing…". The text handed in is a snapshot taken after those waits, tied to the question it was for. If End is pressed meanwhile, Step 1's rules apply unchanged: this answer is finished once with its own outcome, and the session ends without advancing or asking Coach.
+
+### Review
+
+- Shows the **handed-in response** (labelled with its outcome and with how long preparing and answering took), the **recording** if there is one (the same single review panel), and the **reference answer** (always, in Review). The reference is **never** counted as seen during the answer because of Review: only what was on screen before the answer was handed in counts toward the assisted-answer note.
+- **Self-marking** (where on): choose Got it, Partly or Missed. The choice is shown with a tick and can be changed; choosing does **not** move on. **Next question** is a separate button.
+- **Coach feedback** (where on, with a key): appears here. If it fails, **Try again** asks again for the *same* response (never a new result) and **Skip feedback** carries on; Next waits for one of them. Only the response *text* ever goes to Coach: never a recording or a camera frame.
+- **No text, only a recording:** the screen says AI feedback needs text, and offers **Type my response** (to add or correct the words, then ask for feedback) or **Continue without feedback**. Nothing is made up, and a missing response is **not** scored zero automatically.
+
+### Outcomes (in Review, the summary and History)
+
+| Outcome | When |
+|---|---|
+| **Answered** | Words were handed in. |
+| **No response** | Handed in with no words (a recording alone does not make words). |
+| **Skipped** | Skip was used. |
+| **Timed out** | The countdown ran out (with the words, or as "timed out · no response"). |
+| **Incomplete** | The session ended before the answer was handed in; kept but never scored (Step 1). |
+
+Incomplete answers stay out of scores, self-marks, weak topics and delivery figures. No response is likewise not scored or marked as a delivery sample.
+
+### Pending recordings
+
+There is still only one pending (unsaved) recording at a time, and it is **never overwritten**. If a recording is chosen and one is still pending when Start answer is pressed, the answer does **not** start; the screen explains that the earlier recording must be saved, downloaded or discarded first, and offers **Continue without recording** (for this answer only, the Recording choice itself is not changed). Audio is still saved only with Save; video still has Download only; the loss warnings and the camera and microphone rules are unchanged. **Record again** (formerly Retry) replaces **the recording only**, while that question is still being answered; it never changes the written or spoken answer, and there is no answer retake in this step. Pressing Download only starts a download: the screen says to check the Downloads folder, because the app cannot know the file arrived.
+
+### Data
+
+Results get two optional numbers, `prepSeconds` and `answerSeconds`, defaulting to 0 in old records; `seconds` keeps its old meaning (time since the question was spoken). "No response" is worked out from the words, not stored. Nothing else is migrated.
+
+### Tests
+
+Unit: the phases, the outcome rules and counts, the new fields' defaults, old-record compatibility. Browser (`tests/browser/lifecycle.mjs`, and the earlier checks updated to the new buttons): every step of the sequence; spoken and typed responses with recording Off, Audio and Video; speech failing while the recording works and the reverse; permission refused or slow with the countdown and typing unaffected; a recorder that never reports back; double-clicked Finish and Next; the countdown running out during speech and in Ready; End during Finishing; self-marking without advancing; Coach retry, error, skip and an empty transcript (no request, no zero); pending recordings across questions and the Continue-without-recording choice; the assisted-answer note, incomplete exclusions and old History; stopped media tracks; the phone layout; keyboard focus.
+
+### Limits of this step
+
+No Guided or Mock presets, no setup changes, no pause or resume, no answer retakes or retake history. Real microphone, camera and speech-recognition behaviour needs a person with real hardware.
+
 ## Acceptance criteria for v1
 
 - With no API key, load a .docx with 10 questions, review the extracted pairs, and run a Practice session with difficulty, timer and order.

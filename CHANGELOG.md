@@ -2,6 +2,16 @@
 
 All notable changes to InterviewPal. Dates are when the work was finished.
 
+## Unreleased (UX redesign — Step 4: Coordinated answer and review lifecycle)
+
+- **A clear sequence for every question:** question spoken, Ready (**Start answer**), Answering (**Finish answer**), Finishing, then a stable **Review** with **Next question**. Nothing advances by itself, not even when the time runs out. End session stays available throughout.
+- **Speak or Type, and Recording Off, Audio or Video**, chosen in the workspace. Recording is Off at the start of every session. Start answer starts what you chose without ever pausing the countdown, and capture never runs while the interviewer is speaking.
+- **Speech and recording are reported separately:** either can fail while the other works, and typing is always there. Failed capture is never restarted by itself.
+- **Finishing waits for the last words and the recording result** (with limits, so it cannot hang), then opens Review with your response, any recording and the reference. Self-marking no longer moves on by itself.
+- **Honest empty responses:** a recording alone is "No response", Coach is not asked and nothing is scored zero; you can type your response or continue without feedback. Outcomes are Answered, No response, Skipped, Timed out or Incomplete.
+- **Pending recordings:** never overwritten; starting an answer with recording while one is pending explains your options and offers Continue without recording. Retry is now "Record again" (recording only).
+- Repeat question is now available only before you start answering.
+
 ## Unreleased (UX redesign — Step 3: Interview workspace and recording review)
 
 - **A wider two-column interview:** a large interviewer portrait on the left, and on the right an answer workspace with the question as its heading, progress and countdown, and the reference and response panels beside the portrait. Narrow screens stack. Setup and the other screens keep their widths.
