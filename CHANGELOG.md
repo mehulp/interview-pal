@@ -2,6 +2,12 @@
 
 All notable changes to InterviewPal. Dates are when the work was finished.
 
+## Unreleased (UX redesign — Step 2: Shared appearance and colour themes)
+
+- **Four light colour themes** in Settings → Appearance: Sage & Forest (the default), Warm Teal, Muted Plum and Classic Blue, chosen from accessible preview cards (native radio inputs, a visible "Selected" mark, keyboard support). The choice applies at once, is remembered, and is set before the page is first drawn, so there is no flash of another theme.
+- **Shared colour roles:** every interface colour now comes from semantic variables, including the charts and the recording and alert panels. A white header with a subtle border, a restrained active-tab treatment, and filled primary / quieter secondary buttons. Portraits, camera feeds and recorded media are not recoloured.
+- The Step 1 browser checks are kept in `tests/browser/` with a runner (`npm run test:browser`) and honest run instructions.
+
 ## Unreleased (UX redesign — Step 1: Reliability)
 
 - **Leaving a session asks first.** Switching tab mid-interview now asks; Cancel carries on with the answer, timer and recording untouched, OK ends the session and leaves.

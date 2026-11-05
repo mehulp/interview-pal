@@ -488,6 +488,44 @@ Unit tests (113 in all) and scripted headless-Chromium checks passed for: Cancel
 
 The confirmation is the browser's plain OK/Cancel box (labelled buttons come with the later layout work). A session that was ended cannot be resumed. Exact links between recordings and individual session results are not added. Summary wording such as "questions asked" is unchanged.
 
+## UX redesign — Step 2: Shared appearance and colour themes (unreleased)
+
+Second step of the redesign in `docs/InterviewPal_UX_Code_Review.md`. It changes **colours and the header only**. Interview layout, widths, typography, timing, recording consent, session flow, question editing and Coach behaviour are untouched. Not assigned a version yet.
+
+### Themes
+
+Settings has a new **Appearance** section at the top, with four light themes. Cards are always white; the page background, text and accent come from the theme.
+
+| Theme (id) | Page | Text | Accent |
+|---|---|---|---|
+| Sage & Forest (`sage`, the default) | `#F6F7F2` | `#24332C` | `#35634D` |
+| Warm Teal (`teal`) | `#F5F7F7` | `#243438` | `#176B70` |
+| Muted Plum (`plum`) | `#F7F5F8` | `#332D3B` | `#715185` |
+| Classic Blue (`blue`) | `#F6F7FB` | `#1D2433` | `#3B5BDB` |
+
+- **Theme picker.** Four preview cards built from native radio inputs in one fieldset. Each shows its name, a short description and swatches of its page, card, text and accent colours. The chosen card is marked with a visible tick and the word **Selected** and a thicker border, so selection never depends on colour alone. Arrow keys move between cards; the focused card has a clear focus ring.
+- **Applies at once, everywhere.** Choosing a card changes every screen immediately, with no reload.
+- **Saved as one validated ID.** Only a valid theme ID is stored, as the `theme` setting through `saveSettings` (merged, so other settings are untouched). A missing, unknown or unreadable value means Sage & Forest. If the browser refuses to store it, the new theme still applies for this visit and the screen says it will not be remembered.
+- **No flash of the wrong theme.** A tiny classic script in the page head (`src/theme-boot.js`) sets the saved theme before the page is first drawn. It reads the one `theme` setting directly from the settings key, which is a **narrow exception** to the rule that everything saved goes through `storage.js`; it lists the valid IDs itself, and a test checks that list matches `src/themes.js`. Without the script, or with unreadable storage, the page simply starts in Sage & Forest.
+- Changing the theme never asks for the microphone or camera and never touches other settings.
+
+### Colour roles
+
+All interface colours come from semantic variables, defined once per theme in `styles.css`: page, surface, subtle surface, reference surface, text, muted text, border, strong (control) border, accent, accent hover, accent foreground, selected background and border, focus, and danger, warning and success (each with a tinted background). Hard-coded colours in the stylesheet and in generated markup (the Progress charts, the recording panels, alerts) are replaced by these. **Not recoloured:** portraits and clips, the drawn fallback face, camera feeds and recorded media, and the heat-map's weak-to-strong shading (data colours, shown with the percentage in words).
+
+- **Header and navigation.** A white header with a subtle bottom border. The active tab has a restrained accent treatment (tinted background, accent text, an underline and heavier weight), not just a colour change.
+- **Buttons.** Primary actions stay filled with the accent; secondary actions are quieter outlines. Meaning and placement are unchanged.
+- **Status colours** are the same in every theme and always come with words or a symbol (for example the low-time warning symbol before the countdown, and "Selected", "Recording", "not saved" texts).
+- **Contrast** (checked from the stylesheet by a unit test, for every theme): text 7:1 or better on the page, cards, subtle and reference surfaces; muted text and the accent used as text 4.5:1 or better on all of them; white text on the accent and its hover colour 4.5:1 or better; focus ring and control borders 3:1 or better; status text 4.5:1 or better on its tinted background.
+
+### Tests
+
+Unit: theme ID validation and the default; the boot script (valid, unknown, missing, unreadable and throwing storage) and that its ID list matches `themes.js`; every theme defines every colour role; every contrast target above, computed from the stylesheet. Browser (`tests/browser/appearance.mjs`): all four themes on every screen, persistence across reload, unknown and missing preferences, blocked storage, keyboard use, phone width and 200% zoom, computed contrast on rendered controls, other settings preserved, and that no camera or microphone was requested.
+
+### Limits of this step
+
+No dark mode, colour picker or new fonts. Existing widths and type sizes are kept; the workspace layout comes in Step 3. Contrast was checked for the interface colours above, not as a full accessibility audit.
+
 ## Acceptance criteria for v1
 
 - With no API key, load a .docx with 10 questions, review the extracted pairs, and run a Practice session with difficulty, timer and order.
