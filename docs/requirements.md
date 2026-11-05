@@ -689,6 +689,64 @@ Representative screenshots (desktop and phone: Ready, Answering, Review) are in 
 9. In Coach mode with a real key: an answer gets feedback in the review; switch the network off for one answer to see Try again and Skip feedback.
 10. Safari and iPhone are still untested.
 
+## UX redesign — Step 5: Simpler interview setup (unreleased)
+
+Fifth step of the redesign in `docs/InterviewPal_UX_Code_Review.md`. Goal: starting daily practice is straightforward, with sensible defaults and the uncommon details tucked away. It stays **one setup screen** (no wizard). Steps 1 to 4 (safe ending, themes, workspace, answer lifecycle) are kept as they are. The question library (Step 6), scoring, answer retakes and pause/resume are **not** part of this step, and there are no new dependencies.
+
+### Three sections and More options
+
+1. **Questions.** Tick one or more sets. The screen says how many questions are available **after the level filter and after removing repeats**, and how many a session will actually contain. Then: number of questions, order, and **Question complexity** (the old "Question level": All / Easy only / Hard only; the stored values `all`, `easy`, `hard` and the per-question `level` are unchanged). If the requested number is more than the matching questions, it says so ("You asked for 10, but only 6 match, so the session will have 6."). With no usable questions at all, a clear link goes to the Questions tab.
+2. **Practice approach.** Two presets, **Guided rehearsal** and **Mock interview** (see below), and, separately, **Feedback**: *No feedback*, *Self-review* or *AI Coach*. Feedback maps onto what already exists: No feedback = Practice mode with self-marking off; Self-review = Practice mode with self-marking on; AI Coach = Coach mode (it is the same Coach, not a new mode). AI Coach is unavailable until an API key is saved in Settings, with a link to Settings. A checkbox **Show the reference answer while I answer** is here too, because the two presets differ on it.
+3. **Response and devices.** *Respond by* **Speak** / **Type** (the same `answerMethod` setting the interview uses; Type is chosen and Speak is off where the browser cannot recognise speech). The **microphone** list with a **Test microphone** button. An optional **Preview camera** button. **Recording: Off / Audio / Video**.
+
+A **More options** disclosure holds: **Interview pressure** (see below) and the optional timer on Relaxed, interviewer and own **accent**, the **interviewer face**, **speaking the Coach feedback aloud**, and the **experimental on-device recogniser**. Essentials and device readiness stay visible without opening it.
+
+### Presets
+
+| | Guided rehearsal | Mock interview |
+|---|---|---|
+| Reference answer | shown while answering | hidden at first (the Show answer button still works during the interview) |
+| Interview pressure | Relaxed (no hard countdown) | Standard (the existing countdown, repeat and skip rules) |
+| Feedback | Self-review | Self-review |
+| Recording | Off | Off |
+
+- A preset is applied **only** when the person chooses it, or on a **genuinely new installation** (no practice settings saved yet), which starts on Guided rehearsal. Nobody's saved choices are overwritten on first load, and an existing user with no preset simply sees "Your own settings" (neither preset selected).
+- After choosing a preset, every control can still be changed. When the current choices differ from the chosen preset, the screen shows **Customised**. Presets are applied once, at the click: they are not re-applied by unrelated changes, by changing sets, count or feedback, or by the screen refreshing.
+- Presets touch only setup choices. They never change History, and they do not replace the real reference tracking: whether the reference counted as seen is still decided by whether it was actually on screen while answering (Step 3), so revealing it during a mock answer still marks that answer as assisted.
+- The preset and the other choices are remembered in the saved settings (`preset`: `guided`, `mock` or empty). **Recording is never remembered** (below).
+
+### Interview pressure
+
+"Difficulty" is renamed **Interview pressure**: **Relaxed** = the existing Easy, **Standard** = Medium, **Challenging** = Hard. The stored values `easy`, `medium`, `hard` and every rule are unchanged. The screen explains the chosen level accurately in one line, for example for Standard: "Time limit: 2 min per answer, counted from when the question has been asked (it does not pause when you press Start answer). When it ends, what you have is handed in for review. Repeat is allowed before you start answering. Skip is allowed." Relaxed has no limit unless its timer box is ticked (5 min). Challenging has 90 seconds and no repeat or skip. The **hard countdown** is always called the time limit, and the optional recording **target length** (set in the recorder panel) is called a target: it is a cue only, and neither replaces the other.
+
+### Device checks
+
+- **Test microphone** reuses the existing microphone check (`miccheck.js`, also used on the Settings tab) through one shared controller. It opens the chosen microphone and draws a level meter. It never records, saves, transcribes or sends anything. It stops by itself after 15 seconds, when pressed again, when the microphone choice changes, when the tab is left, when Start is pressed, or when the page is hidden. A permission that is answered late is released at once.
+- **Preview camera** is requested only when pressed, shows a small mirrored picture on the setup screen, and stops when turned off, when the tab is left, when Start is pressed, or if the request is cancelled before it is ready (a late permission is released). It is the same camera owner logic as self-view. **Allowing the preview is not consent to record video**: the recording choice is separate.
+- Pressing Start ends any setup device check **before** the session starts its own media.
+- Typing always works: with no speech recognition, no microphone or a refused permission, the setup says so and Type remains.
+- Privacy wording stays accurate: Practice makes no call to any AI service, but browser speech recognition may send speech to the browser's provider (in Chrome, to Google). The setup does not claim Practice is offline.
+
+### Recording choice
+
+**Recording: Off / Audio / Video** in setup is the starting value for the session's recording choice in the workspace panel. It is **Off every time the setup screen opens** (new page load, or coming back to setup after a session), and is not saved: the line beside it says "Not remembered: Off unless you choose it here for this session." Choosing it does not start anything: capture only begins when Start answer is pressed (Step 4). Video is still download-only and audio still needs Save. The target length stays in the recorder panel (labelled as a target).
+
+### The start summary
+
+Above the Start button: one line such as "10 questions · Introduction & HR · Guided rehearsal · Speak · Recording off", and a second line with the actual time limit and the feedback choice ("Time limit: none · Feedback: Self-review"). Start is disabled **only** when practice is genuinely impossible (no sets ticked, no usable questions, or no questions match the filter) and then says what to do. AI Coach without a key is not a disabled Start: the Coach choice itself is off, with the Settings link.
+
+### Compatibility
+
+Existing settings (`mode`, `practiceSelfMark`, `practiceDifficulty`, `showModelAnswer`, `practiceEasyTimer`, `practiceSets`, `selfView`, `micDeviceId`, accents, interviewer, `answerMethod`, `answerTargetSec`, theme), sets, History, the API key and saved recordings are untouched. Settings are written only with the merging `saveSettings`. The only new setting is `preset`. The interview lifecycle, the countdown, pending-recording handling and the end and navigation safeguards are unchanged.
+
+### Tests
+
+Unit: presets, feedback mapping both ways, new-install detection, "Customised", the explanation lines, count notes and the Start block. Browser (`tests/browser/setup.mjs`, and the earlier checks updated to the new controls): a new user, saved settings kept, customised presets; changing sets, count or feedback keeps the other choices; empty sets, unmatched filters, duplicates and oversized counts; no API key; no speech recognition; recording back to Off between sessions; the device checks' cleanup, late permissions and typing fallback; the right configuration reaching the Step 4 lifecycle; all themes; keyboard use; phone width and a 200% zoom layout. Real microphone and camera behaviour needs a person.
+
+### Limits of this step
+
+The microphone and camera checks are simulated with fake devices in the scripts. Whether the level meter, permission prompts and device switching behave on real hardware, and Safari and iPhone, are checked by hand.
+
 ## Acceptance criteria for v1
 
 - With no API key, load a .docx with 10 questions, review the extracted pairs, and run a Practice session with difficulty, timer and order.
