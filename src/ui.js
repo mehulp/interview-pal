@@ -1,9 +1,10 @@
 // UI: the app shell. Creates the avatar and switches between the Interview, Questions, History and Settings screens.
 import { createAvatar } from './avatar.js';
 import { initPractice } from './practice.js';
-import './review.js'; // sets up the Questions screen
+// (review.js sets up the Questions screen: imported below)
 import './settings.js'; // sets up the Settings screen
 import { refreshHistory } from './historyscreen.js'; // sets up the History screen
+import { requestLeaveQuestions } from './review.js';
 
 const avatar = createAvatar(document.getElementById('avatar'));
 const practice = initPractice(avatar);
@@ -27,6 +28,8 @@ tabs.forEach((tab) => {
     try {
       // During a session this asks first. Cancel stays on the interview with everything as it was;
       // OK ends the session (what was answered is kept in History) and carries on.
+      // Unsaved edits on the Questions tab ask first (Save, Discard or Stay); the interview asks as before
+      if (current === 'questions' && !(await requestLeaveQuestions())) return;
       if (!(await practice.requestLeave())) return;
       current = tab.dataset.screen;
       practice.leave();

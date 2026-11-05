@@ -373,56 +373,156 @@
     </section>
     <p class="hint demo-note" id="demo-note" aria-live="polite" hidden></p>
 
-    <section class="card" aria-label="Question sets">
-      <h2>Question sets</h2>
-      <p class="hint">Keep separate sets, for example Leadership and Technical. Each question belongs to one set. You pick which sets to practise when you start.</p>
-      <label class="field">Open set
-        <select id="set-select"></select>
-      </label>
-      <div class="buttons">
-        <button type="button" class="small" id="set-new">New set</button>
-        <button type="button" class="small" id="set-rename">Rename</button>
-        <button type="button" class="small danger" id="set-delete">Delete set</button>
+    <!-- The library: a set selector and actions, a searchable list, and the selected question's detail -->
+    <section class="card library" id="library" aria-label="Question library">
+      <div class="lib-head">
+        <div class="lib-set-row">
+          <label class="field lib-set-pick">Set
+            <select id="set-select"></select>
+          </label>
+          <button type="button" class="small" id="set-new">New set</button>
+        </div>
+        <h2 class="lib-title"><span id="set-name"></span> <span id="pair-count" class="count"></span></h2>
+        <div class="lib-actions">
+          <button type="button" class="big" id="add-btn">+ Add question</button>
+          <button type="button" class="big secondary" id="import-open" aria-controls="import-panel" aria-expanded="false">Import questions</button>
+          <button type="button" class="big secondary" id="practise-set">Practise this set</button>
+          <div class="menu-wrap">
+            <button type="button" class="small" id="set-menu-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="set-menu">Set actions ▾</button>
+            <div class="menu" id="set-menu" role="menu" aria-label="Set actions" hidden>
+              <button type="button" role="menuitem" id="set-rename">Rename set…</button>
+              <button type="button" role="menuitem" id="menu-export">Export all sets</button>
+              <button type="button" role="menuitem" id="clear-btn">Clear all questions in this set…</button>
+              <button type="button" role="menuitem" class="danger" id="set-delete">Delete this set…</button>
+            </div>
+          </div>
+        </div>
+        <p class="status" id="set-status" aria-live="polite"></p>
+        <div class="save-alert" id="lib-alert" role="alert" hidden>
+          <p id="lib-alert-text"></p>
+          <div class="buttons">
+            <button type="button" class="small" id="lib-retry">Try again</button>
+            <button type="button" class="small" id="lib-copy" hidden>Copy unsaved text</button>
+            <button type="button" class="small" id="lib-download" hidden>Download as a file</button>
+          </div>
+          <textarea id="lib-copy-box" rows="4" readonly hidden aria-label="Unsaved text: select it all and copy it"></textarea>
+        </div>
+        <div class="undo-bar" id="undo-bar" hidden>
+          <span id="undo-text" role="status"></span>
+          <button type="button" class="small" id="undo-btn">Undo</button>
+          <span class="hint" id="undo-note">Undo stays available until you delete another question, open another set, leave this tab or reload the page.</span>
+        </div>
       </div>
-      <p class="status" id="set-status" aria-live="polite"></p>
-      <div class="save-alert" id="save-alert" role="alert" hidden>
-        <p>Your changes could not be saved: this browser is blocking storage, or it is full. They are still on this page, so do not reload it. Try saving again, or use Export sets (under Backup) to keep a copy.</p>
-        <button type="button" class="small" id="save-retry">Try saving again</button>
-      </div>
-    </section>
 
-    <section class="card" aria-label="Load notes">
-      <h2>Load your notes</h2>
-      <p class="hint">Supports .md, .txt, .docx and .pdf. Files are read in your browser and never uploaded. Questions are added to the open set.</p>
-      <input type="file" id="file-input" multiple accept=".md,.txt,.docx,.pdf" aria-label="Choose note files">
-      <textarea id="paste-box" rows="4" placeholder="…or paste your notes here" aria-label="Paste notes"></textarea>
-      <button type="button" class="big" id="parse-btn">Find questions</button>
-      <p class="status" id="load-status" aria-live="polite"></p>
-    </section>
+      <!-- Importing notes: choose, find, PREVIEW, then confirm. Nothing is added before Confirm. -->
+      <section class="import-panel" id="import-panel" aria-labelledby="import-title" hidden>
+        <h3 id="import-title" tabindex="-1">Import questions from notes</h3>
+        <p class="hint">Supports .md, .txt, .docx and .pdf. Files are read in your browser and never uploaded. You will see what was found before anything is added. (To restore a backup file, use Backup below.)</p>
+        <p class="dest" id="import-dest"></p>
+        <div id="import-input-stage">
+          <input type="file" id="file-input" multiple accept=".md,.txt,.docx,.pdf" aria-label="Choose note files">
+          <textarea id="paste-box" rows="4" placeholder="…or paste your notes here" aria-label="Paste notes"></textarea>
+          <div class="buttons">
+            <button type="button" class="big" id="parse-btn">Find questions</button>
+            <button type="button" class="big secondary" id="import-close">Close</button>
+          </div>
+        </div>
+        <div id="import-preview" hidden>
+          <p id="import-counts" aria-live="polite"></p>
+          <div class="buttons">
+            <button type="button" class="small" id="import-all">Select all</button>
+            <button type="button" class="small" id="import-none">Select none</button>
+          </div>
+          <ul class="import-items" id="import-items"></ul>
+          <div id="import-unplaced" hidden>
+            <h4>Not recognised</h4>
+            <p class="hint">The reader could not place this text. Read it, copy it, or turn a piece into a proposed question.</p>
+            <div id="unplaced-list"></div>
+          </div>
+          <div class="buttons">
+            <button type="button" class="big" id="import-confirm">Add questions</button>
+            <button type="button" class="big secondary" id="import-cancel">Cancel</button>
+          </div>
+        </div>
+        <p class="status" id="load-status" aria-live="polite"></p>
+      </section>
 
-    <section class="card" id="unplaced-section" aria-label="Text not recognised" hidden>
-      <h2>Not recognised</h2>
-      <p class="hint">The parser could not place this text. Turn it into a question, or delete it.</p>
-      <div id="unplaced-list"></div>
-    </section>
+      <div class="lib-body" id="lib-body" data-view="list">
+        <div class="lib-list" id="lib-list-pane">
+          <label class="field">Search
+            <input type="search" id="lib-search" placeholder="Question text or topic" autocomplete="off">
+          </label>
+          <div class="form-grid">
+            <label class="field">Topic <select id="lib-topic"></select></label>
+            <label class="field">Complexity
+              <select id="lib-level">
+                <option value="">All</option>
+                <option value="easy">Easy</option>
+                <option value="hard">Hard</option>
+                <option value="__untagged">Not tagged</option>
+              </select>
+            </label>
+          </div>
+          <div class="lib-count-row">
+            <p class="hint" id="lib-count" aria-live="polite"></p>
+            <button type="button" class="small" id="lib-clear" hidden>Clear filters</button>
+          </div>
+          <ul class="q-list" id="q-list" aria-label="Questions"></ul>
+        </div>
 
-    <section class="card" aria-label="Review questions">
-      <h2>Questions in "<span id="set-name"></span>" <span id="pair-count"></span></h2>
-      <div id="pairs-list"></div>
-      <div class="buttons">
-        <button type="button" class="big" id="add-btn">+ Add question</button>
-        <button type="button" class="big secondary" id="clear-btn">Clear this set</button>
+        <div class="lib-detail" id="lib-detail-pane">
+          <button type="button" class="small lib-back" id="q-back">← Back to the list</button>
+          <p class="hint" id="q-empty">Choose a question from the list to read it, or add a new one.</p>
+          <article class="q-view" id="q-view" aria-labelledby="q-view-title" hidden>
+            <h3 id="q-view-title" tabindex="-1"></h3>
+            <p class="q-meta" id="q-view-meta"></p>
+            <h4>Reference answer</h4>
+            <div class="q-answer" id="q-view-answer"></div>
+            <div class="buttons">
+              <button type="button" class="small" id="q-edit">Edit</button>
+              <button type="button" class="small danger" id="q-delete">Delete</button>
+              <label class="field q-move" id="q-move-row">Move to set
+                <select id="q-move"></select>
+              </label>
+            </div>
+          </article>
+          <form class="q-form" id="q-form" aria-labelledby="q-form-title" novalidate hidden>
+            <h3 id="q-form-title" tabindex="-1">Edit question</h3>
+            <p class="hint" id="q-form-hidden" hidden>This question is hidden by the current search or filters. Your draft is kept.</p>
+            <label class="field">Question
+              <textarea id="q-f-question" rows="3" aria-describedby="q-f-error"></textarea>
+            </label>
+            <p class="field-error" id="q-f-error" role="alert" hidden></p>
+            <label class="field">Reference answer (optional)
+              <textarea id="q-f-answer" rows="8"></textarea>
+            </label>
+            <div class="form-grid">
+              <label class="field">Topic <input type="text" id="q-f-topic" autocomplete="off"></label>
+              <label class="field">Complexity
+                <select id="q-f-level">
+                  <option value="">Not tagged</option>
+                  <option value="easy">Easy</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </label>
+            </div>
+            <div class="buttons">
+              <button type="submit" class="big" id="q-save">Save</button>
+              <button type="button" class="big secondary" id="q-cancel">Cancel</button>
+            </div>
+          </form>
+        </div>
       </div>
     </section>
 
     <section class="card" aria-label="Backup">
-      <h2>Backup</h2>
+      <h2>Backup (all sets)</h2>
       <p class="hint">
         Save all your sets to a file, or restore them from one. The file contains your notes,
         so keep it private and do not put it in the git repository.
       </p>
-      <button type="button" class="big" id="export-btn">Export sets</button>
-      <p class="hint spaced-top">Import a sets file (sets with the same name are merged, and questions that already exist are skipped):</p>
+      <button type="button" class="big" id="export-btn">Export all sets</button>
+      <p class="hint spaced-top">Restore from a sets file made by Export all sets (sets with the same name are merged, and questions that already exist in a set are skipped):</p>
       <input type="file" id="import-input" accept=".json,application/json" aria-label="Choose a sets file to import">
       <button type="button" class="big secondary" id="import-btn">Import sets</button>
       <p class="status" id="backup-status" aria-live="polite"></p>
@@ -532,6 +632,16 @@
       <p class="hint" id="rec-dock-hint">Saved recordings stay in this browser, on this address. An unsaved recording is lost if you close the page.</p>
     </section>
   </div>
+
+  <dialog class="guard-dialog" id="guard-dialog" aria-labelledby="guard-title">
+    <h2 id="guard-title">You have unsaved changes</h2>
+    <p id="guard-text"></p>
+    <div class="buttons">
+      <button type="button" class="big" id="guard-save">Save</button>
+      <button type="button" class="big secondary" id="guard-discard">Discard</button>
+      <button type="button" class="big secondary" id="guard-stay">Stay</button>
+    </div>
+  </dialog>
 
   <script type="module" src="src/ui.js"></script>
 </body>

@@ -79,7 +79,28 @@ export async function startSession(p, { count = 3, difficulty = 'medium' } = {})
 // The question has been asked and Start answer is ready (the "Ready" phase).
 export const ready = (p) => p.waitForSelector('#primary-btn[data-kind="start"]:not([disabled])', { timeout: 30000 });
 // Press Start answer and wait until the answer is under way.
-export async function startAnswer(p) { await ready(p); await p.click('#primary-btn'); await p.waitForSelector('#primary-btn[data-kind="finish"]', { timeout: 10000 }); }
+// What the page looked like, for failure messages (used when a wait below times out)
+export const snapshot = (p) => p.evaluate(() => {
+  const g = (id) => document.getElementById(id);
+  return {
+    button: g('primary-btn')?.outerHTML, hint: g('primary-hint')?.textContent, progress: g('progress')?.textContent,
+    question: g('question-text')?.textContent?.slice(0, 60), phaseClock: g('phase-clock')?.textContent, timer: g('timer')?.textContent,
+    speechLine: g('status')?.textContent, recordingLine: g('rec-status')?.textContent, recBlocked: g('rec-blocked') && !g('rec-blocked').hidden,
+    reviewOpen: g('review') && !g('review').hidden, interviewOpen: g('interview') && !g('interview').hidden, activeElement: document.activeElement?.id || document.activeElement?.tagName,
+    recDock: g('rec-dock') && !g('rec-dock').hidden, now: Math.round(performance.now()),
+  };
+}).catch((e) => ({ snapshotFailed: String(e) }));
+// Press Start answer and wait until the answer is under way. If that does not happen, say what the page looked like.
+export async function startAnswer(p) {
+  await ready(p);
+  const before = await snapshot(p);
+  await p.click('#primary-btn');
+  try {
+    await p.waitForSelector('#primary-btn[data-kind="finish"]', { timeout: 10000 });
+  } catch (err) {
+    throw new Error(`Start answer did not reach "Finish answer" within 10 s.\n  before the click: ${JSON.stringify(before)}\n  now: ${JSON.stringify(await snapshot(p))}\n  page errors: ${JSON.stringify(p.errors || [])}\n  ${err.message.split('\n')[0]}`);
+  }
+}
 // Ready -> Start answer (the "answering" state every older check meant by `answering`)
 export const answering = startAnswer;
 // Press Finish answer and wait for the review to open.
