@@ -534,3 +534,9 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* Wide screens show both panels at once, so the tab bar is not used; spacing between the two */
 @media (min-width: 960px) { .model-answer { margin-bottom: 16px; } .model-answer .panel-title { display: block; } }
+
+/* Phones: a long question must not push the answer off the screen */
+@media (max-width: 600px) { .workspace-head .question { font-size: 1.2rem; } }
+
+/* Buttons in the workspace and the review wrap on a narrow screen instead of widening the page */
+.workspace .buttons, .rec-dock .buttons, .rec-attempt .buttons { flex-wrap: wrap; }

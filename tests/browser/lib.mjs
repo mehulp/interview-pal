@@ -77,3 +77,50 @@ export const attempts = (p) => p.evaluate(`(async () => { const s = await import
 export const stats = (p) => p.evaluate(() => ({ gum: window.__stats.gum, live: window.__stats.tracks.filter((t) => t.readyState === 'live').length, created: window.__stats.created, revoked: window.__stats.revoked, liveUrls: window.__stats.liveUrls.size }));
 export const vis = (p, sel) => p.locator(sel).isVisible();
 export const text = (p, sel) => p.locator(sel).innerText();
+
+// Every visible piece of text on screen: is it readable against what is really behind it? (runs inside the page)
+export const AUDIT = () => {
+  const rgba = (c) => {
+    const m = c.match(/rgba?\(([^)]+)\)/); if (m) { const p = m[1].split(/[\s,/]+/).filter(Boolean).map(Number); return { r: p[0], g: p[1], b: p[2], a: p[3] ?? 1 }; }
+    const s = c.match(/color\(srgb ([^)]+)\)/); if (s) { const p = s[1].split(/[\s/]+/).map(Number); return { r: p[0] * 255, g: p[1] * 255, b: p[2] * 255, a: p[3] ?? 1 }; }
+    return null;
+  };
+  const over = (top, under) => ({ r: top.r * top.a + under.r * (1 - top.a), g: top.g * top.a + under.g * (1 - top.a), b: top.b * top.a + under.b * (1 - top.a), a: 1 });
+  const lum = ({ r, g, b }) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b); };
+  const ratio = (a, b) => { const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x); return (hi + 0.05) / (lo + 0.05); };
+  const backdrop = (el) => { // what is behind the text: walk up, blending translucent layers
+    const chain = [];
+    for (let n = el; n; n = n.parentElement) { const c = rgba(getComputedStyle(n).backgroundColor); if (c && c.a > 0) { chain.push(c); if (c.a > 0.99) break; } }
+    let base = { r: 255, g: 255, b: 255, a: 1 };
+    for (const layer of chain.reverse()) base = over(layer, base);
+    return base;
+  };
+  const skip = (el) => {
+    if (el.closest('.stage, .video-face, .photo-face, video, audio, option, [hidden]')) return true;
+    for (let n = el; n; n = n.parentElement) {
+      const cs = getComputedStyle(n);
+      if (cs.display === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) < 1) return true;
+      if (n.matches?.('button:disabled, input:disabled, select:disabled, fieldset:disabled, label:has(input:disabled)')) return true;
+    }
+    return false;
+  };
+  const failures = [];
+  let checked = 0;
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const words = node.textContent.trim();
+    const el = node.parentElement;
+    if (!words || !el || ['SCRIPT', 'STYLE', 'TITLE'].includes(el.tagName) || skip(el) || !el.getClientRects().length) continue;
+    const cs = getComputedStyle(el);
+    const fgRaw = el instanceof SVGElement ? cs.fill : cs.color;
+    const fg = rgba(fgRaw); if (!fg) continue;
+    const bg = backdrop(el);
+    const size = parseFloat(cs.fontSize); const bold = Number(cs.fontWeight) >= 700;
+    const need = size >= 24 || (size >= 18.66 && bold) ? 3 : 4.5;
+    const r = ratio(over(fg, bg), bg);
+    checked++;
+    if (r < need) failures.push(`${r.toFixed(2)} < ${need}: "${words.slice(0, 40)}" (${el.tagName.toLowerCase()}.${el.className?.baseVal ?? el.className}) ${fgRaw} on rgb(${Math.round(bg.r)},${Math.round(bg.g)},${Math.round(bg.b)})`);
+  }
+  return { checked, failures };
+};
+export const overflow = () => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth });
