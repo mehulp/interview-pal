@@ -286,7 +286,7 @@ export function initPractice(avatar) {
     if (!canSpeak) setRadio('setup-method', 'type');
 
     const block = startBlock({ everything, setsTicked: setIds.length, matching: matching.length });
-    const names = loadSets().filter((set) => setIds.includes(set.id)).map((set) => set.name);
+    const names = loadSets().filter((set) => setIds.includes(set.id) && usableQuestions(set.questions).length).map((set) => set.name); // an empty ticked set adds nothing, so it is not named
     const lines = summaryLines({
       count: note.session, setNames: names, preset: o.preset, customised: status.customised,
       method: radioValue('setup-method') || 'type', recording: o.recording, difficulty: o.difficulty, easyTimer: o.easyTimer, feedback,

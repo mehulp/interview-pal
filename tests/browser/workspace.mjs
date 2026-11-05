@@ -34,6 +34,7 @@ async function begin(p, { count = 2, showAnswer = false, selfMark = false, coach
   await p.evaluate((s) => { localStorage.setItem('interviewpal.sets', JSON.stringify(s)); }, sets);
   await p.reload();
   await p.evaluate(() => document.querySelectorAll('#set-choices input').forEach((i) => { i.checked = i.parentElement.textContent.includes('Workspace set'); i.dispatchEvent(new Event('change', { bubbles: true })); }));
+  await p.evaluate(() => { const d = document.getElementById('more-options'); if (d) d.open = true; }); // contexts made without newPage() do not open it for us
   await p.selectOption('#opt-order', 'serial'); await p.selectOption('#opt-difficulty', difficulty); await p.fill('#opt-count', String(count));
   await p.setChecked('#opt-show-answer', showAnswer); // (a new installation starts on Guided: say what we want)
   await p.check(coach ? '#fbk-coach' : selfMark ? '#fbk-self' : '#fbk-none');

@@ -51,6 +51,7 @@ const SETS = [
   check('More options is closed; pressure, accents and experimental recogniser are inside it', !(await p.evaluate(() => document.getElementById('more-options').open)) && !(await vis(p, '#opt-difficulty')) && !(await vis(p, '#opt-ondevice')) && !(await vis(p, '#voice-lang')));
   check('essentials stay visible: sets, count, order, complexity, presets, feedback, Speak/Type, microphone, recording', (await Promise.all(['#set-choices', '#opt-count', '#opt-order', '#opt-level', '#preset-guided', '#fbk-self', '#setup-method-type', '#opt-mic', '#setup-mic-btn', '#setup-cam-btn', '#setup-rec-off'].map((s) => vis(p, s)))).every(Boolean));
   check('"Question level" is now "Question complexity", with the same values', (await text(p, '#setup')).includes('Question complexity') && !(await text(p, '#setup')).includes('Question level') && (await p.locator('#opt-level option').evaluateAll((o) => o.map((x) => x.value).join())) === 'all,easy,hard');
+  await shot(p, 'setup-new-user-desktop', { fullPage: true });
   await p.focus('#more-options > summary'); await p.keyboard.press('Enter');
   check('More options opens from the keyboard', await p.evaluate(() => document.getElementById('more-options').open) && (await vis(p, '#opt-difficulty')));
   check('"Difficulty" is "Interview pressure": Relaxed / Standard / Challenging over easy / medium / hard', (await p.locator('#opt-difficulty option').evaluateAll((o) => o.map((x) => `${x.value}=${x.textContent}`).join())) === 'easy=Relaxed,medium=Standard,hard=Challenging');
@@ -343,7 +344,7 @@ const SETS = [
   await tab(p, 'questions'); await p.click('#demo-btn'); await tab(p, 'practice');
   let o = await p.evaluate(overflow);
   check('phone width (390px): no sideways scroll on setup', o.sw <= o.cw, JSON.stringify(o));
-  await shot(p, 'setup-mobile', { fullPage: true });
+  await shot(p, 'setup-new-user-mobile', { fullPage: true });
   await p.click('#more-options > summary');
   o = await p.evaluate(overflow);
   check('phone width with More options open: no sideways scroll', o.sw <= o.cw, JSON.stringify(o));

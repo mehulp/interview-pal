@@ -747,6 +747,26 @@ Unit: presets, feedback mapping both ways, new-install detection, "Customised", 
 
 The microphone and camera checks are simulated with fake devices in the scripts. Whether the level meter, permission prompts and device switching behave on real hardware, and Safari and iPhone, are checked by hand.
 
+### How it was checked (Step 5)
+
+- **Unit tests** (`npm test`, 141): presets, the settings a preset writes, feedback mapping both ways, new-install detection, "customised", pressure wording, count notes, the Start block and the summary lines. **Syntax** (`npm run check`) is clean.
+- **Before starting**, the final Step 4 commit (`e0413a0`) was checked out separately and the lifecycle, workspace and regression suites were run against it: all passed. (Its only code changes after the earlier full run were hiding Repeat/Skip in review and a header wrap, both already present in that run.)
+- **Scripted browser checks** (`npm run test:browser`, headless Chromium, fake microphone and camera, stand-in speech recogniser): all eight suites pass. The new `tests/browser/setup.mjs` (97 checks) covers: a new installation on Guided rehearsal; More options closed and opened from the keyboard; a returning user's saved settings left byte-for-byte unchanged on load; presets applied only on choice, Customised, and no reapplying when sets, count, feedback or the tab change; duplicates, the complexity filter, oversized counts, no set ticked, an unmatched filter and empty sets (with the Questions link); AI Coach without and with a key (mapped to mode `coach`, no new mode); Speak/Type with and without recognition; Recording back to Off after a session and after a reload, never saved, and not recording or requesting the microphone until Start answer; the microphone test (no recorder, no recognition, stops on Stop, tab change, microphone change and Start; late permission after Cancel or after leaving is released; a refused microphone or camera and typing still works); the camera preview (video only, stops everywhere, a late permission released, allowing it does not record or imply self-view); the right configuration reaching the interview (Guided: reference shown, no countdown, self-marking; Mock: reference hidden, countdown running; revealing it mid-answer keeps the assisted flag); keyboard order and radio groups; 390px width; a 640px window at double scale; and the contrast audit of the setup screen in all four themes. The earlier suites were updated to the new controls and still pass.
+- **Real browser zoom** was not available; "200% zoom" is emulated with a 640px-wide window at device scale 2. It checks the layout, not the browser's zoom feature.
+- One timing flake appeared once in the Step 4 lifecycle check under load (a 10 second wait for the answer to start) and did not repeat on re-runs; it is noted rather than explained.
+
+### Still to check by hand (Step 5; real hardware)
+
+1. Open setup on a brand-new browser profile: Guided rehearsal is selected and the summary reads correctly. Then, with some saved settings, reload: nothing changes by itself.
+2. Pick Mock interview, change one thing, and see "customised"; change sets and the number of questions and see nothing else move.
+3. With your real microphone: **Test microphone** shows a moving meter and sensible advice, the microphone light goes off at once when you press Stop, switch tabs or press Start. Choose a different microphone and test again.
+4. With a real camera: **Preview camera** shows you, and the camera light goes off when you stop the preview, leave setup or press Start. Allowing it must not start recording.
+5. Deny the microphone (and, separately, the camera) in the browser prompt: the messages are clear and you can still type and start.
+6. Choose Audio (then Video), start, and check nothing records until Start answer; finish the session, come back to setup and see Recording is Off.
+7. Try setup on your phone (Android Chrome): all three sections, the More options drawer and the Start button are reachable with the keyboard open.
+8. In Chrome's zoom (Ctrl +) at 200%: setup stays usable without sideways scrolling.
+9. Safari and iPhone remain untested.
+
 ## Acceptance criteria for v1
 
 - With no API key, load a .docx with 10 questions, review the extracted pairs, and run a Practice session with difficulty, timer and order.
