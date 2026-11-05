@@ -243,6 +243,7 @@ export function initPractice(avatar) {
     setSelfView(false); // the camera is off whenever you are on the setup screen
     $('setup').hidden = false;
     $('interview').hidden = true;
+    $('finished').hidden = true;
     phase = 'setup';
     refreshAnswerPanel();
     refreshMicList();
@@ -607,7 +608,6 @@ export function initPractice(avatar) {
     goNext('next');
   });
   $('fb-next').addEventListener('click', () => { if (phase === 'feedback') { hush(); goNext('next'); } });
-  $('fb-end').addEventListener('click', () => finishSession(false));
 
   // Ask the next question, or finish if that was the last one.
   function goNext(kind) {
@@ -704,10 +704,13 @@ export function initPractice(avatar) {
 
     const { record, note } = recordSession(completed);
     renderSummary($('finished-body'), record, note);
-    $('answer-area').hidden = true;
-    $('reveal').hidden = true;
-    $('feedback').hidden = true;
+    // The live interview gives way to a full-width summary. Focus goes to its heading, so a keyboard or
+    // screen-reader user lands on it (ending is something the user did, not a background event).
+    $('interview').hidden = true;
+    $('finished-closing').textContent = $('interviewer-line').textContent;
     $('finished').hidden = false;
+    const heading = $('finished-body').querySelector('h2');
+    if (heading) { heading.tabIndex = -1; heading.focus(); }
 
     if (completed) say($('interviewer-line').textContent).catch(() => {}); // the summary does not wait for the closing line
   }

@@ -133,7 +133,7 @@ body {
   .app-main { grid-template-columns: 1fr 1fr; align-items: start; }
 }
 
-.avatar-panel, .controls {
+.avatar-panel, .controls, .workspace {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -270,19 +270,11 @@ button.big.secondary { background: var(--surface); color: var(--text); border: 1
 .field select, .lang-row select { max-width: 100%; min-width: 0; }
 .check { display: flex; gap: 8px; align-items: flex-start; margin: 8px 0; }
 .check input { margin-top: 4px; width: 18px; height: 18px; }
-.interview-layout { display: grid; gap: 16px; }
-@media (min-width: 700px) { .interview-layout { grid-template-columns: 1fr 1fr; align-items: start; } }
-.caption .say { margin: 0 0 6px; font-style: italic; color: var(--text-muted); }
-.caption .question { margin: 0; font-size: 1.15rem; font-weight: 600; }
-.progress-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-weight: 600; }
-#timer { font-variant-numeric: tabular-nums; }
+
 #timer.low { color: var(--danger); }
 #timer.low::before { content: "\26A0\FE0E  "; } /* a warning sign as well as the colour */
-#answer-area .buttons + .buttons { flex-wrap: wrap; margin-top: 8px; }
 #reveal pre { white-space: pre-wrap; font: inherit; background: var(--reference); border-radius: 8px; padding: 12px; margin: 0 0 12px; }
-#reveal h2, #finished h2 { margin: 0 0 8px; font-size: 1.1rem; }
-#finished-list { padding-left: 1.2em; }
-#finished-list li { margin-bottom: 6px; }
+#finished h2 { margin: 0 0 8px; font-size: 1.1rem; }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ---------- Mode picker and Settings ---------- */
@@ -376,11 +368,10 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   .tabs { width: 100%; }
   .tabs button { flex: 1; padding: 8px 4px; font-size: 0.9rem; }
   .app-main { padding: 12px; gap: 12px; }
-  .card, .avatar-panel, .controls { padding: 12px; }
+  .card, .avatar-panel, .controls, .workspace { padding: 12px; }
   /* bigger tap targets */
   .tabs button, button.small, .history-row, select, input[type="text"], input[type="number"] { min-height: 44px; }
   .check input { width: 22px; height: 22px; }
-  .caption .question { font-size: 1.05rem; }
 }
 
 /* Progress view (History tab) */
@@ -404,12 +395,6 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .heat-topic { overflow-wrap: anywhere; font-weight: 600; }
 .heat-cell { border-radius: 6px; padding: 4px 8px; text-align: center; color: var(--text); font-weight: 600; } /* the shade is data (weak to strong); the words carry the meaning */
 .heat-count { color: var(--text-muted); font-size: 0.9rem; }
-
-/* Model answer panel (Interview screen): full width under the question and answer cards */
-.model-answer { grid-column: 1 / -1; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px var(--shadow); }
-.model-answer h2 { margin: 0 0 8px; font-size: 1.1rem; }
-.model-answer-text { white-space: pre-wrap; line-height: 1.6; font-size: 1rem; max-height: 40vh; overflow-y: auto; background: var(--reference); border-radius: 8px; padding: 12px; }
-@media (max-width: 520px) { .model-answer { padding: 12px; } }
 
 /* Recording (v1.3): the recorder panel, the shared unsaved-recording panel and saved attempts */
 .rec-panel { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 12px; }
@@ -472,3 +457,50 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 /* The words and tick make the choice clear without relying on colour */
 .theme-selected { font-weight: 600; color: var(--accent); }
 .theme-card input:not(:checked) ~ .theme-selected { visibility: hidden; }
+
+/* ---------- Interview workspace (UX redesign, Step 3) ----------
+   Only the live interview and the summary get the wider container; setup and the other screens keep theirs.
+   Narrow screens: one column (a compact interviewer, the question, the answer, the controls).
+   About 960px and up: the interviewer on the left (roughly 360-440px on roomy screens), the workspace beside it. */
+#screen-practice:has(#interview:not([hidden])), #screen-practice:has(#finished:not([hidden])) { max-width: 1280px; }
+.interview-layout { display: grid; gap: 16px; align-items: start; }
+.interviewer-col .stage, .interviewer-col .stage:has(.has-video) { max-width: min(100%, 300px); }
+@media (min-width: 960px) {
+  .interview-layout { grid-template-columns: minmax(340px, min(38%, 440px)) minmax(0, 1fr); gap: 24px; }
+  .interviewer-col .stage, .interviewer-col .stage:has(.has-video) { max-width: none; }
+}
+/* On roomy, tall screens the portrait stays in view while a long workspace scrolls */
+@media (min-width: 960px) and (min-height: 700px) { .interviewer-col { position: sticky; top: 16px; } }
+
+.interviewer-col .say { margin: 10px 0 0; text-align: center; font-style: italic; color: var(--text-muted); }
+.interviewer-tools { display: flex; justify-content: center; margin-top: 10px; }
+.interviewer-col .hint { text-align: center; margin: 6px 0 0; font-size: 0.85rem; }
+
+.workspace-head { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.progress-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-weight: 600; color: var(--text-muted); }
+#timer { font-variant-numeric: tabular-nums; font-size: 1.15rem; color: var(--text); }
+.workspace-head .question { margin: 6px 0 0; font-size: 1.5rem; line-height: 1.3; font-weight: 600; overflow-wrap: anywhere; }
+.panel-title { margin: 0 0 6px; font-size: 0.95rem; color: var(--text-muted); font-weight: 600; }
+
+/* The reference answer: comfortable to read, and beside the portrait near the top of the screen */
+.model-answer { margin: 0 0 14px; }
+.model-answer-text {
+  white-space: pre-wrap; font-size: 1.125rem; line-height: 1.6; max-width: 75ch;
+  background: var(--reference); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px;
+}
+/* A long reference scrolls inside its own panel only where there is room; on short screens or at high zoom the page scrolls instead */
+@media (min-width: 960px) and (min-height: 700px) { .model-answer-text { max-height: 45vh; overflow-y: auto; } }
+
+/* Response controls: the main pair, then quieter secondary buttons; ending is kept apart */
+.actions { margin-top: 4px; }
+.primary-actions { margin-top: 12px; }
+.secondary-actions { flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.session-end { display: flex; justify-content: flex-end; margin-top: 22px; padding-top: 12px; border-top: 1px solid var(--border); }
+#reveal pre { font-size: 1.125rem; line-height: 1.6; max-width: 75ch; }
+#reveal, #feedback { margin-top: 4px; }
+
+/* The finished session: the whole width, readable line lengths inside */
+.summary-card .closing { margin: 0 0 8px; font-style: italic; color: var(--text-muted); }
+.summary-card .sum-answer, .summary-card .sum-body p { max-width: 75ch; }
+.summary-card h2:focus { outline: none; }
+.summary-card h2:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
