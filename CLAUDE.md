@@ -12,6 +12,8 @@ Build and maintain the app described in `docs/requirements.md`. Read that file f
 
 **v1.4 (record video, download only) is built** (steps 26 to 30): an unticked-by-default Include video box, a small mirrored preview in the recorder panel while recording (the screen is never taken over; the file holds only the camera and microphone; up to 7 minutes), and a review with Download only. Videos are never stored by the app. Not yet tagged or pushed; real-camera checks are the owner's (listed in the requirements).
 
+**UX redesign Step 2 (appearance) is built** (unreleased; see the section in `docs/requirements.md`): four light colour themes chosen in Settings → Appearance, semantic colour roles in `styles.css` (every interface colour comes from them: do not add hard-coded colours), a white header with an accent active tab, and the `theme` setting. Themes are defined only in `styles.css`; `src/themes.js` holds the IDs and names. The scripted browser checks live in `tests/browser/` (`npm run test:browser`; they need Playwright and a Chromium, which are not project dependencies).
+
 **UX redesign Step 1 (reliability) is built** (unreleased, no version assigned; see `docs/InterviewPal_UX_Code_Review.md` and the matching section in `docs/requirements.md`): leaving a session asks first, one idempotent end path, unfinished answers kept as `incomplete`, guarded startup, camera requests that cannot reopen late, honest save and import on the Questions screen. Steps 2 to 6 of the review (theme, layout, answer lifecycle, setup, question library) are not started.
 
 **Also done: a start/stop script** (`scripts/interviewpal.sh` and `scripts/devserver.py`) so the owner can run the app without remembering commands. Documented in the README under "Start and stop". The owner confirmed it opens Chrome on the Windows side, and added the optional `interviewpal` alias to `~/.bashrc`.
@@ -56,13 +58,14 @@ Also built, beyond Practice and Coach: question sets with JSON export and import
 - `scripts/interviewpal.sh` starts, stops and reports on the local server; `scripts/devserver.py` is the small standard-library server behind it (127.0.0.1 only, `Cache-Control: no-store`). Its process ID and log live in `.run/`, which is git-ignored.
 - `index.html` holds all four screens (Interview, Questions, History, Settings); `src/ui.js` switches between them. `styles.css` holds all styles.
 - Logic that needs no page lives in small modules that can be tested on their own with Node: `parser.js` (the text rules), `sets.js`, `session.js`, `history.js`, `vocabulary.js`, `interviewers.js`, `phrases.js`, and from v1.1 `delivery.js`, `progress.js` and `recordings.js`.
-- Everything saved in the browser goes through `src/storage.js`, except recordings, which go through `src/recordstore.js` (IndexedDB, because audio does not fit localStorage). Settings are saved with `saveSettings({ key: value })`, which merges, so never save a whole copy of the settings object.
+- Everything saved in the browser goes through `src/storage.js`, except recordings, which go through `src/recordstore.js` (IndexedDB, because audio does not fit localStorage). Settings are saved with `saveSettings({ key: value })`, which merges, so never save a whole copy of the settings object. One narrow exception to the storage-only rule: `src/theme-boot.js`, a plain script in the page head, reads the `theme` setting directly so the colour theme is applied before the first paint (it accepts only the four known theme IDs, and a test keeps its list equal to `src/themes.js`).
 - Anything a user's notes, answers or Claude's replies put on screen must be set with `textContent`, never as HTML.
 - `src/claude.js` is the only file that talks to the Anthropic API, and Practice mode never loads it (Coach loads it on demand).
 
 ## Testing
 
 - Unit tests are in `tests/` (Node's built-in test runner) for the pure modules: parser, sets, session, history, vocabulary, delivery, progress and recordings. Run `npm test` (same as `node --test tests/*.test.js`) and `npm run check`. `package.json` has no dependencies; it only sets `"type": "module"` and the two scripts. A GitHub Action runs both on every push. Add or update tests whenever a pure module changes. The speech recogniser and the screens are checked by hand in Chrome.
+- Scripted browser checks (leaving a session, ending, recording, themes and so on) are in `tests/browser/`; run them with `npm run test:browser` once Playwright and a Chromium are available (see `tests/browser/README.md`). They are not run by the GitHub Action.
 - Syntax check: `npm run check` (or `for f in src/*.js; do node --check $f; done`).
 - Voice, microphone and camera behaviour can only be checked in a real browser.
 

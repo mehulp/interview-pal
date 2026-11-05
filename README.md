@@ -102,6 +102,8 @@ alias interviewpal='/home/mehul/projects/interviewpal/scripts/interviewpal.sh'
 
 The four tabs at the top are **Interview**, **Questions**, **History** and **Settings**.
 
+**Colour theme.** Settings → Appearance offers four light themes: Sage & Forest (the default), Warm Teal, Muted Plum and Classic Blue. Pick a card (with the mouse, or the arrow keys once one is focused) and every screen changes at once. The choice is remembered in this browser. It only changes colours: nothing else moves, and it never uses your microphone or camera. Pictures of each theme are in [docs/images/themes](docs/images/themes).
+
 1. **Questions tab: add your notes.**
    - New here? The **Try the demo** card at the top adds about 20 sample Engineering Manager questions, with model answers, to a separate set called "Demo: Engineering Manager". It does not change the set you have open, and it offers an **Open demo set** button afterwards. Nothing is downloaded. Once the demo set exists, the card turns into a one-line note.
    - Open a set (the first one is called "My questions"). Use **New set** to create more, such as "Leadership" and "Technical".
@@ -326,7 +328,10 @@ src/
   progressview.js      draws the progress view
   delivery.js          filler words, pace and timer use for answers
   demoset.js           the demo questions
-  settings.js          Settings tab: API key, model, microphone check
+  settings.js          Settings tab: colour theme, API key, model, microphone check
+  themes.js            which colour themes exist (the colours are in styles.css)
+  appearance.js        puts a theme on the page
+  theme-boot.js        applies the saved theme before the page is drawn (a plain script)
   recordings.js        recording rules: format, timer, retry rule, names (pure)
   recorder.js          microphone and MediaRecorder (the only file that records)
   recordstore.js       saved recordings in IndexedDB
@@ -349,6 +354,7 @@ src/
   storage.js           everything saved in the browser
 scripts/               interviewpal.sh (start, stop, status, restart) and devserver.py (the local server)
 tests/                 unit tests (Node's built-in test runner)
+tests/browser/         scripted browser checks (need Playwright and a Chromium: see its README)
 .github/workflows/     the GitHub Action that runs the checks
 CHANGELOG.md           what changed in each version
 assets/interviewers/   the AI-generated interviewer photos and clips, their README and NOTICE.md

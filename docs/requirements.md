@@ -522,6 +522,14 @@ All interface colours come from semantic variables, defined once per theme in `s
 
 Unit: theme ID validation and the default; the boot script (valid, unknown, missing, unreadable and throwing storage) and that its ID list matches `themes.js`; every theme defines every colour role; every contrast target above, computed from the stylesheet. Browser (`tests/browser/appearance.mjs`): all four themes on every screen, persistence across reload, unknown and missing preferences, blocked storage, keyboard use, phone width and 200% zoom, computed contrast on rendered controls, other settings preserved, and that no camera or microphone was requested.
 
+### How it was checked (Step 2)
+
+125 unit tests (including the theme and contrast tests) and the scripted browser check `tests/browser/appearance.mjs` passed. The browser check covers: the default; the picker's markup and its "Selected" word; each theme applying at once and saving only its ID while every other setting is untouched; the head script restoring the theme with the app's own scripts blocked; unknown, wrongly typed, missing and damaged saved values; blocked and throwing storage; arrow-key selection and visible focus rings; every visible piece of text on eleven screens and states (settings, questions, setup, an active interview with the reference answer showing, a recording in progress, an unsaved recording, self-marking, the summary, Coach feedback, History with the Progress charts, and a past session) in all four themes at 4.5:1 (3:1 for large text), no sideways scrolling on any of them; the four main screens at 390 px wide and at a 640 px window at double scale (200% zoom); and that no camera or microphone was requested by changing or showing themes. Pictures of every state in each theme are in `docs/images/themes/`.
+
+**A bug found and fixed on the way (not caused by this step):** with a real microphone listed in the Microphone drop-down, the Interview setup was wider than a 640 px window (669 px), already so before Step 1. Allowing grid items and drop-downs to shrink fixed it, with no change to the layout.
+
+**Still needs a person and a real browser:** how each theme looks on your own screen and in daylight; Safari and Firefox (only Chromium was run); a Windows high-contrast or forced-colours mode; and the check that your saved choice survives closing and reopening Chrome.
+
 ### Limits of this step
 
 No dark mode, colour picker or new fonts. Existing widths and type sizes are kept; the workspace layout comes in Step 3. Contrast was checked for the interface colours above, not as a full accessibility audit.
