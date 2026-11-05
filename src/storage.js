@@ -1,6 +1,7 @@
 // Storage: settings, question sets and the API key, kept in this browser only (localStorage).
 import { createSet, DEFAULT_SET_NAME } from './sets.js';
 import { addSession } from './history.js';
+import { DEFAULT_THEME, isValidTheme, resolveTheme } from './themes.js';
 
 const SETTINGS_KEY = 'interviewpal.settings';
 
@@ -16,6 +17,7 @@ const DEFAULTS = {
   practiceDifficulty: 'medium', // 'easy', 'medium' or 'hard'
   practiceCount: 10,
   practiceSelfMark: false,
+  theme: DEFAULT_THEME, // colour theme ID (see themes.js); anything not valid is ignored
   answerTargetSec: 0, // optional target length for recorded answers (0 = none)
   showModelAnswer: false, // show the model answer with each question (can be toggled during a session)
   practiceEasyTimer: false,
@@ -36,12 +38,18 @@ export function loadSettings() {
   }
 }
 
-// Save some settings. Only the keys you pass change; the rest are kept.
+// Save some settings. Only the keys you pass change; the rest are kept. Returns true if it was saved.
+// A theme that is not a known ID is never saved (and a bad one already stored is replaced by the default).
 export function saveSettings(changes) {
+  const wanted = { ...changes };
+  if ('theme' in wanted && !isValidTheme(wanted.theme)) delete wanted.theme;
   try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...loadSettings(), ...changes }));
+    const merged = { ...loadSettings(), ...wanted };
+    merged.theme = resolveTheme(merged.theme);
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(merged));
+    return true;
   } catch {
-    // storage unavailable: the app still works, settings just won't be remembered
+    return false; // storage unavailable: the app still works, settings just won't be remembered
   }
 }
 

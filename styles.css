@@ -1,9 +1,105 @@
 /* Simple, mobile-first layout. */
+/* ---------- Colour roles ----------
+   Every interface colour comes from these variables. Each theme defines the same list, so a screen
+   looks right in all of them. The data-theme-preview rules let the Appearance cards show a theme
+   without switching to it. Sage & Forest is also the default, with no data-theme at all.
+   page / surface (cards) / surface-subtle / reference (answer text) / text / text-muted /
+   border (dividers) / border-strong (control outlines) / accent / accent-hover / accent-fg (text on the
+   accent) / selected-bg + selected-border / focus (keyboard ring). Contrast of every pair is checked by
+   tests/themes.test.js. */
+/* Sage & Forest */
+:root,
+:root[data-theme="sage"],
+[data-theme-preview="sage"] {
+  --page: #F6F7F2;
+  --surface: #FFFFFF;
+  --surface-subtle: #ECEDE8;
+  --reference: #F6F6EE;
+  --text: #24332C;
+  --text-muted: #505C56;
+  --border: #D4D8D2;
+  --border-strong: #808985;
+  --accent: #35634D;
+  --accent-hover: #2D5341;
+  --accent-fg: #FFFFFF;
+  --selected-bg: #EBEFED;
+  --selected-border: #35634D;
+  --focus: #305945;
+}
+
+/* Warm Teal */
+:root[data-theme="teal"],
+[data-theme-preview="teal"] {
+  --page: #F5F7F7;
+  --surface: #FFFFFF;
+  --surface-subtle: #EBEDED;
+  --reference: #F5F6F0;
+  --text: #243438;
+  --text-muted: #505D60;
+  --border: #D4D8D8;
+  --border-strong: #80898C;
+  --accent: #176B70;
+  --accent-hover: #135A5E;
+  --accent-fg: #FFFFFF;
+  --selected-bg: #E8F0F1;
+  --selected-border: #176B70;
+  --focus: #156065;
+}
+
+/* Muted Plum */
+:root[data-theme="plum"],
+[data-theme-preview="plum"] {
+  --page: #F7F5F8;
+  --surface: #FFFFFF;
+  --surface-subtle: #EDEBEF;
+  --reference: #F9F5F1;
+  --text: #332D3B;
+  --text-muted: #5C5762;
+  --border: #D8D5DA;
+  --border-strong: #89858D;
+  --accent: #715185;
+  --accent-hover: #5F4470;
+  --accent-fg: #FFFFFF;
+  --selected-bg: #F1EEF3;
+  --selected-border: #715185;
+  --focus: #664978;
+}
+
+/* Classic Blue */
+:root[data-theme="blue"],
+[data-theme-preview="blue"] {
+  --page: #F6F7FB;
+  --surface: #FFFFFF;
+  --surface-subtle: #EBECF1;
+  --reference: #F6F6F5;
+  --text: #1D2433;
+  --text-muted: #4A505C;
+  --border: #D3D5DB;
+  --border-strong: #7C8089;
+  --accent: #3B5BDB;
+  --accent-hover: #324CB8;
+  --accent-fg: #FFFFFF;
+  --selected-bg: #EBEFFB;
+  --selected-border: #3B5BDB;
+  --focus: #3552C5;
+}
+
+/* The same in every theme: status colours (always shown with words or a symbol), a second chart
+   colour, media backdrops and shadows. */
 :root {
-  --bg: #f6f7fb;
-  --card: #ffffff;
-  --text: #1d2433;
-  --accent: #3b5bdb;
+  --danger: #B42318;
+  --danger-subtle: #FDECEA;
+  --warning: #8A4B00;
+  --warning-subtle: #FFF3D9;
+  --warning-border: #C77700;
+  --success: #1E6B3A;
+  --success-subtle: #E7F4EA;
+  --chart-2: #B45309;
+  --media-bg: #1D2433;
+  --shadow: rgba(0, 0, 0, 0.1);
+  /* The names the stylesheet used before the roles existed; removed once everything is converted */
+  --bg: var(--page);
+  --card: var(--surface);
 }
 
 * { box-sizing: border-box; }
