@@ -4,9 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>InterviewPal</title>
-  <meta name="theme-color" content="#3b5bdb">
+  <meta name="theme-color" content="#ffffff">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%233b5bdb'/%3E%3Ccircle cx='32' cy='28' r='13' fill='%23f2c9a0'/%3E%3Cpath d='M12 56c3-12 11-16 20-16s17 4 20 16z' fill='%23fff'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css">
+  <!-- Sets the saved colour theme before the page is first drawn (no flash). A plain script on purpose: see src/theme-boot.js -->
+  <script src="src/theme-boot.js"></script>
 </head>
 <body>
   <header class="app-header">
@@ -343,6 +345,16 @@
 
   <!-- Settings screen: API key and model for Coach mode -->
   <main class="app-main single" id="screen-settings" hidden>
+    <section class="card" aria-label="Appearance">
+      <h2>Appearance</h2>
+      <fieldset class="theme-picker">
+        <legend>Colour theme</legend>
+        <p class="hint">Changes every screen straight away, and is remembered in this browser.</p>
+        <div class="theme-grid" id="theme-grid"></div>
+        <p class="status" id="theme-status" aria-live="polite"></p>
+      </fieldset>
+    </section>
+
     <section class="card" aria-label="Coach mode settings">
       <h2>Coach mode (AI)</h2>
       <p class="hint">

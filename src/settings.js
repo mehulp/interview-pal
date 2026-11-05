@@ -2,6 +2,8 @@
 // The key is stored in this browser only. It is never shown again in full, never logged,
 // and never written into code.
 import { getApiKey, saveApiKey, clearApiKey, loadSettings, saveSettings, DEFAULT_MODEL } from './storage.js';
+import { THEMES } from './themes.js';
+import { applyTheme } from './appearance.js';
 import { testConnection, ClaudeError } from './claude.js';
 import { startMicCheck } from './miccheck.js';
 
@@ -11,6 +13,41 @@ const keyStatus = $('key-status');
 const modelInput = $('model-input');
 const testStatus = $('test-status');
 const testBtn = $('test-btn');
+
+/* ---------- Appearance: the colour theme ---------- */
+const themeGrid = $('theme-grid');
+const themeStatus = $('theme-status');
+
+// One card per theme: a native radio inside a label, so the keyboard and screen readers work without extra code.
+function themeCard(theme, selected) {
+  const input = Object.assign(document.createElement('input'), { type: 'radio', name: 'theme', value: theme.id, checked: selected });
+  const swatches = document.createElement('span');
+  swatches.className = 'theme-swatches';
+  swatches.setAttribute('aria-hidden', 'true');
+  ['sw-page', 'sw-surface', 'sw-accent', 'sw-text'].forEach((cls) => { const chip = document.createElement('i'); chip.className = cls; swatches.append(chip); });
+  const text = (cls, content, hidden) => {
+    const span = Object.assign(document.createElement('span'), { className: cls, textContent: content });
+    if (hidden) span.setAttribute('aria-hidden', 'true');
+    return span;
+  };
+  const card = document.createElement('label');
+  card.className = 'theme-card';
+  card.setAttribute('data-theme-preview', theme.id);
+  card.append(input, swatches, text('theme-name', theme.name), text('theme-note', theme.note), text('theme-selected', '\u2713 Selected', true));
+  return card;
+}
+
+const showTheme = applyTheme(loadSettings().theme); // the boot script already did this; this covers it being absent
+themeGrid.replaceChildren(...THEMES.map((theme) => themeCard(theme, theme.id === showTheme)));
+
+themeGrid.addEventListener('change', (event) => {
+  if (event.target.name !== 'theme') return;
+  const id = applyTheme(event.target.value); // shows at once, on every screen
+  const name = THEMES.find((t) => t.id === id).name;
+  themeStatus.textContent = saveSettings({ theme: id }) // only the theme is changed: everything else is kept
+    ? `${name} is on. It will be remembered in this browser.`
+    : `${name} is on for now, but this browser would not store the choice, so it will not be remembered after a reload.`;
+});
 
 // Show whether a key is saved, with only the last 4 characters visible.
 function showKeyStatus(message) {
