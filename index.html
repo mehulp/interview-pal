@@ -271,6 +271,10 @@
         <button type="button" class="small danger" id="set-delete">Delete set</button>
       </div>
       <p class="status" id="set-status" aria-live="polite"></p>
+      <div class="save-alert" id="save-alert" role="alert" hidden>
+        <p>Your changes could not be saved: this browser is blocking storage, or it is full. They are still on this page, so do not reload it. Try saving again, or use Export sets (under Backup) to keep a copy.</p>
+        <button type="button" class="small" id="save-retry">Try saving again</button>
+      </div>
     </section>
 
     <section class="card" aria-label="Load notes">

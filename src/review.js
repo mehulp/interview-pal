@@ -26,10 +26,17 @@ let unplaced = []; // text the parser could not place (not saved)
 
 const active = () => sets.find((s) => s.id === activeId);
 
-// Save the sets. Questions with an empty question text are not kept.
+// Save the sets. Questions with an empty question text are not kept. Returns true if it worked.
+// If it did not (storage blocked or full) the edits stay on the page and a message with a retry
+// button is shown, so a change is never presented as saved when it is not.
 function save() {
-  saveSets(sets.map((s) => ({ ...s, questions: s.questions.filter((q) => q.question.trim()) })));
+  const ok = saveSets(sets.map((s) => ({ ...s, questions: s.questions.filter((q) => q.question.trim()) })));
+  $('save-alert').hidden = ok;
+  return ok;
 }
+
+// A status line that never claims more than happened: it says so when the change was not saved.
+const saved = (message) => (save() ? message : `${message} It is not saved yet: see the message below.`);
 
 function openSet(id) {
   activeId = id;
@@ -65,10 +72,9 @@ function moveControl(pair) {
     const target = sets.find((s) => s.id === select.value);
     const result = moveQuestion(sets, activeId, pair.id, select.value);
     if (result) {
-      setStatus.textContent = result === 'merged'
+      setStatus.textContent = saved(result === 'merged'
         ? `"${target.name}" already had that question, so it was only removed from here. The copy in "${target.name}" is unchanged.`
-        : `Moved one question to "${target.name}".`;
-      save();
+        : `Moved one question to "${target.name}".`);
       render();
     }
   });
@@ -137,6 +143,10 @@ function render() {
   renderDemo();
 }
 
+$('save-retry').addEventListener('click', () => {
+  if (save()) setStatus.textContent = 'Saved. Your changes are now kept in this browser.';
+});
+
 /* ---------- Managing sets ---------- */
 
 // Ask for a set name. Returns the name, or '' if cancelled or not allowed (a message is shown).
@@ -162,8 +172,7 @@ $('set-new').addEventListener('click', () => {
   const set = createSet(name);
   sets.push(set);
   openSet(set.id);
-  setStatus.textContent = `Created "${name}".`;
-  save();
+  setStatus.textContent = saved(`Created "${name}".`);
   render();
 });
 
@@ -171,8 +180,7 @@ $('set-rename').addEventListener('click', () => {
   const name = askSetName('New name for this set:', active().name, activeId);
   if (!name) return;
   active().name = name;
-  setStatus.textContent = `Renamed to "${name}".`;
-  save();
+  setStatus.textContent = saved(`Renamed to "${name}".`);
   render();
 });
 
@@ -185,42 +193,70 @@ $('set-delete').addEventListener('click', () => {
   if (!window.confirm(`Delete the set "${set.name}" and its ${set.questions.length} question(s)? This cannot be undone.`)) return;
   sets = sets.filter((s) => s !== set);
   openSet(sets[0].id);
-  setStatus.textContent = `Deleted "${set.name}".`;
-  save();
+  setStatus.textContent = saved(`Deleted "${set.name}".`);
   render();
 });
 
 /* ---------- Loading notes into the open set ---------- */
 
+let reading = false; // notes are being read: a second click does nothing
+
 $('parse-btn').addEventListener('click', async () => {
+  if (reading) return;
   const files = [...fileInput.files];
   const pasted = pasteBox.value.trim();
   if (!files.length && !pasted) {
     loadStatus.textContent = 'Choose a file or paste some text first.';
     return;
   }
-  loadStatus.textContent = 'Reading…';
+  // The destination is fixed NOW. Reading can take a while, and opening another set meanwhile must not
+  // redirect the notes into it.
+  const destId = activeId;
+  const destName = active().name;
+  reading = true;
+  $('parse-btn').disabled = true;
+  loadStatus.textContent = `Reading… The questions will go into "${destName}".`;
 
-  const result = await parseFiles(files);
-  if (pasted) {
-    const found = parseText(pasted);
-    result.pairs.push(...found.pairs);
-    result.unplaced.push(...found.unplaced);
+  try {
+    const result = await parseFiles(files);
+    if (pasted) {
+      const found = parseText(pasted);
+      result.pairs.push(...found.pairs);
+      result.unplaced.push(...found.unplaced);
+    }
+
+    const target = sets.find((s) => s.id === destId);
+    if (!target) {
+      loadStatus.textContent = `The set "${destName}" was deleted while the notes were being read, so nothing was added. Your notes are still in the boxes above: pick a set and press Find questions again.`;
+      return;
+    }
+
+    // Duplicates are checked inside the destination set only
+    const { added, skipped } = addQuestions(sets, destId, result.pairs);
+    const stillOpen = activeId === destId;
+    if (stillOpen) unplaced = result.unplaced; // text that could not be placed belongs to the set on screen
+    const ok = save();
+    render();
+
+    const parts = [`Found ${result.pairs.length} question(s), added ${added} to "${target.name}".`];
+    if (!stillOpen) parts.push(`You opened another set meanwhile; the questions went into "${target.name}", the set you started from.`);
+    if (skipped.length) parts.push(describeSkipped(skipped));
+    if (result.unplaced.length) {
+      parts.push(stillOpen
+        ? `${result.unplaced.length} piece(s) of text were not recognised. Check them below.`
+        : `${result.unplaced.length} piece(s) of text were not recognised and are not shown, because you opened another set.`);
+    }
+    if (result.errors.length) parts.push('Problems: ' + result.errors.join(' '));
+    if (!ok) parts.push('Not saved yet: see the message under Question sets.');
+    loadStatus.textContent = parts.join(' ');
+    fileInput.value = '';
+    if (!result.errors.length) pasteBox.value = '';
+  } catch (err) {
+    loadStatus.textContent = `Reading the notes failed (${err?.message || 'unknown problem'}), so nothing was added. Your notes are still there: try again.`;
+  } finally {
+    reading = false; // on success, failure and early return alike
+    $('parse-btn').disabled = false;
   }
-
-  // A question that already exists in any set is skipped (one question, one set)
-  const { added, skipped } = addQuestions(sets, activeId, result.pairs);
-  unplaced = result.unplaced;
-  save();
-  render();
-
-  const parts = [`Found ${result.pairs.length} question(s), added ${added} to "${active().name}".`];
-  if (skipped.length) parts.push(describeSkipped(skipped));
-  if (unplaced.length) parts.push(`${unplaced.length} piece(s) of text were not recognised. Check them below.`);
-  if (result.errors.length) parts.push('Problems: ' + result.errors.join(' '));
-  loadStatus.textContent = parts.join(' ');
-  fileInput.value = '';
-  if (!result.errors.length) pasteBox.value = '';
 });
 
 $('add-btn').addEventListener('click', () => {
@@ -259,11 +295,12 @@ $('import-btn').addEventListener('click', async () => {
   try {
     const imported = parseImport(await file.text()); // throws a plain message if the file is not valid
     const { added, skipped, created } = mergeImport(sets, imported);
-    save();
+    const ok = save();
     render();
     backupStatus.textContent = [
       `Imported ${added} question(s)` + (created ? `, created ${created} new set(s).` : '.'),
       describeSkipped(skipped),
+      ok ? '' : 'Not saved yet: see the message under Question sets.',
     ].filter(Boolean).join(' ');
   } catch (err) {
     backupStatus.textContent = `Import failed. Nothing was changed. ${err.message}`;
@@ -291,7 +328,7 @@ function renderDemo() {
   if (confirming) {
     const { added, skipped } = demoResult;
     $('demo-status').textContent = added
-      ? `Added ${added} question(s) to "${DEMO_SET_NAME}". The set you had open has not changed. ${describeSkipped(skipped)}`.trim()
+      ? `Added ${added} question(s) to "${DEMO_SET_NAME}". The set you had open has not changed. ${describeSkipped(skipped)}${demoResult.saved ? '' : ' Not saved yet: see the message under Question sets.'}`.trim()
       : `Nothing was added. ${describeSkipped(skipped)}`.trim();
     $('demo-open').hidden = !demo;
   }
@@ -303,8 +340,7 @@ $('demo-btn').addEventListener('click', () => {
   const { added, skipped } = mergeImport(sets, parseImport(JSON.stringify(DEMO_EXPORT)));
   const demo = demoSet();
   if (demo && !demo.questions.length) sets.splice(sets.indexOf(demo), 1); // nothing to show: do not leave an empty set behind
-  save();
-  demoResult = { added, skipped };
+  demoResult = { added, skipped, saved: save() };
   render();
 });
 

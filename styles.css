@@ -328,3 +328,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .rec-preview-box .hint { margin: 4px 0 0; color: #c92a2a; }
 .rec-dock video { width: 100%; max-height: 50vh; background: #000; border-radius: 8px; margin: 6px 0; }
 .rec-dock .buttons .big { flex: 0 0 auto; }
+
+/* Questions screen: a failed save (v1.5 Step 1) */
+.save-alert { border: 1px solid #c92a2a; background: #fff5f5; border-radius: 8px; padding: 8px 12px; margin: 8px 0; }
+.save-alert p { margin: 0 0 8px; color: #a61e1e; }
