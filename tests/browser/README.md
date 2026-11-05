@@ -35,6 +35,7 @@ Each check prints `PASS` or `FAIL` lines and ends with `ALL PASSED` or `N FAILED
 | `step1-finalise.mjs` | Next, Skip or the time limit followed by End (original outcome kept, no next question, no Coach request, score unset), a late Coach reply, expiry using a fake clock |
 | `step1-questions.mjs` | A failed save with retry, importing notes while the set changes or is deleted, a read failure |
 | `regression.mjs` | A full session, self-marking, the model answer, the same question in two sets, audio recording (save, reload, play, delete), video (download only, nothing stored) |
+| `workspace.mjs` | The interview workspace and recording review: layout at desktop, short laptop, phone and 200%-zoom sizes, the reference and response panels and tabs, what counts as "viewed", self-marking and Coach feedback, recording in progress and pending (audio and video, an earlier question's), one camera picture, the header indicator, and the full-width summary |
 | `appearance.mjs` | The colour themes: switching, persistence, invalid and missing preferences, blocked storage, keyboard, phone width, 200% zoom, contrast, and that no camera or microphone is requested |
 
 `lib.mjs` holds the shared helpers (launching, the speech and media stand-ins, starting a session). Earlier, more detailed recording and video checks from the v1.3 and v1.4 work were not kept; `regression.mjs` covers their main paths.
