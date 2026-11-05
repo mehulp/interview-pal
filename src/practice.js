@@ -11,7 +11,7 @@ import { keyTerms } from './vocabulary.js';
 import { pickPhrase } from './phrases.js';
 import {
   DIFFICULTY, timerSecondsFor, describeDifficulty, usableQuestions, filterByLevel,
-  buildQuestionList, removeRepeats, createSession, createTimer, formatTime,
+  buildQuestionList, removeRepeats, createSession, createTimer, formatTime, needsLeaveConfirmation, unfinishedAnswer,
 } from './session.js';
 import { loadInterviewers, pickInterviewer } from './interviewers.js';
 import { createSelfView } from './selfview.js';
@@ -57,7 +57,7 @@ export function initPractice(avatar) {
   // What is happening right now
   let session = null;
   let options = null; // the choices made at setup
-  let phase = 'setup'; // setup | asking | answering | marking | finished
+  let phase = 'setup'; // setup | asking | answering | finishing | marking | feedback | ending | finished
   let runId = 0; // bumped whenever the flow moves on, so old waiting code stops itself
   let sayId = 0;
   let timer = null;
@@ -67,6 +67,13 @@ export function initPractice(avatar) {
   let listening = false;
   let onDeviceReady = false; // the on-device recogniser is switched on and works here
   let textBefore = '';
+  // Starting and ending are asynchronous, so each is guarded against happening twice or arriving late
+  let starting = false; // Start was pressed and the first question has not begun yet
+  let startToken = 0; // numbers each start, so one that was cancelled can tell it is out of date
+  let ending = null; // the one end of session in progress (a promise): it only ever happens once
+  let endRequested = false; // set as soon as ending begins, so work already under way does not go on to a next step
+  let finalising = null; // { promise } while an answer is being handed in (Next, Skip or time up)
+  let submittedThisQuestion = false; // the answer to the question on screen has already become a result
   let questionToken = 0; // a new number for every question asked, so a recording is never tied to the wrong one
   let answerVisible = false; // is the model answer showing? (this session only; the saved setting only sets the start)
   let answerShownNow = false; // was it visible at any point while the current question was open?
@@ -220,11 +227,17 @@ export function initPractice(avatar) {
         : `${all.length} question(s) in the ticked set(s). ${matching.length} match your choices.`;
     $('difficulty-note').textContent = `${DIFFICULTY[o.difficulty].label}: ${describeDifficulty(o.difficulty, o.easyTimer)}`;
     $('easy-timer-row').hidden = o.difficulty !== 'easy';
-    startBtn.disabled = matching.length === 0;
+    startBtn.disabled = matching.length === 0 || starting;
     $('setup-status').textContent = '';
   }
   [optOrder, optLevel, optDifficulty, optCount, optEasyTimer, optSelfMark, optCoachSpeak, ...modeRadios].forEach((control) =>
     control.addEventListener('change', refreshSetup));
+
+  // Forget a start that is still loading (the user left the Interview tab): it must not open a session later.
+  function cancelStartup() {
+    startToken++;
+    starting = false;
+  }
 
   function showSetup() {
     setSelfView(false); // the camera is off whenever you are on the setup screen
@@ -238,50 +251,64 @@ export function initPractice(avatar) {
   }
 
   startBtn.addEventListener('click', async () => {
-    options = readOptions();
-    saveSettings({
-      mode: options.mode,
-      practiceOrder: options.order,
-      practiceLevel: options.level,
-      practiceDifficulty: options.difficulty,
-      practiceCount: options.count,
-      practiceEasyTimer: options.easyTimer,
-      practiceSelfMark: options.selfMark,
-      showModelAnswer: options.showAnswer,
-      coachSpeak: options.coachSpeak,
-      practiceSets: selectedSetIds(),
-      selfView: options.selfView,
-    });
+    if (starting || startBtn.disabled) return; // a second click while the first is still loading does nothing
+    const token = ++startToken;
+    starting = true;
+    startBtn.disabled = true; // stays off until the first question begins
+    const outOfDate = () => token !== startToken; // the user left the Interview tab meanwhile
+    try {
+      options = readOptions();
+      saveSettings({
+        mode: options.mode,
+        practiceOrder: options.order,
+        practiceLevel: options.level,
+        practiceDifficulty: options.difficulty,
+        practiceCount: options.count,
+        practiceEasyTimer: options.easyTimer,
+        practiceSelfMark: options.selfMark,
+        showModelAnswer: options.showAnswer,
+        coachSpeak: options.coachSpeak,
+        practiceSets: selectedSetIds(),
+        selfView: options.selfView,
+      });
 
-    if (options.mode === 'coach' && !getApiKey()) {
-      $('setup-status').textContent = 'Coach mode needs an API key. Add one in Settings.';
-      return;
-    }
+      if (options.mode === 'coach' && !getApiKey()) {
+        $('setup-status').textContent = 'Coach mode needs an API key. Add one in Settings.';
+        return;
+      }
 
-    const questions = buildQuestionList(loadQuestions(selectedSetIds()), options);
-    if (!questions.length) {
-      $('setup-status').textContent = 'No questions match these choices.';
-      return;
-    }
-    session = createSession(questions);
+      const questions = buildQuestionList(loadQuestions(selectedSetIds()), options);
+      if (!questions.length) {
+        $('setup-status').textContent = 'No questions match these choices.';
+        return;
+      }
 
-    // Pick the interviewer for this round (Automatic: the tough one for Hard, otherwise random)
-    if (interviewers.length) {
-      startBtn.disabled = true; // no double clicks while the face loads
-      const entry = chooseInterviewer(options.difficulty);
-      if (optInterviewer.value === 'auto') lastAutoFolder = entry ? entry.folder : '';
-      await showInterviewer(entry);
-      startBtn.disabled = false;
+      // Pick the interviewer for this round (Automatic: the tough one for Hard, otherwise random)
+      if (interviewers.length) {
+        const entry = chooseInterviewer(options.difficulty);
+        if (optInterviewer.value === 'auto') lastAutoFolder = entry ? entry.folder : '';
+        await showInterviewer(entry);
+        if (outOfDate()) return;
+      }
+      await pickVoice(); // choose the voice now, so the page can say which one it is
+      if (outOfDate()) return;
+
+      // Every wait is over and nobody left: only now does the session exist and the screen change
+      session = createSession(questions);
+      $('voice-note').textContent = describeVoice();
+      sessionStartedAt = Date.now();
+      answerVisible = options.showAnswer;
+      $('setup').hidden = true;
+      $('interview').hidden = false;
+      showAnswerArea();
+      if (options.selfView) setSelfView(true);
+      askQuestion('opening');
+    } finally {
+      if (!outOfDate()) {
+        starting = false;
+        refreshSetup(); // the button is on again only if the choices allow a session
+      }
     }
-    await pickVoice(); // choose the voice now, so the page can say which one it is
-    $('voice-note').textContent = describeVoice();
-    sessionStartedAt = Date.now();
-    answerVisible = options.showAnswer;
-    $('setup').hidden = true;
-    $('interview').hidden = false;
-    showAnswerArea();
-    if (options.selfView) setSelfView(true);
-    askQuestion('opening');
   });
 
   /* ---------- Speaking ---------- */
@@ -370,6 +397,7 @@ export function initPractice(avatar) {
     questionToken++;
     showAnswerArea();
     answerShownNow = false;
+    submittedThisQuestion = false;
     refreshAnswerPanel();
     $('progress').textContent = `Question ${session.position()} of ${session.total}`;
     answerBox.value = '';
@@ -425,38 +453,55 @@ export function initPractice(avatar) {
   // The answer is over. reason: 'next', 'skip' or 'timeup'.
   async function finishAnswer(reason) {
     if (phase !== 'asking' && phase !== 'answering') return;
+    if (endRequested) return; // the session is being ended: nothing new may begin
     const run = ++runId;
     const q = session.current();
     const wasAnswering = phase === 'answering';
     phase = 'finishing'; // blocks double clicks while we wait for the last spoken words
     setButtons();
     refreshAnswerPanel();
-    stopTimer();
-    hush();
-    await stopListening(); // waits (briefly) for the last words, so nothing is cut off
-    if (run !== runId) return; // you ended the session during the wait
 
-    const record = {
-      question: q.question,
-      topic: q.topic,
-      level: q.level,
-      set: q.set,
-      answer: answerBox.value.trim(),
-      skipped: reason === 'skip',
-      timedOut: reason === 'timeup',
-      mark: null,
-      seconds: wasAnswering ? Math.round((Date.now() - startedAt) / 1000) : 0,
-      answerShown: answerShownNow, // the model answer was on screen while this question was open
-    };
-    // Delivery numbers come from the text and the timings only. No audio is kept.
-    record.delivery = reason === 'skip' ? null : analyzeAnswer({
-      answer: record.answer,
-      spokenText: voice.chunks.join(' '),
-      spokenSeconds: voice.ms / 1000,
-      seconds: record.seconds,
-      timerSeconds: timerSecondsFor(options.difficulty, options.easyTimer),
-    });
-    session.record(record);
+    // While the answer is being handed in, ending the session waits for it (see endSession), so it
+    // becomes a result exactly once, with the outcome it was given, however the session ends.
+    let handedIn;
+    const submission = { promise: new Promise((resolve) => { handedIn = resolve; }) };
+    finalising = submission;
+    let record;
+    try {
+      stopTimer();
+      hush();
+      await stopListening(); // waits (briefly) for the last words, so nothing is cut off
+      if (run !== runId) return;
+
+      record = {
+        question: q.question,
+        topic: q.topic,
+        level: q.level,
+        set: q.set,
+        answer: answerBox.value.trim(),
+        skipped: reason === 'skip',
+        timedOut: reason === 'timeup',
+        mark: null,
+        seconds: wasAnswering ? Math.round((Date.now() - startedAt) / 1000) : 0,
+        answerShown: answerShownNow, // the model answer was on screen while this question was open
+      };
+      // Delivery numbers come from the text and the timings only. No audio is kept.
+      record.delivery = reason === 'skip' ? null : analyzeAnswer({
+        answer: record.answer,
+        spokenText: voice.chunks.join(' '),
+        spokenSeconds: voice.ms / 1000,
+        seconds: record.seconds,
+        timerSeconds: timerSecondsFor(options.difficulty, options.easyTimer),
+      });
+      session.record(record);
+      submittedThisQuestion = true;
+    } finally {
+      if (finalising === submission) finalising = null;
+      handedIn();
+    }
+    // The session was ended while this was being handed in: the answer is kept as it is (no mark, no
+    // Coach request, no next question), and ending carries on.
+    if (endRequested) return;
 
     const wantsMark = options.selfMark && reason !== 'skip' && q.answer;
     if (reason === 'timeup') {
@@ -608,15 +653,50 @@ export function initPractice(avatar) {
     return { record, note: saved ? 'Saved to History.' : 'Could not save to History. Your browser may be blocking storage, or it may be full.' };
   }
 
-  async function finishSession(completed) {
-    if (phase === 'finished') return; // already finished (for example a double click)
-    runId++;
+  // End the session. Every way of ending (End session, Coach's End, leaving the tab, the last
+  // question) comes through here, and it only ever runs once.
+  function finishSession(completed) {
+    if (ending) return ending; // a second click, or a second reason to end: the first one is already doing it
+    if (phase === 'finished' || phase === 'setup') return Promise.resolve();
+    endRequested = true;
+    ending = endSession(completed).finally(() => {
+      ending = null;
+      endRequested = false;
+    });
+    return ending;
+  }
+
+  async function endSession(completed) {
+    // An answer already being handed in (Next, Skip or time up) is finished first, once, with its
+    // own outcome. It does not go on to mark, ask Coach or ask the next question: see finishAnswer.
+    if (finalising) await finalising.promise;
+
+    const before = phase; // where the interview was when the ending began
+    phase = 'ending'; // blocks Next, Skip, Repeat and the microphone while the last words arrive
+    setButtons();
+    runId++; // anything still waiting (the question being read, Coach marking) now gives up
     stopTimer();
-    stopListening();
     hush();
+    await stopListening(); // the last spoken words land in the answer box before it is read
+
+    // An answer that was started but not handed in is kept, marked incomplete. It is never scored.
+    // A recording with no words is not an answer, so it does not become a result.
+    const words = completed ? null : unfinishedAnswer({ phase: before, text: answerBox.value, submitted: submittedThisQuestion });
+    if (words) {
+      const q = session.current();
+      session.record({
+        question: q.question, topic: q.topic, level: q.level, set: q.set,
+        answer: words,
+        incomplete: true,
+        skipped: false, timedOut: false, mark: null,
+        seconds: before === 'answering' ? Math.round((Date.now() - startedAt) / 1000) : 0,
+        answerShown: answerShownNow,
+      });
+    }
+
     setSelfView(false); // session over: switch the camera off
     phase = 'finished';
-    refreshAnswerPanel();
+    refreshAnswerPanel(); // also tells the recorder: a recording in progress stops and stays pending, labelled with its question
 
     $('progress').textContent = '';
     $('question-text').textContent = '';
@@ -629,7 +709,7 @@ export function initPractice(avatar) {
     $('feedback').hidden = true;
     $('finished').hidden = false;
 
-    if (completed) await say($('interviewer-line').textContent);
+    if (completed) say($('interviewer-line').textContent).catch(() => {}); // the summary does not wait for the closing line
   }
 
   $('again-btn').addEventListener('click', () => { hush(); showSetup(); });
@@ -729,14 +809,25 @@ export function initPractice(avatar) {
 
   return {
     refreshSetup,
-    // Called when you switch tabs: end any session quietly and go back to setup.
-    leave() {
-      // Leaving in the middle of a session: keep what was answered so far in History
-      if (session && phase !== 'setup' && phase !== 'finished') recordSession(false);
-      runId++;
-      stopTimer();
-      stopListening();
-      hush();
+    // Called BEFORE switching tabs. Returns true if it is fine to leave. During a session the user is asked:
+    // OK ends it and leaves, Cancel stays and changes nothing (the answer, the timer and any recording go on).
+    async requestLeave() {
+      if (ending) { await ending; return true; } // already ending (End was pressed): just wait for it
+      if (starting) { cancelStartup(); return true; } // nothing answered yet: quietly cancel the start
+      if (!needsLeaveConfirmation(phase)) return true; // setup screen, or the summary: nothing to lose
+      const leave = window.confirm(
+        'Leave the interview?\n\n'
+        + 'OK: end this session and leave. Your answers so far are saved to History, and an answer you have started is kept as incomplete.\n'
+        + 'Cancel: stay and carry on with the interview.',
+      );
+      if (!leave) return false;
+      await finishSession(false);
+      return true;
+    },
+    // Called when the Interview tab is left (after requestLeave): any session has ended; go back to setup.
+    async leave() {
+      cancelStartup();
+      if (needsLeaveConfirmation(phase)) await finishSession(false); // safety net: should already have ended
       showSetup();
     },
   };

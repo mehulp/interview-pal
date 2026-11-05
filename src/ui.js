@@ -18,15 +18,25 @@ const tabs = document.querySelectorAll('.tabs button');
 
 let current = 'practice';
 
+let navigating = false; // a leave confirmation or an ending is in progress: ignore further tab clicks
+
 tabs.forEach((tab) => {
-  tab.addEventListener('click', () => {
-    if (tab.dataset.screen === current) return; // clicking the tab you are on does nothing
-    current = tab.dataset.screen;
-    practice.leave(); // leaving mid-session ends it (what was answered is kept in History)
-    Object.entries(screens).forEach(([name, node]) => { node.hidden = name !== tab.dataset.screen; });
-    tabs.forEach((t) => t.setAttribute('aria-pressed', String(t === tab)));
-    if (current === 'practice') practice.refreshSetup(); // question list may have changed
-    if (current === 'history') refreshHistory(); // show the latest sessions
+  tab.addEventListener('click', async () => {
+    if (tab.dataset.screen === current || navigating) return; // clicking the tab you are on does nothing
+    navigating = true;
+    try {
+      // During a session this asks first. Cancel stays on the interview with everything as it was;
+      // OK ends the session (what was answered is kept in History) and carries on.
+      if (!(await practice.requestLeave())) return;
+      current = tab.dataset.screen;
+      practice.leave();
+      Object.entries(screens).forEach(([name, node]) => { node.hidden = name !== tab.dataset.screen; });
+      tabs.forEach((t) => t.setAttribute('aria-pressed', String(t === tab)));
+      if (current === 'practice') practice.refreshSetup(); // question list may have changed
+      if (current === 'history') refreshHistory(); // show the latest sessions
+    } finally {
+      navigating = false;
+    }
   });
 });
 
