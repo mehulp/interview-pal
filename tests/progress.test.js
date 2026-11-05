@@ -71,3 +71,14 @@ test('two sessions in one day count as one day; no history is zero', () => {
   assert.equal(streak(history, now).current, 1);
   assert.deepEqual(streak([], now), { current: 0, longest: 0, practisedToday: false });
 });
+
+test('incomplete answers do not appear in the weak-topics heat map or the trend', () => {
+  const history = [session(at(2026, 10, 10), [
+    { topic: 'A', score: 8 },
+    { topic: 'A', score: 1, incomplete: true }, // would be weak, but it was never handed in
+    { topic: 'B', mark: 'missed', incomplete: true },
+  ])];
+  const heat = topicHeat(history);
+  assert.deepEqual(heat.map((t) => [t.topic, t.weak, t.answered]), [['A', 0, 1]]);
+  assert.equal(trendPoints(history)[0].coach, 80); // the average is of the handed-in answer alone
+});

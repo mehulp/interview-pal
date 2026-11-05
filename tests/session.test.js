@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   DIFFICULTY, timerSecondsFor, buildQuestionList, filterByLevel, usableQuestions,
-  shuffle, createSession, formatTime, createTimer, removeRepeats,
+  shuffle, createSession, formatTime, createTimer, removeRepeats, needsLeaveConfirmation, unfinishedAnswer, ACTIVE_PHASES,
 } from '../src/session.js';
 
 const pairs = [
@@ -122,4 +122,32 @@ test('the timer counts down and finishes', async () => {
     createTimer(1, { onTick: (left) => { last = left; }, onDone: resolve }).start();
   });
   assert.equal(last, 0);
+});
+
+/* ---------- Leaving and unfinished answers (UX redesign, Step 1) ---------- */
+
+test('leaving asks first while a session is under way, and not otherwise', () => {
+  for (const phase of ['asking', 'answering', 'finishing', 'marking', 'feedback']) assert.equal(needsLeaveConfirmation(phase), true, phase);
+  for (const phase of ['setup', 'finished', 'ending', 'unknown', undefined]) assert.equal(needsLeaveConfirmation(phase), false, String(phase));
+  assert.equal(ACTIVE_PHASES.length, 5);
+});
+
+test('an answer that was started but not handed in is an unfinished answer', () => {
+  assert.equal(unfinishedAnswer({ phase: 'answering', text: '  I would delegate.  ' }), 'I would delegate.');
+  assert.equal(unfinishedAnswer({ phase: 'asking', text: 'typed while the question was read' }), 'typed while the question was read');
+});
+
+test('no unfinished answer when there are no words, or it was already handed in', () => {
+  assert.equal(unfinishedAnswer({ phase: 'answering', text: '' }), null);
+  assert.equal(unfinishedAnswer({ phase: 'answering', text: '   \n ' }), null); // a recording alone has no words
+  assert.equal(unfinishedAnswer({ phase: 'answering', text: undefined }), null);
+  // Next, Skip or the time limit already made it a real result: it must not be counted twice
+  assert.equal(unfinishedAnswer({ phase: 'answering', text: 'handed in', submitted: true }), null);
+  assert.equal(unfinishedAnswer({ phase: 'asking', text: 'time-up line is being spoken', submitted: true }), null);
+});
+
+test('only the asking and answering phases can hold an unfinished answer', () => {
+  for (const phase of ['setup', 'finishing', 'marking', 'feedback', 'ending', 'finished']) {
+    assert.equal(unfinishedAnswer({ phase, text: 'words' }), null, phase);
+  }
 });

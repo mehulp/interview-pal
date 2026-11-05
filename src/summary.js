@@ -14,6 +14,7 @@ const list = (items) => el('ul', {}, items.map((text) => el('li', { textContent:
 
 // How a question went, in a few words.
 function outcome(r) {
+  if (r.incomplete) return 'incomplete, not scored';
   const parts = [];
   if (r.skipped) parts.push('skipped');
   else if (r.score !== null) parts.push(`${r.score}/10`);
@@ -26,24 +27,29 @@ function outcome(r) {
 // The details shown when a question is opened.
 function questionDetails(r, index) {
   const body = el('div', { className: 'sum-body' });
-  if (r.skipped) {
+  if (r.incomplete) {
+    // Started but not handed in: shown clearly, and never scored
+    body.append(el('p', {}, [el('strong', { textContent: 'Your answer (incomplete)' })]));
+    body.append(el('p', { className: 'sum-answer', textContent: r.answer }));
+    body.append(el('p', { textContent: 'You ended the session before handing this answer in, so it was not scored or marked.' }));
+  } else if (r.skipped) {
     body.append(el('p', { textContent: 'You skipped this question.' }));
   } else {
     body.append(el('p', {}, [el('strong', { textContent: 'Your answer' })]));
     body.append(el('p', { className: 'sum-answer', textContent: r.answer || '(no answer)' }));
   }
-  if (r.timedOut) body.append(el('p', { textContent: 'The time ran out.' }));
+  if (r.timedOut && !r.incomplete) body.append(el('p', { textContent: 'The time ran out.' }));
   if (r.answerShown) body.append(el('p', { className: 'sum-note', textContent: 'The model answer was visible for this question.' }));
-  if (r.mark) body.append(el('p', { textContent: `Your self-mark: ${MARK_TEXT[r.mark]}.` }));
-  if (r.feedbackSkipped) body.append(el('p', { textContent: 'The AI feedback was skipped for this question.' }));
-  if (r.score !== null && !r.skipped) {
+  if (r.mark && !r.incomplete) body.append(el('p', { textContent: `Your self-mark: ${MARK_TEXT[r.mark]}.` }));
+  if (r.feedbackSkipped && !r.incomplete) body.append(el('p', { textContent: 'The AI feedback was skipped for this question.' }));
+  if (r.score !== null && !r.skipped && !r.incomplete) {
     if (r.noAnswer) body.append(el('p', { textContent: 'No answer was given, so it scored 0.' }));
     if (r.noReference) body.append(el('p', { textContent: 'No reference answer was saved, so this was judged on general merit.' }));
     if (r.covered.length) body.append(el('p', {}, [el('strong', { textContent: 'You covered' })]), list(r.covered));
     if (r.missed.length) body.append(el('p', {}, [el('strong', { textContent: 'You missed' })]), list(r.missed));
     if (r.tip) body.append(el('p', {}, [el('strong', { textContent: 'Tip: ' }), r.tip]));
   }
-  if (r.delivery && !r.skipped) {
+  if (r.delivery && !r.skipped && !r.incomplete) {
     body.append(el('p', {}, [el('strong', { textContent: 'Delivery' })]), list(describeDelivery(r.delivery)));
   }
   const detail = [r.set && `Set: ${r.set}`, r.topic && `Topic: ${r.topic}`, r.level && `Level: ${r.level}`].filter(Boolean).join(' · ');
@@ -62,7 +68,8 @@ export function renderSummary(container, record, note = '') {
     el('h2', { textContent: record.completed ? 'Session summary' : 'Session summary (ended early)' }),
     el('p', { className: 'sum-when', textContent: formatDate(record.startedAt) }),
     el('p', {
-      textContent: `${s.asked} of ${s.total} question(s) asked · ${s.skipped} skipped · ${s.timedOut} ran out of time · ${formatDuration(s.durationSec)}`,
+      textContent: `${s.asked} of ${s.total} question(s) asked · ${s.skipped} skipped · ${s.timedOut} ran out of time`
+        + (s.incomplete ? ` · ${s.incomplete} incomplete (not scored)` : '') + ` · ${formatDuration(s.durationSec)}`,
     }),
   ];
 

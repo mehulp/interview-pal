@@ -23,13 +23,16 @@ function cleanResult(r) {
     skipped: Boolean(r.skipped),
     timedOut: Boolean(r.timedOut),
     seconds: r.seconds || 0,
-    delivery: r.delivery || null, // v1.1: filler words, pace, timer use (older records have none)
+    // v1.1: filler words, pace, timer use (older records have none). Never for an incomplete answer.
+    delivery: r.incomplete ? null : (r.delivery || null),
+    // An answer that was started but not handed in before the session ended: kept, never scored
+    incomplete: Boolean(r.incomplete),
     answerShown: Boolean(r.answerShown), // v1.2: the model answer was on screen for this question
-    mark: r.mark || '', // Practice self-mark: 'got' | 'partly' | 'missed'
-    score: r.score ?? null, // Coach score out of 10
-    covered: r.covered || [],
-    missed: r.missed || [],
-    tip: r.tip || '',
+    mark: r.incomplete ? '' : (r.mark || ''), // Practice self-mark: 'got' | 'partly' | 'missed'
+    score: r.incomplete ? null : (r.score ?? null), // Coach score out of 10
+    covered: r.incomplete ? [] : (r.covered || []),
+    missed: r.incomplete ? [] : (r.missed || []),
+    tip: r.incomplete ? '' : (r.tip || ''),
     noAnswer: Boolean(r.noAnswer),
     noReference: Boolean(r.noReference),
     feedbackSkipped: Boolean(r.feedbackSkipped),
@@ -62,14 +65,17 @@ export const removeSession = (history, id) => history.filter((s) => s.id !== id)
 
 export function summarize(record) {
   const results = record.results;
-  const scored = results.filter((r) => r.score !== null);
+  // An incomplete answer is never part of a score, an average or the self-mark totals
+  const judged = results.filter((r) => !r.incomplete);
+  const scored = judged.filter((r) => r.score !== null);
   const marks = { got: 0, partly: 0, missed: 0 };
-  results.forEach((r) => { if (marks[r.mark] !== undefined) marks[r.mark]++; });
+  judged.forEach((r) => { if (marks[r.mark] !== undefined) marks[r.mark]++; });
   return {
     asked: results.length,
     total: record.total,
-    skipped: results.filter((r) => r.skipped).length,
-    timedOut: results.filter((r) => r.timedOut).length,
+    skipped: judged.filter((r) => r.skipped).length,
+    timedOut: judged.filter((r) => r.timedOut).length,
+    incomplete: results.length - judged.length,
     scoredCount: scored.length,
     average: scored.length ? scored.reduce((sum, r) => sum + r.score, 0) / scored.length : null,
     marks,
@@ -80,7 +86,7 @@ export function summarize(record) {
 
 // Needs another look: a low Coach score, or a self-mark of Missed or Partly.
 export const isWeak = (r) =>
-  (r.score !== null && r.score <= WEAK_SCORE) || r.mark === 'missed' || r.mark === 'partly';
+  !r.incomplete && ((r.score !== null && r.score <= WEAK_SCORE) || r.mark === 'missed' || r.mark === 'partly');
 
 // Topics to revisit: [{ topic, questions: [text, ...] }], the topic with most questions first.
 export function weakSpots(results) {
@@ -111,6 +117,7 @@ export function describeSession(record) {
   if (s.average !== null) parts.push(`average ${s.average.toFixed(1)}/10`);
   else if (s.markedCount) parts.push(`${s.marks.got} got it, ${s.marks.partly} partly, ${s.marks.missed} missed`);
   if (record.answersVisible) parts.push('model answer visible');
+  if (s.incomplete) parts.push(`${s.incomplete} incomplete`);
   if (!record.completed) parts.push('ended early');
   return { title: formatDate(record.startedAt), detail: parts.join(' · ') };
 }

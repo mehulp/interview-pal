@@ -97,6 +97,21 @@ export function buildQuestionList(pairs, { order, level, count }) {
 
 /* ---------- Running a session ---------- */
 
+// The phases in which a session is under way (the question is being asked, answered, handed in,
+// marked by the user, or marked by Coach). Leaving the page's Interview tab in any of these ends
+// the session, so it asks first.
+export const ACTIVE_PHASES = ['asking', 'answering', 'finishing', 'marking', 'feedback'];
+export const needsLeaveConfirmation = (phase) => ACTIVE_PHASES.includes(phase);
+
+// The words of an answer that was started but never handed in, or null. Only while the question is
+// being asked or answered: once an answer has been submitted (`submitted`) it is a real result and
+// must not be counted a second time, and a recording without words is not an answer.
+export function unfinishedAnswer({ phase, text, submitted = false }) {
+  if (submitted || (phase !== 'asking' && phase !== 'answering')) return null;
+  const words = String(text || '').trim();
+  return words || null;
+}
+
 export function createSession(questions) {
   let index = 0;
   const results = []; // one record per question, filled in as you go

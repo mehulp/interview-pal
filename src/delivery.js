@@ -81,7 +81,7 @@ export function paceLabel(wpm) {
 
 // Totals for a whole session, from its results. Returns null if no answer has delivery numbers.
 export function summarizeDelivery(results) {
-  const rows = results.map((r) => r.delivery).filter(Boolean);
+  const rows = results.filter((r) => !r.incomplete).map((r) => r.delivery).filter(Boolean); // an incomplete answer is never part of the figures
   if (!rows.length) return null;
 
   const paced = rows.filter((d) => d.wpm !== null);

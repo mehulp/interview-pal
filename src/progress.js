@@ -59,7 +59,7 @@ export function topicHeat(history, limit = 12) {
   const topics = new Map();
   for (const record of history) {
     for (const r of record.results) {
-      if (r.skipped || (r.score === null && !r.mark)) continue; // nothing was judged
+      if (r.incomplete || r.skipped || (r.score === null && !r.mark)) continue; // nothing was judged
       const name = r.topic || NO_TOPIC;
       const t = topics.get(name) || { topic: name, answered: 0, weak: 0 };
       t.answered++;

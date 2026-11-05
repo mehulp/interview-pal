@@ -101,3 +101,69 @@ test('describeSession says when the model answer was visible; old records have n
   const { answersVisible, ...old } = flagged; // a record saved before v1.2
   assert.doesNotMatch(describeSession(old).detail, /model answer visible/);
 });
+
+/* ---------- Incomplete answers (UX redesign, Step 1) ---------- */
+
+const done = (extra = {}) => ({ question: 'done?', topic: 'T', answer: 'a', ...extra });
+const unfinished = (extra = {}) => ({ question: 'unfinished?', topic: 'U', answer: 'half an answer', incomplete: true, ...extra });
+const withIncomplete = (results) => buildSessionRecord({ options, results, total: 5, startedAt: 0, endedAt: 60000, completed: false });
+
+test('an incomplete answer is kept with its words, flagged, and never scored', () => {
+  // Even if something wrongly gave it a score, mark or delivery figures, they are dropped
+  const r = withIncomplete([unfinished({ score: 9, mark: 'got', covered: ['x'], missed: ['y'], tip: 't', delivery: { words: 3, wpm: 100, fillers: 0, fillerWords: {} } })]).results[0];
+  assert.equal(r.incomplete, true);
+  assert.equal(r.answer, 'half an answer');
+  assert.equal(r.score, null);
+  assert.equal(r.mark, '');
+  assert.equal(r.delivery, null);
+  assert.deepEqual([r.covered, r.missed, r.tip], [[], [], '']);
+});
+
+test('old records without the flag read as complete', () => {
+  const old = { results: [{ question: 'q', score: 7, mark: '', skipped: false, timedOut: false }], total: 1, durationSec: 5 };
+  const s = summarize(old);
+  assert.equal(s.incomplete, 0);
+  assert.equal(s.average, 7);
+  assert.equal(isWeak({ score: 3, mark: '' }), true); // no `incomplete` field at all: unchanged
+});
+
+test('incomplete answers are excluded from scores, averages and self-mark totals', () => {
+  // Built by hand, as an old or damaged record could be: an incomplete result that carries a score and a mark
+  const record = {
+    total: 4, durationSec: 30,
+    results: [
+      { question: 'a', score: 8, mark: '', incomplete: false },
+      { question: 'b', score: 2, mark: '', incomplete: true },
+      { question: 'c', score: null, mark: 'got', incomplete: false },
+      { question: 'd', score: null, mark: 'missed', incomplete: true },
+    ],
+  };
+  const s = summarize(record);
+  assert.equal(s.average, 8); // the incomplete 2 is not averaged in
+  assert.equal(s.scoredCount, 1);
+  assert.deepEqual(s.marks, { got: 1, partly: 0, missed: 0 });
+  assert.equal(s.markedCount, 1);
+  assert.equal(s.incomplete, 2);
+  assert.equal(s.asked, 4); // they were put in front of the user
+});
+
+test('incomplete answers are never weak, so they never feed topics to revisit', () => {
+  assert.equal(isWeak({ score: 1, mark: '', incomplete: true }), false);
+  assert.equal(isWeak({ score: null, mark: 'missed', incomplete: true }), false);
+  const spots = weakSpots([
+    { question: 'a', topic: 'A', score: 2, mark: '', incomplete: true },
+    { question: 'b', topic: 'B', score: null, mark: 'missed', incomplete: true },
+    { question: 'c', topic: 'C', score: null, mark: 'partly', incomplete: false },
+  ]);
+  assert.deepEqual(spots.map((x) => x.topic), ['C']);
+});
+
+test('the History row and the counts show incomplete answers clearly', () => {
+  const rec = withIncomplete([done(), unfinished()]);
+  assert.equal(summarize(rec).incomplete, 1);
+  assert.equal(summarize(rec).skipped, 0);
+  assert.equal(summarize(rec).timedOut, 0);
+  assert.match(describeSession(rec).detail, /1 incomplete/);
+  assert.match(describeSession(rec).detail, /ended early/);
+  assert.doesNotMatch(describeSession(withIncomplete([done()])).detail, /incomplete/);
+});

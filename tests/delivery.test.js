@@ -91,3 +91,13 @@ test('totals are null when nothing has delivery numbers (for example old history
   assert.equal(summarizeDelivery([{}, { delivery: null }]), null);
   assert.deepEqual(describeDelivery(null), []);
 });
+
+test('incomplete answers are left out of the session delivery totals', () => {
+  const real = analyzeAnswer({ answer: 'a b c d e f g h i j', spokenText: 'a b c d e f g h i j', spokenSeconds: 5, seconds: 10, timerSeconds: 100 });
+  const stray = analyzeAnswer({ answer: 'um um um um um um', seconds: 3, timerSeconds: 100 }); // as if an incomplete result carried figures
+  const t = summarizeDelivery([{ delivery: real }, { delivery: stray, incomplete: true }]);
+  assert.equal(t.answers, 1);
+  assert.equal(t.fillers, 0);
+  assert.equal(t.wpm, 120);
+  assert.equal(summarizeDelivery([{ delivery: stray, incomplete: true }]), null);
+});
