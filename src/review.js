@@ -450,7 +450,7 @@ function openSet(id) {
   activeId = id;
   selectedId = null; mode = 'view'; draft = null; undo = null;
   filters = { search: '', topic: '', level: '' };
-  importState = importState && importState.destId === id ? importState : null;
+  // (a notes preview keeps its own destination, so opening another set never redirects it)
   saveSettings({ activeSetId: id });
 }
 

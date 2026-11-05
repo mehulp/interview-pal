@@ -29,7 +29,7 @@ const tab = (p, n) => p.click(`.tabs button[data-screen="${n}"]`);
   const p = await newPage(b);
   await tab(p, 'questions'); await p.click('#demo-btn');
   check('demo card is first on the Questions tab', (await p.locator('#screen-questions > *:not([hidden])').first().getAttribute('id')) === 'demo-card');
-  await p.fill('#paste-box', 'Q: How do you delegate effectively?\nA: MY ANSWER\n'); await p.click('#parse-btn');
+  await p.click('#import-open'); await p.fill('#paste-box', 'Q: How do you delegate effectively?\nA: MY ANSWER\n'); await p.click('#parse-btn'); await p.click('#import-confirm'); // notes are previewed, then confirmed
   check('the same question is allowed in a second set', (await p.evaluate(() => JSON.parse(localStorage.getItem('interviewpal.sets')).sets.map((s) => s.questions.length))).join() === '1,20');
   await tab(p, 'practice');
   await p.evaluate(() => document.querySelectorAll('#set-choices input').forEach((i) => { i.checked = true; i.dispatchEvent(new Event('change', { bubbles: true })); }));
