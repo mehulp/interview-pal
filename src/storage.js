@@ -18,6 +18,7 @@ const DEFAULTS = {
   practiceCount: 10,
   practiceSelfMark: false,
   theme: DEFAULT_THEME, // colour theme ID (see themes.js); anything not valid is ignored
+  answerMethod: '', // how you respond: 'speak', 'type' or '' (not chosen yet: Speak where the browser supports it)
   answerTargetSec: 0, // optional target length for recorded answers (0 = none)
   showModelAnswer: false, // show the model answer with each question (can be toggled during a session)
   practiceEasyTimer: false,

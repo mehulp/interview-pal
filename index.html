@@ -136,7 +136,10 @@
         <div class="workspace-head">
           <div class="progress-row">
             <span id="progress"></span>
-            <span id="timer" hidden></span>
+            <span class="clocks">
+              <span id="phase-clock" hidden></span>
+              <span id="timer" hidden title="Time left in this interview question"></span>
+            </span>
           </div>
           <h2 class="question" id="question-text" aria-live="polite"></h2>
         </div>
@@ -156,98 +159,123 @@
           <div id="answer-area">
             <div id="response-panel">
               <h3 class="panel-title" id="response-title" hidden>Your response</h3>
-              <textarea id="answer" placeholder="Speak with the mic, or type your answer here" rows="5" aria-label="Your answer"></textarea>
-              <p class="status" id="status" aria-live="polite"></p>
-            </div>
-            <div class="actions">
-              <div class="buttons primary-actions">
-                <button type="button" class="big" id="mic-btn">🎤 Answer</button>
-                <button type="button" class="big" id="next-btn">Next</button>
-              </div>
-              <div class="buttons secondary-actions">
-                <button type="button" class="small" id="repeat-btn">↻ Repeat question</button>
-                <button type="button" class="small" id="skip-btn">Skip</button>
-                <button type="button" class="small" id="answer-toggle" aria-pressed="false" aria-controls="model-answer">Show answer</button>
-              </div>
-            </div>
-
-            <div class="rec-panel" id="rec-panel">
-              <h3>Recording <span class="hint">(optional, starts with Start answer)</span></h3>
-              <fieldset class="seg" id="rec-mode">
-                <legend class="seg-legend">Record this answer</legend>
-                <label class="seg-opt"><input type="radio" name="rec-mode" id="rec-mode-off" value="off" checked> Off</label>
-                <label class="seg-opt"><input type="radio" name="rec-mode" id="rec-mode-audio" value="audio"> Audio</label>
-                <label class="seg-opt"><input type="radio" name="rec-mode" id="rec-mode-video" value="video"> Video</label>
+              <fieldset class="seg" id="method-seg">
+                <legend class="seg-legend">Respond by</legend>
+                <label class="seg-opt"><input type="radio" name="answer-method" id="method-speak" value="speak"> Speak</label>
+                <label class="seg-opt"><input type="radio" name="answer-method" id="method-type" value="type" checked> Type</label>
               </fieldset>
-              <div class="rec-row">
-                <label class="field rec-field">Target length
-                  <select id="rec-target">
-                    <option value="0">No target</option>
-                    <option value="60">1 min</option>
-                    <option value="90">90 sec</option>
-                    <option value="120">2 min</option>
-                    <option value="180">3 min</option>
-                    <option value="custom">Custom…</option>
-                  </select>
-                </label>
-                <label class="field rec-field" id="rec-custom-row" hidden>Seconds
-                  <input type="number" id="rec-custom" min="10" max="600" step="5" inputmode="numeric">
-                </label>
-                <div class="rec-buttons">
-                  <button type="button" class="small" id="rec-stop" hidden>■ Stop recording</button>
+              <textarea id="answer" placeholder="Your response appears here. Speak, or type it yourself." rows="5" aria-label="Your response"></textarea>
+              <p class="status" id="status" data-label="Speech to text" aria-live="polite"></p>
+            </div>
+          </div>
+
+          <!-- Review: what was handed in, the recording, the reference, then marking or feedback -->
+          <div id="review" hidden>
+            <h3 class="review-title" id="review-title" tabindex="-1"></h3>
+            <p class="review-note" id="review-note"></p>
+            <h3 class="panel-title">Your response</h3>
+            <div class="review-response" id="review-response"></div>
+            <p class="status" id="review-recording" data-label="Recording"></p>
+            <div id="reveal">
+              <h3 class="panel-title">Reference answer</h3>
+              <pre id="reference"></pre>
+              <div id="mark-row" hidden>
+                <p>How did you do? <span class="hint">(choosing a mark does not move on)</span></p>
+                <div class="buttons" role="group" aria-label="How did you do?">
+                  <button type="button" class="big secondary" data-mark="got" aria-pressed="false">Got it</button>
+                  <button type="button" class="big secondary" data-mark="partly" aria-pressed="false">Partly</button>
+                  <button type="button" class="big secondary" data-mark="missed" aria-pressed="false">Missed</button>
                 </div>
               </div>
-              <p class="hint rec-note">Audio records your microphone (up to 10 minutes). Video adds your camera (up to 7 minutes) and is not kept in this browser: you download it. The target length is only a cue: it never stops the recording or the interview.</p>
-              <div class="rec-blocked" id="rec-blocked" hidden>
-                <p id="rec-blocked-text"></p>
-                <button type="button" class="small" id="rec-continue-without">Continue without recording</button>
+            </div>
+
+            <div id="feedback" hidden>
+              <h3 class="panel-title">Feedback</h3>
+              <p class="status" id="fb-loading">Marking your answer…</p>
+              <div id="fb-error" hidden>
+                <p id="fb-error-text"></p>
+                <div class="buttons">
+                  <button type="button" class="big" id="fb-retry">Try again</button>
+                  <button type="button" class="big secondary" id="fb-skip">Skip feedback</button>
+                </div>
               </div>
-              <p class="rec-clock" id="rec-clock" hidden></p>
-              <p class="hint" id="rec-device"></p>
-              <p class="status" id="rec-status" aria-live="polite"></p>
-              <details id="rec-saved" hidden>
-                <summary id="rec-saved-summary">Saved recordings for this question</summary>
-                <div id="rec-saved-list"></div>
-              </details>
+              <div id="fb-empty" hidden>
+                <p>AI feedback needs your words, and there is no text to send. A recording on its own is never sent to the AI, so it cannot be marked. You can type or correct your response now, or carry on without feedback.</p>
+                <div class="buttons">
+                  <button type="button" class="big secondary" id="fb-type">Type my response</button>
+                  <button type="button" class="big secondary" id="fb-continue">Continue without feedback</button>
+                </div>
+                <div id="fb-edit" hidden>
+                  <label class="field">Your response
+                    <textarea id="fb-text" rows="4"></textarea>
+                  </label>
+                  <button type="button" class="big" id="fb-submit">Get feedback</button>
+                </div>
+              </div>
+              <div id="fb-result" hidden>
+                <p class="score"><span id="fb-score"></span> / 10</p>
+                <p class="hint" id="fb-note"></p>
+                <h3>You covered</h3>
+                <ul id="fb-covered"></ul>
+                <h3>You missed</h3>
+                <ul id="fb-missed"></ul>
+                <h3>Tip</h3>
+                <p id="fb-tip"></p>
+              </div>
             </div>
           </div>
 
-          <div id="reveal" hidden>
-            <div id="reveal-reference">
-              <h3 class="panel-title">Your reference answer</h3>
-              <pre id="reference"></pre>
+          <div class="actions">
+            <div class="buttons primary-actions">
+              <button type="button" class="big" id="primary-btn" disabled>Start answer</button>
+              <button type="button" class="small" id="mic-btn" hidden>🎤 Listen again</button>
             </div>
-            <p>How did you do?</p>
-            <div class="buttons">
-              <button type="button" class="big" data-mark="got">Got it</button>
-              <button type="button" class="big" data-mark="partly">Partly</button>
-              <button type="button" class="big" data-mark="missed">Missed</button>
+            <div class="buttons secondary-actions">
+              <button type="button" class="small" id="repeat-btn">↻ Repeat question</button>
+              <button type="button" class="small" id="skip-btn">Skip</button>
+              <button type="button" class="small" id="answer-toggle" aria-pressed="false" aria-controls="model-answer">Show answer</button>
             </div>
+            <p class="hint" id="primary-hint" aria-live="polite"></p>
           </div>
 
-          <div id="feedback" hidden>
-            <h3 class="panel-title">Feedback</h3>
-            <p class="status" id="fb-loading">Marking your answer…</p>
-            <div id="fb-error" hidden>
-              <p id="fb-error-text"></p>
-              <div class="buttons">
-                <button type="button" class="big" id="fb-retry">Try again</button>
-                <button type="button" class="big secondary" id="fb-skip">Skip feedback</button>
+          <div class="rec-panel" id="rec-panel">
+            <h3>Recording <span class="hint">(optional, starts with Start answer)</span></h3>
+            <fieldset class="seg" id="rec-mode">
+              <legend class="seg-legend">Record this answer</legend>
+              <label class="seg-opt"><input type="radio" name="rec-mode" id="rec-mode-off" value="off" checked> Off</label>
+              <label class="seg-opt"><input type="radio" name="rec-mode" id="rec-mode-audio" value="audio"> Audio</label>
+              <label class="seg-opt"><input type="radio" name="rec-mode" id="rec-mode-video" value="video"> Video</label>
+            </fieldset>
+            <div class="rec-row">
+              <label class="field rec-field">Target length
+                <select id="rec-target">
+                  <option value="0">No target</option>
+                  <option value="60">1 min</option>
+                  <option value="90">90 sec</option>
+                  <option value="120">2 min</option>
+                  <option value="180">3 min</option>
+                  <option value="custom">Custom…</option>
+                </select>
+              </label>
+              <label class="field rec-field" id="rec-custom-row" hidden>Seconds
+                <input type="number" id="rec-custom" min="10" max="600" step="5" inputmode="numeric">
+              </label>
+              <div class="rec-buttons">
+                <button type="button" class="small" id="rec-stop" hidden>■ Stop recording</button>
               </div>
             </div>
-            <div id="fb-result" hidden>
-              <p class="score"><span id="fb-score"></span> / 10</p>
-              <p class="hint" id="fb-note"></p>
-              <h3>You covered</h3>
-              <ul id="fb-covered"></ul>
-              <h3>You missed</h3>
-              <ul id="fb-missed"></ul>
-              <h3>Tip</h3>
-              <p id="fb-tip"></p>
+            <p class="hint rec-note">Audio records your microphone (up to 10 minutes). Video adds your camera (up to 7 minutes) and is not kept in this browser: you download it. The target length is only a cue: it never stops the recording or the interview.</p>
+            <div class="rec-blocked" id="rec-blocked" hidden>
+              <p id="rec-blocked-text"></p>
+              <button type="button" class="small" id="rec-continue-without">Continue without recording</button>
             </div>
-            <div class="buttons" id="fb-buttons" hidden>
-              <button type="button" class="big" id="fb-next">Next question</button>
-            </div>
+            <p class="rec-clock" id="rec-clock" hidden></p>
+            <p class="hint" id="rec-device"></p>
+            <p class="status" id="rec-status" data-label="Recording" aria-live="polite"></p>
+            <details id="rec-saved" hidden>
+              <summary id="rec-saved-summary">Saved recordings for this question</summary>
+              <div id="rec-saved-list"></div>
+            </details>
           </div>
 
           <!-- The recording review: the same panel as in the tray, moved here during a session so it is reachable while marking or reading feedback -->

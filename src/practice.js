@@ -1,7 +1,8 @@
 // Practice screen: setup, then the interview loop (no AI, nothing leaves the browser).
 //
-// Flow for each question:  interviewer speaks -> timer starts -> you answer (voice or typing)
-//   -> Next (or time runs out) -> optional self-marking -> next question.
+// Flow for each question:  the interviewer asks -> Ready (think, or type) -> Start answer -> Answering (speak or type,
+//   optionally recorded) -> Finish answer -> Finishing (waits for the last words and the recording) -> Review
+//   (your response, the recording, the reference, self-marking or Coach feedback) -> Next question.
 import {
   speak, stopSpeaking, createRecognizer, isRecognitionSupported,
   LANGUAGES, setVoiceLang, setRecognitionLang, setVoiceProfile, pickVoice, describeVoice,
@@ -12,11 +13,12 @@ import { pickPhrase } from './phrases.js';
 import {
   DIFFICULTY, timerSecondsFor, describeDifficulty, usableQuestions, filterByLevel,
   buildQuestionList, removeRepeats, createSession, createTimer, formatTime, needsLeaveConfirmation, unfinishedAnswer,
+  nextPhase, phaseAllows, primaryAction, canRepeat, canSkip,
 } from './session.js';
 import { loadInterviewers, pickInterviewer } from './interviewers.js';
 import { createSelfView } from './selfview.js';
 import { loadSets, loadQuestions, loadSettings, saveSettings, getApiKey, saveSession } from './storage.js';
-import { buildSessionRecord } from './history.js';
+import { buildSessionRecord, outcomeOf } from './history.js';
 import { analyzeAnswer } from './delivery.js';
 import { recPanel } from './recpanel.js';
 import { renderSummary } from './summary.js';
@@ -49,7 +51,7 @@ export function initPractice(avatar) {
   const answerBox = $('answer');
   const status = $('status');
   const micBtn = $('mic-btn');
-  const nextBtn = $('next-btn');
+  const primaryBtn = $('primary-btn');
   const repeatBtn = $('repeat-btn');
   const skipBtn = $('skip-btn');
   const timerEl = $('timer');
@@ -57,11 +59,13 @@ export function initPractice(avatar) {
   // What is happening right now
   let session = null;
   let options = null; // the choices made at setup
-  let phase = 'setup'; // setup | asking | answering | finishing | marking | feedback | ending | finished
+  let phase = 'setup'; // setup | asking | ready | answering | finishing | review | ending | finished
   let runId = 0; // bumped whenever the flow moves on, so old waiting code stops itself
   let sayId = 0;
   let timer = null;
-  let startedAt = 0;
+  let askedAt = 0; // when the question finished being spoken (the hard countdown and preparation start here)
+  let answerStartedAt = 0; // when Start answer was pressed (0 = not yet)
+  let clockTimer = null;
   let voice = { chunks: [], live: '', ms: 0, since: 0 }; // speech heard during the current answer
   let sessionStartedAt = 0; // when the whole session began (for the summary)
   let listening = false;
@@ -302,6 +306,8 @@ export function initPractice(avatar) {
       $('voice-note').textContent = describeVoice();
       sessionStartedAt = Date.now();
       answerVisible = options.showAnswer;
+      recPanel.resetMode(); // recording is Off at the start of every session
+      initMethod();
       $('setup').hidden = true;
       $('interview').hidden = false;
       window.scrollTo(0, 0); // the setup screen may have been scrolled: begin at the top of the interview
@@ -345,24 +351,26 @@ export function initPractice(avatar) {
   // (only while the question is being answered). Anything else stops a recording in progress.
   function syncRecorder() {
     const q = session && session.current();
-    const open = ['asking', 'answering', 'finishing', 'marking', 'feedback'].includes(phase);
+    const open = ['asking', 'ready', 'answering', 'finishing', 'review'].includes(phase);
+    // Recording may be started while the question is ready, being answered, or in review (Record again)
     recPanel.setContext(q && open
-      ? { token: questionToken, question: q.question, set: q.set, topic: q.topic, canRecord: phase === 'answering' }
+      ? { token: questionToken, question: q.question, set: q.set, topic: q.topic, phase, canRecord: ['ready', 'answering', 'review'].includes(phase) }
       : null);
   }
 
   function refreshAnswerPanel() {
     syncRecorder();
     const q = session && session.current();
-    const answering = phase === 'asking' || phase === 'answering' || phase === 'finishing';
-    const marking = phase === 'marking';
-    // With the reference on there are two panels to choose between while answering; when marking there is only the reference
+    const live = ['asking', 'ready', 'answering', 'finishing'].includes(phase); // the response box is on screen
+    const reviewing = phase === 'review';
     // Roomy screens (the two-column layout) show the reference above the response, both at once. Narrow screens
     // use tabs, to save height. What counts as shown is what is really on screen, so it depends on which.
-    const tabs = Boolean(q) && answerVisible && answering && !roomy();
-    const show = Boolean(q) && answerVisible && (marking || (answering && (roomy() || replyTab === 'reference')));
+    const tabs = Boolean(q) && answerVisible && live && !roomy();
+    const show = Boolean(q) && answerVisible && live && (roomy() || replyTab === 'reference');
+    $('answer-area').hidden = reviewing;
+    $('review').hidden = !reviewing;
     $('reply-tabs').hidden = !tabs;
-    $('response-title').hidden = !(Boolean(q) && answerVisible && answering && roomy()); // the stacked panels are each labelled
+    $('response-title').hidden = !(Boolean(q) && answerVisible && live && roomy()); // the stacked panels are each labelled
     $('model-answer').hidden = !show;
     $('response-panel').hidden = tabs && replyTab === 'reference';
     $('model-answer').setAttribute('role', tabs ? 'tabpanel' : 'region');
@@ -378,16 +386,18 @@ export function initPractice(avatar) {
       $('model-answer-text').textContent = q.answer?.trim() || 'No model answer saved for this question.';
       // "Viewed" means actually on screen: the Reference panel open, while the answer is still being given.
       // Having the reference available but never opened does not count; once seen, it stays recorded.
-      if (phase === 'asking' || phase === 'answering') answerShownNow = true;
+      // (The reference in the review, after the answer was handed in, never counts: see showReview.)
+      if (phase === 'asking' || phase === 'ready' || phase === 'answering') answerShownNow = true;
     }
     const toggle = $('answer-toggle');
     toggle.textContent = answerVisible ? 'Hide answer' : 'Show answer';
     toggle.setAttribute('aria-pressed', String(answerVisible));
-    toggle.disabled = !(phase === 'asking' || phase === 'answering');
+    toggle.hidden = reviewing;
+    toggle.disabled = !(phase === 'asking' || phase === 'ready' || phase === 'answering');
   }
 
   $('answer-toggle').addEventListener('click', () => {
-    if (phase !== 'asking' && phase !== 'answering') return;
+    if (phase !== 'asking' && phase !== 'ready' && phase !== 'answering') return;
     answerVisible = !answerVisible; // this session only: the saved setting is not touched
     if (answerVisible) replyTab = 'reference'; // switching it on shows it
     refreshAnswerPanel();
@@ -419,25 +429,103 @@ export function initPractice(avatar) {
   answerBox.addEventListener('input', updateReplyCount);
   roomyQuery.addEventListener?.('change', refreshAnswerPanel); // the window was resized across the breakpoint
 
+  /* ---------- Respond by: Speak or Type ---------- */
+  // Speak is the default where the browser can recognise speech, otherwise Type. The response box is always
+  // there: spoken words land in it, and typing in it always works. The choice is remembered.
+  let method = 'type';
+  function setMethod(next) {
+    method = next === 'speak' && isRecognitionSupported() ? 'speak' : 'type';
+    $('method-speak').checked = method === 'speak';
+    $('method-type').checked = method === 'type';
+  }
+  function initMethod() {
+    $('method-speak').disabled = !isRecognitionSupported();
+    setMethod(loadSettings().answerMethod || 'speak');
+  }
+  document.querySelectorAll('input[name="answer-method"]').forEach((radio) => radio.addEventListener('change', () => {
+    if (phase === 'finishing' || phase === 'review') return;
+    setMethod(radio.value);
+    saveSettings({ answerMethod: method });
+    if (phase === 'answering') {
+      if (method === 'speak') startListening(); else stopListening();
+    }
+    showSpeechState();
+    setButtons();
+  }));
+
+  // The "Speech to text" line: its own status, separate from the "Recording" line in the recorder panel
+  function showSpeechState() {
+    if (listening) return;
+    if (method === 'type') {
+      status.textContent = isRecognitionSupported() ? 'Off. You are typing.' : 'Not supported in this browser, so you type your response.';
+    } else if (phase === 'answering') {
+      status.textContent = 'Not listening. Press Listen again to speak.';
+    } else {
+      status.textContent = 'Ready. It starts when you press Start answer.';
+    }
+  }
+
   /* ---------- Showing and hiding parts of the controls ---------- */
   function showAnswerArea() {
     $('answer-area').hidden = false;
-    $('reveal').hidden = true;
+    $('review').hidden = true;
     $('feedback').hidden = true;
     $('finished').hidden = true;
   }
 
+  const HINTS = {
+    asking: 'The interviewer is asking the question. Nothing is captured yet.',
+    ready: 'Take a moment to think, or start typing. Press Start answer when you are ready.',
+    answering: '',
+    finishing: 'Handing in your response…',
+    review: '',
+  };
+
   function setButtons() {
+    if (!options) return;
     const rules = DIFFICULTY[options.difficulty];
-    const answering = phase === 'answering';
-    micBtn.disabled = !answering || !isRecognitionSupported();
-    nextBtn.disabled = !answering;
+    const isLast = Boolean(session) && session.position() === session.total;
+    const act = primaryAction({ phase, isLast, waitingForFeedback: feedbackBlocking });
+    primaryBtn.textContent = act.label;
+    primaryBtn.disabled = act.disabled || endRequested;
+    primaryBtn.dataset.kind = act.kind;
+    $('primary-hint').textContent = $('primary-hint').dataset.lead || HINTS[phase] || '';
     repeatBtn.hidden = !rules.allowRepeat;
-    repeatBtn.disabled = !answering;
+    repeatBtn.disabled = !canRepeat(phase, rules.allowRepeat);
     skipBtn.hidden = !rules.allowSkip;
+    skipBtn.disabled = !canSkip(phase, rules.allowSkip);
+    micBtn.hidden = !(phase === 'answering' && method === 'speak' && isRecognitionSupported());
+    micBtn.textContent = listening ? '⏹ Stop listening' : '🎤 Listen again';
+    answerBox.readOnly = phase === 'finishing';
+    document.querySelectorAll('input[name="answer-method"]').forEach((radio) => {
+      radio.disabled = phase === 'finishing' || phase === 'review' || (radio.value === 'speak' && !isRecognitionSupported());
+    });
+    // A new question is ready: keyboard users land on Start answer (only if focus was on the buttons or nowhere)
+    if (phase === 'ready' && (document.activeElement === document.body || document.activeElement === primaryBtn)) {
+      primaryBtn.focus({ preventScroll: true });
+    }
   }
 
+  /* ---------- The clocks ---------- */
+  // Four different times are kept apart:
+  //   preparation  from the question being spoken until Start answer ("Preparing")
+  //   answering    from Start answer until Finish answer ("Answering")
+  //   hard limit   the interview countdown for this difficulty, from the question being spoken (never paused or reset)
+  //   target       the optional recording cue, shown by the recorder panel (it never stops anything)
+  const seconds = (from, to = Date.now()) => (from ? Math.max(0, Math.round((to - from) / 1000)) : 0);
+  function updateClocks() {
+    const el = $('phase-clock');
+    if (phase === 'ready') { el.hidden = false; el.textContent = `Preparing ${formatTime(seconds(askedAt))}`; }
+    else if (phase === 'answering') { el.hidden = false; el.textContent = `Answering ${formatTime(seconds(answerStartedAt))}`; }
+    else el.hidden = true;
+  }
+  function startClock() { stopClock(); updateClocks(); clockTimer = setInterval(updateClocks, 500); }
+  function stopClock() { clearInterval(clockTimer); clockTimer = null; $('phase-clock').hidden = true; }
+
   /* ---------- The interview loop ---------- */
+  // Each question: asking -> ready -> answering -> finishing -> review -> (Next) asking...
+  // Every step that can arrive twice (a double click, a timeout and a click together) is checked against the
+  // phase first, so it happens once.
 
   // kind: 'opening', 'next', or 'none' (no lead-in phrase)
   async function askQuestion(kind) {
@@ -448,37 +536,43 @@ export function initPractice(avatar) {
     showAnswerArea();
     answerShownNow = false;
     submittedThisQuestion = false;
+    feedbackBlocking = false;
+    askedAt = 0;
+    answerStartedAt = 0;
+    stopClock();
     refreshAnswerPanel(); // (the open tab is kept from question to question on narrow screens: a typist stays on the response)
     $('progress').textContent = `Question ${session.position()} of ${session.total}`;
     answerBox.value = '';
     updateReplyCount();
     voice = { chunks: [], live: '', ms: 0, since: 0 }; // what the speech recogniser heard for this answer
     status.textContent = '';
+    showSpeechState();
     timerEl.hidden = true;
+    $('primary-hint').dataset.lead = '';
     setButtons();
 
     // A short breather after pressing Start, before the interviewer speaks
     if (kind === 'opening') {
-      status.textContent = 'Get ready…';
+      $('primary-hint').dataset.lead = 'Get ready…';
+      setButtons();
       await pause(START_DELAY_MS);
       if (run !== runId) return; // you ended the session during the pause
-      status.textContent = '';
+      $('primary-hint').dataset.lead = '';
     }
 
     const lead = kind === 'none' ? '' : pickPhrase(options.difficulty, kind);
     $('interviewer-line').textContent = lead;
     $('question-text').textContent = q.question;
     await say(`${lead} ${q.question}`);
-    if (run !== runId) return; // you skipped or ended while the question was being read
+    if (run !== runId || phase !== 'asking') return; // you skipped or ended while the question was being read
 
-    phase = 'answering';
+    phase = nextPhase(phase, 'spoken'); // ready
+    askedAt = Date.now(); // the hard countdown and the preparation time both start here
     refreshAnswerPanel();
-    startedAt = Date.now();
     startTimer(run);
+    startClock();
+    showSpeechState();
     setButtons();
-    status.textContent = isRecognitionSupported()
-      ? 'Press the mic to answer by voice, or just type.'
-      : 'Voice input is not supported in this browser. Please type your answer.';
   }
 
   function startTimer(run) {
@@ -490,7 +584,7 @@ export function initPractice(avatar) {
         timerEl.textContent = `⏱ ${formatTime(left)}`;
         timerEl.classList.toggle('low', left <= 15);
       },
-      onDone: () => { if (run === runId && phase === 'answering') finishAnswer('timeup'); },
+      onDone: () => { if (run === runId && (phase === 'ready' || phase === 'answering')) finishAnswer('timeup'); },
     });
     timer.start();
   }
@@ -499,16 +593,36 @@ export function initPractice(avatar) {
     timer?.stop();
     timer = null;
     timerEl.hidden = true;
+    stopClock();
   }
 
-  // The answer is over. reason: 'next', 'skip' or 'timeup'.
+  // Start answer: from now the chosen response method and the chosen recording are on. The hard countdown is
+  // not touched. Neither the microphone permission nor the speech recogniser is waited for: the answer
+  // (and typing) goes ahead, and each of the two says for itself how it is doing.
+  function startAnswer({ withoutRecording = false } = {}) {
+    if (phase !== 'ready' || endRequested || finalising) return;
+    hush(); // the interviewer stops speaking first: the microphone must never hear them
+    const began = recPanel.beginForAnswer({ withoutRecording });
+    if (began.state === 'blocked') { setButtons(); return; } // an earlier recording is waiting: the panel explains
+    phase = nextPhase(phase, 'start'); // answering
+    answerStartedAt = Date.now();
+    refreshAnswerPanel();
+    updateClocks();
+    if (method === 'speak') startListening();
+    else { showSpeechState(); answerBox.focus({ preventScroll: true }); }
+    setButtons();
+  }
+  recPanel.onContinueWithout(() => startAnswer({ withoutRecording: true }));
+
+  // The answer is over. reason: 'finish' (the button), 'skip' or 'timeup' (the hard limit).
   async function finishAnswer(reason) {
-    if (phase !== 'asking' && phase !== 'answering') return;
-    if (endRequested) return; // the session is being ended: nothing new may begin
+    const event = reason === 'finish' ? 'finish' : reason === 'skip' ? 'skip' : 'timeup';
+    if (!phaseAllows(phase, event) || endRequested) return; // already finishing, or not at a point where it can
     const run = ++runId;
     const q = session.current();
     const wasAnswering = phase === 'answering';
-    phase = 'finishing'; // blocks double clicks while we wait for the last spoken words
+    phase = nextPhase(phase, event); // finishing: blocks double clicks while we wait for the last words and the recording
+    $('primary-hint').dataset.lead = '';
     setButtons();
     refreshAnswerPanel();
 
@@ -518,23 +632,29 @@ export function initPractice(avatar) {
     const submission = { promise: new Promise((resolve) => { handedIn = resolve; }) };
     finalising = submission;
     let record;
+    let rec = { mode: 'off', recorded: false, failure: '' };
     try {
       stopTimer();
       hush();
       await stopListening(); // waits (briefly) for the last words, so nothing is cut off
+      rec = await recPanel.finishForAnswer(); // waits (a bounded time) for the recording to be complete
       if (run !== runId) return;
 
+      const now = Date.now();
+      const totalSec = askedAt ? seconds(askedAt, now) : 0;
       record = {
         question: q.question,
         topic: q.topic,
         level: q.level,
         set: q.set,
-        answer: answerBox.value.trim(),
+        answer: answerBox.value.trim(), // the text as it is now: a snapshot, tied to this question
         skipped: reason === 'skip',
         timedOut: reason === 'timeup',
         mark: null,
-        seconds: wasAnswering ? Math.round((Date.now() - startedAt) / 1000) : 0,
-        answerShown: answerShownNow, // the model answer was on screen while this question was open
+        seconds: totalSec,
+        prepSeconds: answerStartedAt ? seconds(askedAt, answerStartedAt) : totalSec,
+        answerSeconds: answerStartedAt ? seconds(answerStartedAt, now) : 0,
+        answerShown: answerShownNow, // the reference was on screen while this question was open
       };
       // Delivery numbers come from the text and the timings only. No audio is kept.
       record.delivery = reason === 'skip' ? null : analyzeAnswer({
@@ -550,45 +670,88 @@ export function initPractice(avatar) {
       if (finalising === submission) finalising = null;
       handedIn();
     }
-    // The session was ended while this was being handed in: the answer is kept as it is (no mark, no
+    // The session was ended while this was being handed in: the answer is kept as it is (no review, no
     // Coach request, no next question), and ending carries on.
     if (endRequested) return;
 
-    const wantsMark = options.selfMark && reason !== 'skip' && q.answer;
-    if (reason === 'timeup') {
-      const line = pickPhrase(options.difficulty, 'timeUp');
-      $('interviewer-line').textContent = line;
-      phase = 'asking'; // blocks the buttons while the interviewer speaks
-      setButtons();
-      await say(line);
-      if (run !== runId) return;
-    }
-
-    if (options.mode === 'coach' && reason !== 'skip') {
-      coachMark(record, q); // AI marking (see below)
-      return;
-    }
-    if (wantsMark) {
-      phase = 'marking';
-      $('reference').textContent = q.answer;
-      $('reveal-reference').hidden = answerVisible; // already on screen: skip the reveal, keep the mark buttons
-      $('answer-area').hidden = true;
-      $('reveal').hidden = false;
-      refreshAnswerPanel();
-      return; // waits for Got it / Partly / Missed
-    }
-    goNext(reason === 'timeup' ? 'none' : 'next');
+    // Skip hands in nothing to review: it moves straight on
+    if (reason === 'skip') { goNext('next'); return; }
+    showReview(record, q, rec, reason);
   }
 
-  /* ---------- Coach mode: AI marking ---------- */
+  /* ---------- Review ---------- */
+  // After the answer is handed in: what was handed in, the recording, the reference, marking or feedback.
+  // Nothing here moves on by itself: Next question (or Finish session) is the only way forward.
+  let reviewCtx = null; // { record, q } for the question in review
+  let feedbackBlocking = false; // Coach feedback is loading, or failed and needs a choice: Next waits
+
+  const OUTCOME_TITLES = {
+    answered: 'Response handed in',
+    'no-response': 'No response',
+    'timed-out': 'Time ran out: your response was handed in',
+    'timed-out-no-response': 'Time ran out: no response',
+  };
+
+  function describeRecording(rec) {
+    if (rec.recorded) return `${rec.mode === 'video' ? 'Video' : 'Audio'} captured. It is waiting below, not saved yet.`;
+    if (rec.mode === 'off') return 'Off for this answer.';
+    return `Nothing was recorded. ${rec.failure || ''} Your response is not affected.`.trim();
+  }
+
+  function renderReviewResponse() {
+    const { record } = reviewCtx;
+    const o = outcomeOf(record);
+    $('review-title').textContent = OUTCOME_TITLES[o.key] || 'Response handed in';
+    $('review-response').textContent = record.answer || '(no text: a recording alone has no words to show)';
+    $('review-response').classList.toggle('empty', !record.answer);
+    $('review-note').textContent = record.timedOut
+      ? 'The time limit was reached, so what you had was handed in. Nothing moves on until you press the button below.'
+      : '';
+  }
+
+  function showReview(record, q, rec, reason) {
+    reviewCtx = { record, q };
+    phase = nextPhase(phase, 'handed'); // review
+    renderReviewResponse();
+    $('review-recording').textContent = describeRecording(rec);
+    // The reference shown here is for comparing afterwards. It does not count as "assisted": answerShownNow
+    // is only ever set while the answer is still being given.
+    $('reference').textContent = q.answer?.trim() || 'No reference answer is saved for this question.';
+    const canMark = options.mode === 'practice' && options.selfMark && Boolean(q.answer?.trim());
+    $('mark-row').hidden = !canMark;
+    document.querySelectorAll('#review [data-mark]').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+    $('feedback').hidden = true;
+    feedbackBlocking = false;
+    refreshAnswerPanel();
+    setButtons();
+    $('review-title').focus(); // the answer view has gone, so focus goes to the review
+    if (reason === 'timeup') say(pickPhrase(options.difficulty, 'timeUp')).catch(() => {});
+    if (options.mode === 'coach') {
+      if (record.answer) coachMark(record, q);
+      else showEmptyFeedback();
+    }
+  }
+
+  // Self-marking: choosing a mark records it and nothing else. Moving on is the Next button.
+  document.querySelectorAll('#review [data-mark]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (phase !== 'review' || !reviewCtx) return;
+      reviewCtx.record.mark = btn.dataset.mark;
+      document.querySelectorAll('#review [data-mark]').forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+    });
+  });
+
+  /* ---------- Coach mode: AI marking (in the review) ---------- */
   let marking = null; // { record, q } for the answer being marked, so "Try again" can repeat it
 
-  // Show one of three views in the feedback panel: loading, error or result.
+  // Show one of the views in the feedback panel: loading, error, empty (no text) or result.
   function setFeedbackView(view) {
+    $('feedback').hidden = false;
     $('fb-loading').hidden = view !== 'loading';
     $('fb-error').hidden = view !== 'error';
+    $('fb-empty').hidden = view !== 'empty';
     $('fb-result').hidden = view !== 'result';
-    $('fb-buttons').hidden = view !== 'result';
+    if (view !== 'empty') $('fb-edit').hidden = true;
   }
 
   const bulletList = (items) => items.length ? items : ['(nothing noted)'];
@@ -602,62 +765,93 @@ export function initPractice(avatar) {
 
   function showFeedback(record) {
     $('fb-score').textContent = record.score;
-    $('fb-note').textContent = record.noAnswer
-      ? 'No answer was given, so no AI marking was done.'
-      : record.noReference ? 'No reference answer is saved for this question, so it was judged on general merit.' : '';
+    $('fb-note').textContent = record.noReference ? 'No reference answer is saved for this question, so it was judged on general merit.' : '';
     fillList('fb-covered', record.covered);
     fillList('fb-missed', record.missed);
     $('fb-tip').textContent = record.tip;
-    $('fb-next').textContent = session.position() === session.total ? 'Finish' : 'Next question';
     setFeedbackView('result');
+  }
+
+  // No text: nothing is sent and nothing is scored. A recording is never sent to the AI.
+  function showEmptyFeedback() {
+    feedbackBlocking = false;
+    setFeedbackView('empty');
+    setButtons();
   }
 
   async function coachMark(record, q) {
     const run = runId;
     marking = { record, q };
-    phase = 'feedback';
-    refreshAnswerPanel();
-    $('answer-area').hidden = true;
-    $('reveal').hidden = true;
-    $('feedback').hidden = false;
+    feedbackBlocking = true;
     setFeedbackView('loading');
+    setButtons();
 
-    // Nothing to mark: score 0 without calling the AI (saves cost)
-    if (!record.answer) {
-      Object.assign(record, { score: 0, covered: [], missed: [], tip: 'Try to give at least a short answer next time.', spoken: '', noAnswer: true });
-      showFeedback(record);
-      return;
-    }
-
-    const claude = await import('./claude.js'); // loaded only in Coach mode
+    let claude = null;
     try {
+      claude = await import('./claude.js'); // loaded only in Coach mode
       const result = await claude.evaluateAnswer({
         question: q.question,
         reference: q.answer,
         answer: record.answer,
         difficulty: options.difficulty,
       });
-      if (run !== runId) return; // you ended the session while it was marking
+      if (run !== runId || phase !== 'review') return; // the session ended, or the question moved on, while it was marking
       Object.assign(record, result, { noReference: !q.answer?.trim() });
+      feedbackBlocking = false;
       showFeedback(record);
-      if (options.coachSpeak && record.spoken) say(record.spoken);
+      setButtons();
+      if (options.coachSpeak && record.spoken) say(record.spoken).catch(() => {});
     } catch (err) {
-      if (run !== runId) return;
-      $('fb-error-text').textContent = err instanceof claude.ClaudeError
+      if (run !== runId || phase !== 'review') return;
+      $('fb-error-text').textContent = claude && err instanceof claude.ClaudeError
         ? err.message
         : 'Something went wrong while marking. You can try again or skip the feedback.';
-      setFeedbackView('error');
+      setFeedbackView('error'); // Next waits for a choice: Try again or Skip feedback
+      setButtons();
     }
   }
 
-  $('fb-retry').addEventListener('click', () => { if (phase === 'feedback') coachMark(marking.record, marking.q); });
+  // Try again re-marks the same result: it never adds another one
+  $('fb-retry').addEventListener('click', () => { if (phase === 'review' && marking && !$('fb-error').hidden) coachMark(marking.record, marking.q); });
   $('fb-skip').addEventListener('click', () => {
-    if (phase !== 'feedback') return;
+    if (phase !== 'review' || !marking) return;
     marking.record.feedbackSkipped = true; // stays in the list, without a score
     hush();
-    goNext('next');
+    feedbackBlocking = false;
+    $('feedback').hidden = true;
+    setButtons();
+    $('primary-btn').focus({ preventScroll: true });
   });
-  $('fb-next').addEventListener('click', () => { if (phase === 'feedback') { hush(); goNext('next'); } });
+  $('fb-continue').addEventListener('click', () => {
+    if (phase !== 'review') return;
+    $('feedback').hidden = true;
+    $('primary-btn').focus({ preventScroll: true });
+  });
+  $('fb-type').addEventListener('click', () => {
+    $('fb-edit').hidden = false;
+    $('fb-text').value = reviewCtx ? reviewCtx.record.answer : '';
+    $('fb-text').focus();
+  });
+  $('fb-submit').addEventListener('click', () => {
+    if (phase !== 'review' || !reviewCtx || feedbackBlocking) return;
+    const text = $('fb-text').value.trim();
+    if (!text) { $('fb-text').focus(); return; }
+    const { record, q } = reviewCtx;
+    record.answer = text; // the same result, now with words: it is not a new one
+    record.delivery = analyzeAnswer({
+      answer: text, spokenText: voice.chunks.join(' '), spokenSeconds: voice.ms / 1000,
+      seconds: record.seconds, timerSeconds: timerSecondsFor(options.difficulty, options.easyTimer),
+    });
+    renderReviewResponse();
+    coachMark(record, q);
+  });
+
+  // Next question (or Finish session after the last). Only from review, and not while Coach is still deciding.
+  function nextQuestion() {
+    if (phase !== 'review' || feedbackBlocking || endRequested) return;
+    hush();
+    goNext('next');
+  }
 
   // Ask the next question, or finish if that was the last one.
   function goNext(kind) {
@@ -665,26 +859,21 @@ export function initPractice(avatar) {
     else finishSession(true);
   }
 
-  // Self-marking buttons
-  document.querySelectorAll('#reveal [data-mark]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      if (phase !== 'marking') return;
-      session.results[session.results.length - 1].mark = btn.dataset.mark;
-      goNext('next');
-    });
+  primaryBtn.addEventListener('click', () => {
+    if (phase === 'ready') startAnswer();
+    else if (phase === 'answering') finishAnswer('finish');
+    else if (phase === 'review') nextQuestion();
   });
-
-  nextBtn.addEventListener('click', () => finishAnswer('next'));
   skipBtn.addEventListener('click', () => finishAnswer('skip'));
   $('end-btn').addEventListener('click', () => finishSession(false));
 
+  // Repeat: only before the answer starts. Nothing is being captured then, so the interviewer's voice can never
+  // end up in the response, and no clock is restarted (the hard countdown and the preparation time carry on).
   repeatBtn.addEventListener('click', async () => {
-    if (phase !== 'answering') return;
-    stopListening();
+    if (!canRepeat(phase, DIFFICULTY[options.difficulty].allowRepeat)) return;
     const run = runId;
     $('interviewer-line').textContent = pickPhrase(options.difficulty, 'repeat');
     await say(`${$('interviewer-line').textContent} ${session.current().question}`);
-    if (run === runId && phase === 'answering') status.textContent = 'Go ahead whenever you are ready.';
   });
 
   /* ---------- End of session ---------- */
@@ -722,12 +911,13 @@ export function initPractice(avatar) {
     if (finalising) await finalising.promise;
 
     const before = phase; // where the interview was when the ending began
-    phase = 'ending'; // blocks Next, Skip, Repeat and the microphone while the last words arrive
+    phase = 'ending'; // blocks Start/Finish, Next, Skip, Repeat and the microphone while the last words arrive
     setButtons();
     runId++; // anything still waiting (the question being read, Coach marking) now gives up
     stopTimer();
     hush();
     await stopListening(); // the last spoken words land in the answer box before it is read
+    if (before === 'ready' || before === 'answering') await recPanel.finishForAnswer(); // a recording in progress is stopped and kept (bounded wait)
 
     // An answer that was started but not handed in is kept, marked incomplete. It is never scored.
     // A recording with no words is not an answer, so it does not become a result.
@@ -739,7 +929,9 @@ export function initPractice(avatar) {
         answer: words,
         incomplete: true,
         skipped: false, timedOut: false, mark: null,
-        seconds: before === 'answering' ? Math.round((Date.now() - startedAt) / 1000) : 0,
+        seconds: before === 'answering' || before === 'ready' ? seconds(askedAt) : 0,
+        prepSeconds: before === 'ready' ? seconds(askedAt) : answerStartedAt ? seconds(askedAt, answerStartedAt) : 0,
+        answerSeconds: before === 'answering' ? seconds(answerStartedAt) : 0,
         answerShown: answerShownNow,
       });
     }
@@ -783,10 +975,11 @@ export function initPractice(avatar) {
       voice.since = 0;
       voice.live = '';
       listening = false;
-      micBtn.textContent = '🎤 Answer';
       if (avatar.getState() === 'listening') avatar.setState('idle');
+      if (phase === 'answering') { status.textContent = 'Stopped listening. Press Listen again to speak, or type.'; }
+      setButtons();
     },
-    onError: (message) => { status.textContent = message; },
+    onError: (message) => { status.textContent = `${message} You can type your response instead.`; },
     onNote: (message) => { status.textContent = message; },
   });
 
@@ -797,13 +990,13 @@ export function initPractice(avatar) {
     voice.since = Date.now();
     voice.live = '';
     listening = true;
-    micBtn.textContent = '⏹ Stop';
-    status.textContent = 'Listening… speak your answer.';
+    status.textContent = 'Listening… speak your response.';
     avatar.setState('listening');
     // With the on-device recogniser, tell it which words to expect (from this question and its answer)
     const q = session.current();
     const phrases = onDeviceReady ? keyTerms(joinText(q.topic, q.question, q.answer)) : [];
     recognizer.start({ onDevice: onDeviceReady, phrases, deviceId: optMic.value });
+    setButtons();
   }
 
   // Stop listening. The promise resolves once the last words have arrived.
@@ -859,6 +1052,7 @@ export function initPractice(avatar) {
     answerBox.addEventListener('input', stopListening);
   }
 
+  initMethod();
   showSetup();
 
   return {

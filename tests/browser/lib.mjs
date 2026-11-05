@@ -70,9 +70,22 @@ export async function startSession(p, { count = 3, difficulty = 'medium' } = {})
   await p.evaluate(() => document.querySelectorAll('#set-choices input').forEach((i) => { i.checked = i.parentElement.textContent.includes('Demo'); i.dispatchEvent(new Event('change', { bubbles: true })); }));
   await p.selectOption('#opt-order', 'serial'); await p.selectOption('#opt-difficulty', difficulty); await p.fill('#opt-count', String(count));
   await p.click('#start-btn');
-  await answering(p);
+  await ready(p); // the first question has been asked; Start answer has not been pressed
 }
-export const answering = (p) => p.waitForSelector('#next-btn:not([disabled])', { timeout: 30000 });
+// The question has been asked and Start answer is ready (the "Ready" phase).
+export const ready = (p) => p.waitForSelector('#primary-btn[data-kind="start"]:not([disabled])', { timeout: 30000 });
+// Press Start answer and wait until the answer is under way.
+export async function startAnswer(p) { await ready(p); await p.click('#primary-btn'); await p.waitForSelector('#primary-btn[data-kind="finish"]', { timeout: 10000 }); }
+// Ready -> Start answer (the "answering" state every older check meant by `answering`)
+export const answering = startAnswer;
+// Press Finish answer and wait for the review to open.
+export async function finish(p) { await p.click('#primary-btn'); await p.waitForSelector('#review:not([hidden])', { timeout: 15000 }); }
+// Press Next question / Finish session (from the review).
+export async function next(p) { await p.waitForSelector('#primary-btn[data-kind="next"]:not([disabled])', { timeout: 15000 }); await p.click('#primary-btn'); }
+// Answer a question completely by typing, then move on. Returns after the next question is ready (or the summary shows).
+export async function typeAndNext(p, words = 'I would listen first, then act.') {
+  await startAnswer(p); await p.fill('#answer', words); await finish(p); await next(p);
+}
 export const attempts = (p) => p.evaluate(`(async () => { const s = await import('/src/recordstore.js'); return await s.listAttempts(); })()`);
 export const stats = (p) => p.evaluate(() => ({ gum: window.__stats.gum, live: window.__stats.tracks.filter((t) => t.readyState === 'live').length, created: window.__stats.created, revoked: window.__stats.revoked, liveUrls: window.__stats.liveUrls.size }));
 export const vis = (p, sel) => p.locator(sel).isVisible();

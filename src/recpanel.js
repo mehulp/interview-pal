@@ -186,6 +186,8 @@ function updatePanel() {
   $('rec-custom').disabled = busy;
   for (const r of document.querySelectorAll('input[name="rec-mode"]')) r.disabled = busy;
   renderBlocked();
+  // After the answer is handed in the recorder panel is out of the way, unless a recording is being retaken
+  $('rec-panel').hidden = Boolean(context && context.phase === 'review') && !busy;
   $('rec-panel').classList.toggle('recording', state === 'recording');
   if (state === 'idle') {
     $('rec-clock').hidden = true;
@@ -283,7 +285,11 @@ let blockedShown = false;
 $('rec-continue-without').addEventListener('click', () => { blockedShown = false; renderBlocked(); continueWithout?.(); });
 
 function stopRecording() {
-  if (recorder.getState() === 'requesting') { recording = null; hidePreview(); } // permission was still pending: nothing will come of it
+  if (recorder.getState() === 'requesting') { // permission was still pending: nothing will come of it
+    recording = null;
+    hidePreview();
+    if (answerRec && !answerRec.failure) answerRec.failure = 'The microphone permission was still waiting.';
+  }
   recorder.stop();
   updatePanel();
 }

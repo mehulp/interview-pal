@@ -500,6 +500,35 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .primary-actions { margin-top: 12px; }
 .secondary-actions { flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .session-end { display: flex; justify-content: flex-end; margin-top: 22px; padding-top: 12px; border-top: 1px solid var(--border); }
+/* Answer lifecycle (Step 4): response method, two separate status lines, clocks, review */
+.seg { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; margin: 0 0 10px; padding: 0; border: 0; min-width: 0; }
+.seg-legend { float: left; margin-right: 12px; padding: 0; font-weight: 600; color: var(--text-muted); font-size: 0.95rem; }
+.seg-opt { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; cursor: pointer; }
+.seg-opt:has(input:checked) { font-weight: 600; color: var(--accent); }
+.seg-opt:has(input:disabled) { opacity: 0.55; cursor: not-allowed; }
+.status[data-label]:not(:empty)::before { content: attr(data-label) ": "; font-weight: 600; color: var(--text); }
+.clocks { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; align-items: baseline; gap: 4px 14px; }
+#phase-clock { font-variant-numeric: tabular-nums; font-size: 0.95rem; font-weight: 500; color: var(--text-muted); }
+.primary-actions { flex-wrap: wrap; align-items: center; gap: 8px; }
+#primary-btn { min-width: 11em; }
+#primary-hint { margin: 8px 0 0; }
+#primary-hint:empty { display: none; }
+.rec-blocked { margin: 10px 0; padding: 10px 12px; border: 1px solid var(--warning-border); background: var(--warning-subtle); border-radius: 8px; }
+.rec-blocked p { margin: 0 0 8px; }
+.review-title { margin: 0 0 6px; font-size: 1.2rem; }
+.review-title:focus { outline: none; }
+.review-title:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+.review-note { margin: 0 0 10px; color: var(--text-muted); }
+.review-note:empty { display: none; }
+.review-response {
+  white-space: pre-wrap; overflow-wrap: anywhere; max-width: 75ch; margin: 0 0 6px; padding: 12px 14px;
+  background: var(--surface-subtle); border: 1px solid var(--border); border-radius: 10px; line-height: 1.55;
+}
+.review-response.empty { font-style: italic; color: var(--text-muted); }
+#review > .panel-title { margin-top: 14px; }
+#mark-row [aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: var(--selected-bg); font-weight: 600; }
+#fb-edit { margin-top: 10px; }
+#fb-edit textarea { width: 100%; }
 #reveal pre { font-size: 1.125rem; line-height: 1.6; max-width: 75ch; }
 #reveal, #feedback { margin-top: 4px; }
 
