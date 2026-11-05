@@ -75,7 +75,9 @@ export function initPractice(avatar) {
   let finalising = null; // { promise } while an answer is being handed in (Next, Skip or time up)
   let submittedThisQuestion = false; // the answer to the question on screen has already become a result
   let questionToken = 0; // a new number for every question asked, so a recording is never tied to the wrong one
-  let replyTab = 'reference'; // which panel is open while the reference is on: 'reference' or 'response'
+  let replyTab = 'reference'; // narrow screens only: which tab is open while the reference is on ('reference' or 'response')
+  const roomyQuery = window.matchMedia('(min-width: 960px)'); // the two-column layout: no tabs needed
+  const roomy = () => roomyQuery.matches;
   let answerVisible = false; // is the model answer showing? (this session only; the saved setting only sets the start)
   let answerShownNow = false; // was it visible at any point while the current question was open?
 
@@ -354,9 +356,12 @@ export function initPractice(avatar) {
     const answering = phase === 'asking' || phase === 'answering' || phase === 'finishing';
     const marking = phase === 'marking';
     // With the reference on there are two panels to choose between while answering; when marking there is only the reference
-    const tabs = Boolean(q) && answerVisible && answering;
-    const show = Boolean(q) && answerVisible && (marking || (answering && replyTab === 'reference'));
+    // Roomy screens (the two-column layout) show the reference above the response, both at once. Narrow screens
+    // use tabs, to save height. What counts as shown is what is really on screen, so it depends on which.
+    const tabs = Boolean(q) && answerVisible && answering && !roomy();
+    const show = Boolean(q) && answerVisible && (marking || (answering && (roomy() || replyTab === 'reference')));
     $('reply-tabs').hidden = !tabs;
+    $('response-title').hidden = !(Boolean(q) && answerVisible && answering && roomy()); // the stacked panels are each labelled
     $('model-answer').hidden = !show;
     $('response-panel').hidden = tabs && replyTab === 'reference';
     $('model-answer').setAttribute('role', tabs ? 'tabpanel' : 'region');
@@ -411,6 +416,7 @@ export function initPractice(avatar) {
     $('reply-count').textContent = words ? ` · ${words} word${words === 1 ? '' : 's'}` : '';
   }
   answerBox.addEventListener('input', updateReplyCount);
+  roomyQuery.addEventListener?.('change', refreshAnswerPanel); // the window was resized across the breakpoint
 
   /* ---------- Showing and hiding parts of the controls ---------- */
   function showAnswerArea() {

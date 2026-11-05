@@ -130,11 +130,13 @@ const spoken = (p) => p.evaluate(() => window.__spokenLog.length);
   const q1 = (await text(p, '#question-text')).trim();
   await p.click('#rec-btn'); await p.waitForSelector('#rec-stop:not([hidden])'); await p.waitForTimeout(1500);
   await p.click('#end-btn');
-  await p.waitForSelector('#rec-dock:not([hidden])'); await p.waitForSelector('#finished:not([hidden])');
+  await p.waitForSelector('#rec-indicator:not([hidden])'); await p.waitForSelector('#finished:not([hidden])');
   const h = await history(p);
   check('recording only: no result and no session is created from it', h.length === 0, JSON.stringify(h));
   check('the summary says nothing was saved because nothing was answered', (await text(p, '#finished-body')).includes('Nothing was saved to History'));
-  check('the recording is kept as the pending attempt, with its ORIGINAL question', (await text(p, '#rec-dock-question')).includes(q1), await text(p, '#rec-dock-question'));
+  check('the summary is not displaced: the review stays closed, and a header line names the question', (await vis(p, '#rec-indicator')) && (await text(p, '#rec-indicator-text')).includes(q1) && !(await vis(p, '#rec-dock')), await text(p, '#rec-indicator-text'));
+  await p.click('#rec-indicator-open'); // the person asks for it
+  check('Open review shows the same panel, and the recording is kept with its ORIGINAL question', (await text(p, '#rec-dock-question')).includes(q1) && (await text(p, '#rec-dock h2')).includes('earlier question'), await text(p, '#rec-dock-question'));
   check('the microphone is released', (await stats(p)).live === 0);
   check('it can still be saved as audio', await vis(p, '#rec-save'));
   await p.context().close();

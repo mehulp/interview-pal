@@ -531,3 +531,6 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .rec-live button { font-weight: 400; color: var(--text); }
 .rec-dock--inline video { max-width: 560px; max-height: 45vh; }
+
+/* Wide screens show both panels at once, so the tab bar is not used; spacing between the two */
+@media (min-width: 960px) { .model-answer { margin-bottom: 16px; } .model-answer .panel-title { display: block; } }

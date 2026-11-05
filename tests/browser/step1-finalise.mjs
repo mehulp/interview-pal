@@ -58,7 +58,7 @@ async function coachPage(delayMs = 1500) {
   await p.click('#next-btn');
   await p.waitForSelector('#feedback:not([hidden])');
   await p.waitForFunction(() => !document.getElementById('fb-loading').hidden);
-  await p.click('#fb-end');
+  await p.click('#end-btn'); // the one End session button, kept apart from the routine buttons (Step 3 removed the duplicate in the feedback panel)
   await p.waitForSelector('#finished:not([hidden])');
   await p.waitForTimeout(3000); // the answer from Coach arrives after the session ended
   const h = await history(p); const r = h[0].results;
