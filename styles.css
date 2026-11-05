@@ -399,8 +399,11 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 /* Recording (v1.3): the recorder panel, the shared unsaved-recording panel and saved attempts */
 .rec-panel { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 12px; }
 .rec-panel h3 { margin: 0 0 8px; font-size: 1rem; }
-.rec-controls { display: flex; gap: 12px; flex-wrap: wrap; }
-.rec-controls .field input[type="number"] { width: 6em; }
+.rec-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 16px; }
+.rec-row .field, .rec-row .check { margin: 0; }
+.rec-row input[type="number"] { width: 6em; }
+.rec-buttons { display: flex; gap: 8px; margin-left: auto; }
+.rec-note { margin: 8px 0 0; font-size: 0.85rem; }
 .rec-clock { font-size: 1.3rem; font-weight: 700; margin: 8px 0 4px; font-variant-numeric: tabular-nums; }
 .rec-panel.recording .rec-clock { color: var(--danger); }
 .rec-panel.rec-reached { border-top-color: var(--warning-border); background: var(--warning-subtle); border-radius: 8px; padding: 12px; }
@@ -409,8 +412,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   .rec-panel.rec-reached { animation: rec-pulse 1.4s ease-in-out 3; }
   @keyframes rec-pulse { 50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--warning-border) 35%, transparent); } }
 }
-.rec-dock { background: var(--warning-subtle); border-bottom: 2px solid var(--warning-border); padding: 12px 16px; }
-.rec-dock > * { max-width: 900px; margin-left: auto; margin-right: auto; }
+.rec-dock { background: var(--warning-subtle); border: 1px solid var(--warning-border); border-radius: 12px; padding: 12px 16px; margin-top: 16px; }
 .rec-dock h2 { margin: 0 0 4px; font-size: 1.05rem; }
 .rec-dock .rec-dock-question { margin: 0 0 4px; font-weight: 600; }
 .rec-dock audio, .rec-attempt audio { width: 100%; margin: 6px 0; }
@@ -422,9 +424,11 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 #rec-saved summary { cursor: pointer; }
 
 /* Video recording (v1.4): a small mirrored preview in the recorder panel, and the video review */
-.rec-preview-box { margin: 8px 0; }
-.rec-preview-box video { display: block; width: min(100%, 260px); aspect-ratio: 16 / 9; object-fit: contain; background: #000; border-radius: 8px; transform: scaleX(-1); } /* mirrored, like a mirror; the saved file is not */
-.rec-preview-box .hint { margin: 4px 0 0; color: var(--danger); }
+/* The recording preview takes the corner of the portrait that self-view uses; only one of them is ever shown */
+.rec-preview-box { position: absolute; right: 8px; bottom: 8px; z-index: 11; width: max(28%, 90px); }
+.rec-preview-box video { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; transform: scaleX(-1); /* mirrored like a mirror; the saved file is not */ border: 2px solid var(--surface); border-radius: 8px; background: #000; box-shadow: 0 1px 6px var(--shadow-strong); }
+.stage.recording-video .self-view { display: none; }
+.rec-live { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 10px; margin-top: 10px; color: var(--danger); font-weight: 600; font-size: 0.9rem; text-align: center; }
 .rec-dock video { width: 100%; max-height: 50vh; background: #000; border-radius: 8px; margin: 6px 0; }
 .rec-dock .buttons .big { flex: 0 0 auto; }
 
@@ -515,3 +519,15 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .reply-tabs [role="tab"][aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
 .reply-count { font-weight: 400; color: var(--text-muted); }
 .reply-tabs:not([hidden]) ~ .model-answer .panel-title { display: none; } /* the tab already names it */
+
+/* The recording review: a card inside the workspace during a session, a card in the tray otherwise, and a one-line indicator in the header */
+.rec-indicator { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 16px; background: var(--warning-subtle); border-bottom: 1px solid var(--warning-border); font-size: 0.9rem; }
+.rec-indicator span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rec-indicator button { flex: none; }
+.rec-tray { max-width: 1280px; margin: 0 auto; padding: 0 16px 24px; }
+.rec-dock--inline { margin-top: 18px; }
+.rec-dock h2:focus { outline: none; }
+.rec-dock h2:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+
+.rec-live button { font-weight: 400; color: var(--text); }
+.rec-dock--inline video { max-width: 560px; max-height: 45vh; }

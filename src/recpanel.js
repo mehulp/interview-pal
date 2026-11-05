@@ -1,10 +1,12 @@
 // Recorder panel and the shared "unsaved recording" panel.
 //
 // The Interview screen has a small recorder panel (target length, Include video, Record, Stop,
-// clock). With video on, a small mirrored preview of the camera shows in the panel; nothing
-// else on screen changes and nothing goes full screen. A
-// finished recording becomes an UNSAVED ATTEMPT, shown in a panel at the top of the page that
-// stays visible on every tab. It has Save, Download, Discard and (sometimes) Retry.
+// clock). With video on, a small mirrored preview of the camera shows in the corner of the
+// portrait (the only live camera picture; nothing else on screen changes, nothing goes full
+// screen). A finished recording becomes an UNSAVED ATTEMPT with a review panel (one panel, reused):
+// it lives inside the answer workspace during a session, and otherwise in a tray at the foot of the
+// page, with a one-line indicator in the header and a button to open it. It has Save, Download,
+// Discard and (sometimes) Retry. A finishing recording never moves the page or the focus.
 //
 // Rules this file keeps:
 //   - the question is captured when Record is pressed and travels with the attempt, so an attempt
@@ -35,6 +37,8 @@ let reachedAnnounced = false;
 let persistenceAsked = false;
 let savedLoad = 0;
 let cameraSource = null; // () => self-view's live camera track or null (set by the practice screen)
+let trayOpen = false; // outside a session: has the user opened the review from the header indicator?
+let previewHidden = false; // the user hid the recording preview (the recording itself is not affected)
 
 const onPlayerProblem = (message) => { if (pending) { pending.message = message; renderDock(); } };
 const player = createPlayer($('rec-audio'), { onProblem: onPlayerProblem });
@@ -53,6 +57,8 @@ const recorder = createRecorder({
     const text = `Recording ${kind === 'video' ? 'video ' : ''}with: ${deviceLabel}.${notice ? ' ' + notice : ''}`;
     $('rec-device').textContent = text;
     $('rec-status').textContent = '';
+    previewHidden = false;
+    showLive(kind);
     if (kind === 'video') showPreview(stream);
     tick();
   },
@@ -70,11 +76,10 @@ const recorder = createRecorder({
     };
     recording = null;
     $('rec-status').textContent = '';
+    // The review appears where it belongs (in the workspace, or announced by the header indicator). The page does
+    // not scroll and focus does not move: the person may be reading or typing.
     renderDock();
     updatePanel();
-    // The panel is at the top of the page: bring it into view so a finished recording is not missed
-    const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    $('rec-dock').scrollIntoView({ block: 'start', behavior: calm ? 'auto' : 'smooth' });
     (pending.kind === 'video' ? videoPlayer : player).load(pending.blob);
   },
   onError: (message) => {
@@ -102,19 +107,41 @@ function tick() {
   }
 }
 
-/* ---------- The small camera preview (video only) ---------- */
-// The preview is the stream that is being recorded, muted so there is no echo and mirrored by CSS
-// (the recorded file is not mirrored). It lives in the recorder panel; nothing else changes.
+/* ---------- The camera preview and the "recording" line ---------- */
+// While video records, the one live camera picture is the stream being recorded (muted, so no echo, and
+// mirrored by CSS; the recorded file is not mirrored). Self-view's own picture is hidden meanwhile by CSS
+// (.recording-video) but its camera and state are untouched. The "Recording video" line stays whatever
+// the preview is doing.
+function showLive(kind) {
+  $('rec-live-text').textContent = kind === 'video'
+    ? '● Recording video (the file has only your camera and microphone)'
+    : '● Recording audio';
+  $('rec-preview-toggle').hidden = kind !== 'video';
+  $('rec-live').hidden = false;
+  syncPreviewToggle();
+}
+function syncPreviewToggle() {
+  $('rec-preview-toggle').textContent = previewHidden ? 'Show preview' : 'Hide preview';
+  $('rec-preview-toggle').setAttribute('aria-pressed', String(previewHidden));
+}
 function showPreview(stream) {
   const preview = $('rec-preview');
   preview.srcObject = stream;
   preview.play().catch(() => {});
-  $('rec-preview-box').hidden = false;
+  $('rec-preview-box').hidden = previewHidden;
+  document.querySelector('.stage').classList.add('recording-video');
 }
 function hidePreview() {
   $('rec-preview').srcObject = null;
   $('rec-preview-box').hidden = true;
+  $('rec-live').hidden = true;
+  document.querySelector('.stage').classList.remove('recording-video');
 }
+$('rec-preview-toggle').addEventListener('click', () => {
+  previewHidden = !previewHidden;
+  $('rec-preview-box').hidden = previewHidden || !$('rec-preview').srcObject;
+  syncPreviewToggle();
+});
 function startTicking() { stopTicking(); tickTimer = setInterval(tick, 250); }
 function stopTicking() { clearInterval(tickTimer); tickTimer = null; }
 document.addEventListener('visibilitychange', tick); // catch up straight away when you come back to the tab
@@ -190,10 +217,49 @@ $('rec-btn').addEventListener('click', startRecording);
 $('rec-stop').addEventListener('click', stopRecording);
 
 /* ---------- The unsaved recording panel ---------- */
-function renderDock() {
+// Where the review lives. During a session it is inside the answer workspace (so it is reachable while marking
+// or reading feedback). Otherwise it is in the tray at the foot of the page, and the header shows a one-line
+// indicator instead. It is always the same element, moved, so there is only ever one player of each kind.
+const inWorkspace = () => context !== null;
+
+function placeDock() {
+  const host = inWorkspace() ? $('rec-review-slot') : $('rec-tray');
   const dock = $('rec-dock');
-  if (!pending && !savedNote) { dock.hidden = true; return; }
-  dock.hidden = false;
+  if (dock.parentElement !== host) host.append(dock);
+  dock.classList.toggle('rec-dock--inline', inWorkspace());
+}
+
+// "Earlier question" when the recording belongs to a question that is no longer the one on screen
+const isEarlier = () => Boolean(pending) && (!context || context.token !== pending.snapshot.token);
+
+function renderIndicator() {
+  const needed = !inWorkspace() && Boolean(pending || savedNote);
+  $('rec-indicator').hidden = !needed;
+  if (!needed) return;
+  const open = $('rec-indicator-open');
+  if (pending) {
+    const kind = pending.kind === 'video' ? 'video' : 'audio';
+    const words = pending.snapshot.questionText.trim();
+    $('rec-indicator-text').textContent = pending.saveState === 'failed'
+      ? `Unsaved ${kind} recording (not saved: see the review) for "${words}"`
+      : `Unsaved ${kind} recording for "${words}"`;
+    open.hidden = false;
+    open.textContent = trayOpen ? 'Hide review' : 'Open review';
+    open.setAttribute('aria-expanded', String(trayOpen));
+  } else {
+    $('rec-indicator-text').textContent = savedNote;
+    open.hidden = true;
+  }
+}
+
+function renderDock() {
+  placeDock();
+  renderIndicator();
+  const dock = $('rec-dock');
+  const something = Boolean(pending || savedNote);
+  // In a session the review is simply there; outside one it appears only when the user opens it
+  dock.hidden = !something || (!inWorkspace() && !(trayOpen && pending));
+  if (dock.hidden) return;
   const has = Boolean(pending);
   const isVideo = has && pending.kind === 'video';
   $('rec-audio').hidden = !has || isVideo;
@@ -214,10 +280,11 @@ function renderDock() {
     $('rec-dock-status').textContent = savedNote;
     return;
   }
-  $('rec-dock').querySelector('h2').textContent = isVideo ? 'Video recording (not saved)' : 'Unsaved recording';
+  const earlier = isEarlier() ? ' (earlier question)' : '';
+  $('rec-dock').querySelector('h2').textContent = (isVideo ? 'Video recording (not saved)' : 'Unsaved recording') + earlier;
   const s = pending.snapshot;
   $('rec-dock-question').textContent = `For: "${s.questionText.trim()}"${s.setName ? ` (${s.setName})` : ''}`;
-  const moved = context && context.token !== s.token ? ' You have moved on to another question.' : '';
+  const moved = context && context.token !== s.token ? ' This is not the question on screen now: you have moved on.' : '';
   const where = !context ? ' It is from an earlier question.' : '';
   $('rec-dock-meta').textContent =
     `Length ${formatClock(pending.durationMs)} · target ${targetLabel(pending.targetSec)} · microphone: ${pending.deviceLabel || 'unknown'}.${moved}${where}`
@@ -231,8 +298,18 @@ function renderDock() {
   $('rec-dock-status').textContent = pending.message || '';
 }
 
+// The header indicator's button: show or put away the review (outside a session). Opening moves focus to the
+// review, because the person asked for it.
+$('rec-indicator-open').addEventListener('click', () => {
+  trayOpen = !trayOpen;
+  renderDock();
+  if (trayOpen) $('rec-dock').querySelector('h2').focus();
+  else $('rec-indicator-open').focus();
+});
+
 function clearPending() {
   pending = null;
+  trayOpen = false;
   player.clear(); // releases the temporary address of the audio or video
   videoPlayer.clear();
   renderDock();
