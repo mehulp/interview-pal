@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildSessionRecord, addSession, removeSession, MAX_SESSIONS, summarize, isWeak, weakSpots,
-  formatDuration, describeSession,
+  formatDuration, describeSession, outcomeOf,
 } from '../src/history.js';
 
 const options = { mode: 'practice', difficulty: 'medium', order: 'serial', level: 'all' };
@@ -166,4 +166,32 @@ test('the History row and the counts show incomplete answers clearly', () => {
   assert.match(describeSession(rec).detail, /1 incomplete/);
   assert.match(describeSession(rec).detail, /ended early/);
   assert.doesNotMatch(describeSession(withIncomplete([done()])).detail, /incomplete/);
+});
+
+test('outcomeOf tells answered, no response, skipped, timed out and incomplete apart', () => {
+  assert.equal(outcomeOf({ answer: 'words' }).key, 'answered');
+  assert.equal(outcomeOf({ answer: '  ' }).key, 'no-response');
+  assert.equal(outcomeOf({}).key, 'no-response');
+  assert.equal(outcomeOf({ skipped: true }).key, 'skipped');
+  assert.equal(outcomeOf({ timedOut: true, answer: 'some' }).key, 'timed-out');
+  assert.equal(outcomeOf({ timedOut: true, answer: '' }).key, 'timed-out-no-response');
+  assert.equal(outcomeOf({ incomplete: true, answer: 'half' }).key, 'incomplete');
+});
+
+test('summarize counts no-response separately and keeps incomplete answers out; old records still work', () => {
+  const rec = buildSessionRecord({
+    options, startedAt: 1, endedAt: 61, total: 4,
+    results: [
+      { question: 'a?', answer: 'x', mark: 'got' },
+      { question: 'b?', answer: '' },
+      { question: 'c?', answer: 'half', incomplete: true },
+      { question: 'd?', skipped: true },
+    ],
+  });
+  const s = summarize(rec);
+  assert.equal(s.noResponse, 1);
+  assert.equal(s.incomplete, 1);
+  assert.equal(rec.results[0].prepSeconds, 0); // old-style results gain zero defaults
+  assert.equal(rec.results[0].answerSeconds, 0);
+  assert.match(describeSession(rec).detail, /1 no response/);
 });

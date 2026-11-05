@@ -97,17 +97,58 @@ export function buildQuestionList(pairs, { order, level, count }) {
 
 /* ---------- Running a session ---------- */
 
-// The phases in which a session is under way (the question is being asked, answered, handed in,
-// marked by the user, or marked by Coach). Leaving the page's Interview tab in any of these ends
-// the session, so it asks first.
-export const ACTIVE_PHASES = ['asking', 'answering', 'finishing', 'marking', 'feedback'];
+// The phases of one question, in order:
+//   asking     the interviewer is asking the question (nothing is captured)
+//   ready      the question has been asked; the user thinks or types; nothing is captured yet
+//   answering  Start answer was pressed: the chosen response method and recording are on
+//   finishing  the answer is being handed in: listening and recording are stopped and awaited
+//   review     the handed-in response, recording, reference, self-marking or Coach feedback
+// then 'ending' and 'finished' for the whole session, and 'setup' before it. Leaving the page's
+// Interview tab in any of the first five ends the session, so it asks first.
+export const ACTIVE_PHASES = ['asking', 'ready', 'answering', 'finishing', 'review'];
 export const needsLeaveConfirmation = (phase) => ACTIVE_PHASES.includes(phase);
+
+// What may follow what. An event that does not fit the current phase changes nothing, which is what
+// keeps a double click or a late callback from handing an answer in twice or moving on early.
+//   spoken   the question has been spoken            start    Start answer was pressed
+//   finish   Finish answer was pressed               timeup   the interview countdown ran out
+//   skip     Skip was pressed                        handed   the answer became a result (go to review)
+//   advance  a skipped answer moves straight on      next     Next question was pressed
+//   end      End session (or leaving) was triggered  done     ending finished
+const PHASE_TRANSITIONS = {
+  asking: { spoken: 'ready', skip: 'finishing', end: 'ending' },
+  ready: { start: 'answering', timeup: 'finishing', skip: 'finishing', end: 'ending' },
+  answering: { finish: 'finishing', timeup: 'finishing', skip: 'finishing', end: 'ending' },
+  finishing: { handed: 'review', advance: 'asking', end: 'ending' },
+  review: { next: 'asking', end: 'ending' },
+  ending: { done: 'finished' },
+};
+export const nextPhase = (phase, event) => PHASE_TRANSITIONS[phase]?.[event] ?? phase;
+export const phaseAllows = (phase, event) => Boolean(PHASE_TRANSITIONS[phase]?.[event]);
+
+// The one main button, for each phase. `isLast` is true on the final question; `waitingForFeedback`
+// is true in review while Coach feedback is loading or has failed and needs a choice.
+export function primaryAction({ phase, isLast = false, waitingForFeedback = false }) {
+  switch (phase) {
+    case 'asking': return { label: 'Start answer', disabled: true, kind: 'start' };
+    case 'ready': return { label: 'Start answer', disabled: false, kind: 'start' };
+    case 'answering': return { label: 'Finish answer', disabled: false, kind: 'finish' };
+    case 'finishing': return { label: 'Finishing…', disabled: true, kind: 'wait' };
+    case 'review': return { label: isLast ? 'Finish session' : 'Next question', disabled: waitingForFeedback, kind: 'next' };
+    default: return { label: 'Start answer', disabled: true, kind: 'none' };
+  }
+}
+
+// Repeat is only offered before the answer starts (nothing is being captured then, so the interviewer's
+// voice can never be taken for the answer); Skip is offered until it is handed in.
+export const canRepeat = (phase, allowRepeat) => Boolean(allowRepeat) && phase === 'ready';
+export const canSkip = (phase, allowSkip) => Boolean(allowSkip) && (phase === 'asking' || phase === 'ready' || phase === 'answering');
 
 // The words of an answer that was started but never handed in, or null. Only while the question is
 // being asked or answered: once an answer has been submitted (`submitted`) it is a real result and
 // must not be counted a second time, and a recording without words is not an answer.
 export function unfinishedAnswer({ phase, text, submitted = false }) {
-  if (submitted || (phase !== 'asking' && phase !== 'answering')) return null;
+  if (submitted || (phase !== 'asking' && phase !== 'ready' && phase !== 'answering')) return null;
   const words = String(text || '').trim();
   return words || null;
 }

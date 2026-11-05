@@ -12,6 +12,17 @@ export const WEAK_SCORE = 5; // a Coach score at or below this goes on the "to r
 export const MARK_TEXT = { got: 'Got it', partly: 'Partly', missed: 'Missed' };
 const cap = (word) => word.charAt(0).toUpperCase() + word.slice(1);
 
+// How a result ended, in words. A recording alone is not words, so a response with no text is "no response".
+// (Old records have no `incomplete`, and an old empty answer reads as no response too.)
+export function outcomeOf(r) {
+  if (r.incomplete) return { key: 'incomplete', label: 'incomplete, not scored' };
+  if (r.skipped) return { key: 'skipped', label: 'skipped' };
+  const words = Boolean(String(r.answer || '').trim());
+  if (r.timedOut) return words ? { key: 'timed-out', label: 'timed out' } : { key: 'timed-out-no-response', label: 'timed out, no response' };
+  if (!words) return { key: 'no-response', label: 'no response' };
+  return { key: 'answered', label: 'answered' };
+}
+
 // One answered question, with only the fields worth keeping.
 function cleanResult(r) {
   return {
@@ -22,7 +33,9 @@ function cleanResult(r) {
     answer: r.answer || '',
     skipped: Boolean(r.skipped),
     timedOut: Boolean(r.timedOut),
-    seconds: r.seconds || 0,
+    seconds: r.seconds || 0, // time since the question was spoken (the countdown's own clock)
+    prepSeconds: r.prepSeconds || 0, // v1.5 Step 4: from the question being spoken to Start answer
+    answerSeconds: r.answerSeconds || 0, // from Start answer to Finish answer
     // v1.1: filler words, pace, timer use (older records have none). Never for an incomplete answer.
     delivery: r.incomplete ? null : (r.delivery || null),
     // An answer that was started but not handed in before the session ended: kept, never scored
@@ -76,6 +89,7 @@ export function summarize(record) {
     skipped: judged.filter((r) => r.skipped).length,
     timedOut: judged.filter((r) => r.timedOut).length,
     incomplete: results.length - judged.length,
+    noResponse: judged.filter((r) => !r.skipped && !String(r.answer || '').trim()).length, // handed in with no words
     scoredCount: scored.length,
     average: scored.length ? scored.reduce((sum, r) => sum + r.score, 0) / scored.length : null,
     marks,
@@ -118,6 +132,7 @@ export function describeSession(record) {
   else if (s.markedCount) parts.push(`${s.marks.got} got it, ${s.marks.partly} partly, ${s.marks.missed} missed`);
   if (record.answersVisible) parts.push('model answer visible');
   if (s.incomplete) parts.push(`${s.incomplete} incomplete`);
+  if (s.noResponse) parts.push(`${s.noResponse} no response`);
   if (!record.completed) parts.push('ended early');
   return { title: formatDate(record.startedAt), detail: parts.join(' · ') };
 }

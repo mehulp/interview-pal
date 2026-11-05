@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   DIFFICULTY, timerSecondsFor, buildQuestionList, filterByLevel, usableQuestions,
   shuffle, createSession, formatTime, createTimer, removeRepeats, needsLeaveConfirmation, unfinishedAnswer, ACTIVE_PHASES,
+  nextPhase, phaseAllows, primaryAction, canRepeat, canSkip,
 } from '../src/session.js';
 
 const pairs = [
@@ -127,13 +128,14 @@ test('the timer counts down and finishes', async () => {
 /* ---------- Leaving and unfinished answers (UX redesign, Step 1) ---------- */
 
 test('leaving asks first while a session is under way, and not otherwise', () => {
-  for (const phase of ['asking', 'answering', 'finishing', 'marking', 'feedback']) assert.equal(needsLeaveConfirmation(phase), true, phase);
-  for (const phase of ['setup', 'finished', 'ending', 'unknown', undefined]) assert.equal(needsLeaveConfirmation(phase), false, String(phase));
+  for (const phase of ['asking', 'ready', 'answering', 'finishing', 'review']) assert.equal(needsLeaveConfirmation(phase), true, phase);
+  for (const phase of ['setup', 'finished', 'ending', 'marking', 'feedback', 'unknown', undefined]) assert.equal(needsLeaveConfirmation(phase), false, String(phase));
   assert.equal(ACTIVE_PHASES.length, 5);
 });
 
 test('an answer that was started but not handed in is an unfinished answer', () => {
   assert.equal(unfinishedAnswer({ phase: 'answering', text: '  I would delegate.  ' }), 'I would delegate.');
+  assert.equal(unfinishedAnswer({ phase: 'ready', text: 'typed before starting' }), 'typed before starting');
   assert.equal(unfinishedAnswer({ phase: 'asking', text: 'typed while the question was read' }), 'typed while the question was read');
 });
 
@@ -150,4 +152,47 @@ test('only the asking and answering phases can hold an unfinished answer', () =>
   for (const phase of ['setup', 'finishing', 'marking', 'feedback', 'ending', 'finished']) {
     assert.equal(unfinishedAnswer({ phase, text: 'words' }), null, phase);
   }
+});
+
+test('a question moves asking -> ready -> answering -> finishing -> review -> asking', () => {
+  let p = 'asking';
+  for (const [event, expected] of [['spoken', 'ready'], ['start', 'answering'], ['finish', 'finishing'], ['handed', 'review'], ['next', 'asking']]) {
+    p = nextPhase(p, event);
+    assert.equal(p, expected, event);
+  }
+});
+
+test('events that do not fit the phase change nothing (double clicks, late callbacks)', () => {
+  assert.equal(nextPhase('finishing', 'finish'), 'finishing');
+  assert.equal(nextPhase('finishing', 'next'), 'finishing');
+  assert.equal(nextPhase('review', 'finish'), 'review');
+  assert.equal(nextPhase('review', 'timeup'), 'review'); // a hard timeout never re-finalises or auto-advances
+  assert.equal(nextPhase('asking', 'start'), 'asking'); // nothing is captured while the interviewer speaks
+  assert.equal(phaseAllows('review', 'next'), true);
+  assert.equal(phaseAllows('finishing', 'next'), false);
+});
+
+test('a time-up in ready or answering goes to finishing, and End is allowed from every active phase', () => {
+  assert.equal(nextPhase('ready', 'timeup'), 'finishing');
+  assert.equal(nextPhase('answering', 'timeup'), 'finishing');
+  for (const p of ACTIVE_PHASES) assert.equal(nextPhase(p, 'end'), 'ending', p);
+});
+
+test('the main button follows the phase', () => {
+  assert.deepEqual(primaryAction({ phase: 'ready' }), { label: 'Start answer', disabled: false, kind: 'start' });
+  assert.equal(primaryAction({ phase: 'asking' }).disabled, true);
+  assert.equal(primaryAction({ phase: 'answering' }).label, 'Finish answer');
+  assert.deepEqual(primaryAction({ phase: 'finishing' }), { label: 'Finishing…', disabled: true, kind: 'wait' });
+  assert.equal(primaryAction({ phase: 'review' }).label, 'Next question');
+  assert.equal(primaryAction({ phase: 'review', isLast: true }).label, 'Finish session');
+  assert.equal(primaryAction({ phase: 'review', waitingForFeedback: true }).disabled, true);
+});
+
+test('repeat is only offered before the answer starts; skip until it is handed in', () => {
+  assert.equal(canRepeat('ready', true), true);
+  for (const p of ['asking', 'answering', 'finishing', 'review']) assert.equal(canRepeat(p, true), false, p);
+  assert.equal(canRepeat('ready', false), false);
+  for (const p of ['asking', 'ready', 'answering']) assert.equal(canSkip(p, true), true, p);
+  for (const p of ['finishing', 'review']) assert.equal(canSkip(p, true), false, p);
+  assert.equal(canSkip('ready', false), false);
 });

@@ -1,6 +1,6 @@
 // Summary: draws one session's summary. Used at the end of a session and on the History tab.
 // All text is set with textContent, so answers and feedback can't inject HTML.
-import { summarize, weakSpots, formatDuration, formatDate, MARK_TEXT } from './history.js';
+import { summarize, weakSpots, formatDuration, formatDate, outcomeOf, MARK_TEXT } from './history.js';
 import { summarizeDelivery, describeDelivery, paceLabel, listFillers } from './delivery.js';
 
 // Small helper to build an element.
@@ -14,14 +14,11 @@ const list = (items) => el('ul', {}, items.map((text) => el('li', { textContent:
 
 // How a question went, in a few words.
 function outcome(r) {
-  if (r.incomplete) return 'incomplete, not scored';
-  const parts = [];
-  if (r.skipped) parts.push('skipped');
-  else if (r.score !== null) parts.push(`${r.score}/10`);
-  else if (r.mark) parts.push(MARK_TEXT[r.mark]);
-  else parts.push('answered');
-  if (r.timedOut) parts.push('time up');
-  return parts.join(', ');
+  const o = outcomeOf(r);
+  if (o.key === 'incomplete' || o.key === 'skipped') return o.label;
+  // A score or a self-mark comes first; the outcome is added when it says something more than "answered"
+  const judged = r.score !== null ? `${r.score}/10` : r.mark ? MARK_TEXT[r.mark] : '';
+  return [judged || (o.key === 'answered' ? 'answered' : ''), o.key === 'answered' ? '' : o.label].filter(Boolean).join(', ');
 }
 
 // The details shown when a question is opened.
@@ -34,9 +31,11 @@ function questionDetails(r, index) {
     body.append(el('p', { textContent: 'You ended the session before handing this answer in, so it was not scored or marked.' }));
   } else if (r.skipped) {
     body.append(el('p', { textContent: 'You skipped this question.' }));
+  } else if (!String(r.answer || '').trim()) {
+    body.append(el('p', { textContent: 'No response was handed in for this question (a recording alone does not give words, so there is no text to show or score).' }));
   } else {
     body.append(el('p', {}, [el('strong', { textContent: 'Your answer' })]));
-    body.append(el('p', { className: 'sum-answer', textContent: r.answer || '(no answer)' }));
+    body.append(el('p', { className: 'sum-answer', textContent: r.answer }));
   }
   if (r.timedOut && !r.incomplete) body.append(el('p', { textContent: 'The time ran out.' }));
   if (r.answerShown) body.append(el('p', { className: 'sum-note', textContent: 'The model answer was visible for this question.' }));
@@ -52,7 +51,8 @@ function questionDetails(r, index) {
   if (r.delivery && !r.skipped && !r.incomplete) {
     body.append(el('p', {}, [el('strong', { textContent: 'Delivery' })]), list(describeDelivery(r.delivery)));
   }
-  const detail = [r.set && `Set: ${r.set}`, r.topic && `Topic: ${r.topic}`, r.level && `Level: ${r.level}`].filter(Boolean).join(' · ');
+  const timing = r.prepSeconds || r.answerSeconds ? `Preparing: ${r.prepSeconds} sec · Answering: ${r.answerSeconds} sec` : '';
+  const detail = [timing, r.set && `Set: ${r.set}`, r.topic && `Topic: ${r.topic}`, r.level && `Level: ${r.level}`].filter(Boolean).join(' · ');
   if (detail) body.append(el('p', { className: 'sum-note', textContent: detail }));
 
   return el('details', {}, [
@@ -69,6 +69,7 @@ export function renderSummary(container, record, note = '') {
     el('p', { className: 'sum-when', textContent: formatDate(record.startedAt) }),
     el('p', {
       textContent: `${s.asked} of ${s.total} question(s) asked · ${s.skipped} skipped · ${s.timedOut} ran out of time`
+        + (s.noResponse ? ` · ${s.noResponse} no response` : '')
         + (s.incomplete ? ` · ${s.incomplete} incomplete (not scored)` : '') + ` · ${formatDuration(s.durationSec)}`,
     }),
   ];
