@@ -2,6 +2,14 @@
 
 All notable changes to InterviewPal. Dates are when the work was finished.
 
+## Unreleased (UX redesign — Step 3: Interview workspace and recording review)
+
+- **A wider two-column interview:** a large interviewer portrait on the left, and on the right an answer workspace with the question as its heading, progress and countdown, and the reference and response panels beside the portrait. Narrow screens stack. Setup and the other screens keep their widths.
+- **Reference answer and Your response tabs** (accessible, keyboard-friendly) keep a typed draft and focus where they are. The "model answer was visible" note now counts only when the reference was actually on screen.
+- **Calmer controls:** Answer/Stop and Next first, quieter secondary buttons, and a separate, quiet End session. Self-view moves under the portrait.
+- **Recording review inside the workspace** (reusing the same player), with no forced scrolling or focus change when a recording finishes, and a compact header indicator with Open review when it is not on screen. One live camera picture at a time, and a steady "Recording video" line.
+- **A full-width summary** replaces the live interview when the session ends.
+
 ## Unreleased (UX redesign — Step 2: Shared appearance and colour themes)
 
 - **Four light colour themes** in Settings → Appearance: Sage & Forest (the default), Warm Teal, Muted Plum and Classic Blue, chosen from accessible preview cards (native radio inputs, a visible "Selected" mark, keyboard support). The choice applies at once, is remembered, and is set before the page is first drawn, so there is no flash of another theme.

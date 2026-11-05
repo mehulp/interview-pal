@@ -534,6 +534,54 @@ Unit: theme ID validation and the default; the boot script (valid, unknown, miss
 
 No dark mode, colour picker or new fonts. Existing widths and type sizes are kept; the workspace layout comes in Step 3. Contrast was checked for the interface colours above, not as a full accessibility audit.
 
+## UX redesign — Step 3: Interview workspace and recording review (unreleased)
+
+Third step of the redesign in `docs/InterviewPal_UX_Code_Review.md`. It changes how the **live interview, the recording review and the summary are laid out and presented**. Setup, the other screens, timing, pressure rules, Coach behaviour, and the answer lifecycle (Answer/Stop, Next, Repeat, Skip, self-marking) are unchanged; Start answer / Finish answer is Step 4. No version assigned yet.
+
+### Desktop layout
+
+- **A wider container only for the live interview** (up to about 1280 CSS pixels). Setup and the other screens keep their widths.
+- **Two columns when there is room** (about 960 px and wider): the interviewer column on the left, about 35–40% of the width (a column of roughly 360–440 px on roomy screens), and the **answer workspace** on the right. The portrait stays large, because eye contact is a core goal; on roomy, tall screens it stays in view while the workspace scrolls.
+- **Interviewer column:** the portrait (with the self-view picture, or the video-recording preview, in its corner), the line the interviewer just said, and the quiet supporting notes (the chosen voice, camera messages). The Self-view button sits here because it is about the camera.
+- **Answer workspace, top to bottom:** progress and the countdown; **the current question as a prominent heading** (it stays through answering, self-marking and Coach feedback); then the reference and response panels; the response controls; the recorder; and the recording review. The reference therefore sits beside the portrait, near the top of the screen, not below both columns.
+- **Narrow screens** (under about 960 px): everything stacks in one column: a compact interviewer, the question, the answer content, the controls. No fixed heights that could clip content on short screens or at 200% zoom; no bars fixed to the bottom of the screen, so actions stay reachable with the phone keyboard open.
+
+### Reference answer and your response
+
+- When the reference is on (the setting, or the Show answer button: both unchanged), the workspace shows two clearly labelled tabs, **Reference answer** and **Your response**, using the standard accessible tab pattern (arrow keys, Home and End). Reference is selected when it is first shown. When the reference is off there are no tabs, only the response.
+- **Typed text is never lost or moved:** switching tabs keeps the draft exactly as it is and does not move focus. The Your response tab shows the number of words so far, so progress is visible while reading the reference; spoken words keep flowing into the response while the Reference tab is open.
+- **"Viewed" means actually displayed.** The `answerShown` flag (and so the History note) is set only while the Reference panel is on screen during the answer. Having the reference available but never selecting it does not count; once shown, it stays recorded for that question.
+- **Reading comfort:** about 18 px text, 1.6 line spacing, a restrained themed surface, and a readable line length. On roomy desktops a long reference scrolls inside its own panel; the panel is a named region reachable by keyboard. On short screens or at high zoom it simply grows with the page.
+- **Self-marking** is unchanged: after Next the question stays on screen, the reference is shown (once) and the Got it / Partly / Missed buttons follow.
+
+### Controls
+
+Response actions are grouped: the main pair (Answer/Stop and Next) first, then quieter secondary buttons (Repeat question, Skip, Show/Hide answer). **End session** is separate, at the foot of the workspace and visually quiet, so it is never next to routine progression. Hard difficulty still hides Repeat and Skip. The recorder panel is more compact (one row of controls), with the consent wording kept as a short supporting line.
+
+### Recording review and preview
+
+- **One review panel, reused.** The existing player and its buttons (Save audio, Download, Retry where applicable, Discard) live inside the answer workspace during the interview, under the controls, so they are reachable during self-marking and Coach feedback too. The same player elements are moved, never duplicated. There is still only one pending recording, with the same storage rules, loss warnings and navigation safeguards.
+- **No forced scrolling.** When a recording finishes the page does not move and focus does not move; the review panel appears in place and its status line is announced politely.
+- **A compact indicator** appears in the page header whenever a recording is pending and its review is not on screen (on other tabs, on the setup screen, or on the summary): a short line naming the question, with an **Open review** button. Opening it shows the same review panel at the foot of the page and moves focus to it; **Hide review** puts it away. The summary is never displaced by it.
+- **Earlier questions are labelled.** If the pending recording belongs to an earlier question, the review says so in its heading and its text, shows that question's words, and offers Retry only when its question is still the active one.
+- **One live camera picture at a time.** While video is recording, the only live picture is the recording preview, in the portrait's corner; it is the stream being recorded. If self-view is on, its picture is hidden meanwhile but its camera and state are untouched, and it comes back when the recording ends. **Hide preview / Show preview** only hides the picture. A **"● Recording video"** line (and "● Recording audio" for audio) stays visible under the portrait whatever the preview is doing. Permissions and track ownership are as before (the recorder copies self-view's track and never stops it).
+
+### Session summary
+
+When the session ends the live interview (portrait and workspace) is replaced by a **full-width summary** with the closing line at its top, and keyboard focus moves to the summary heading. A pending recording is not shown above or inside it; the header indicator is its way in.
+
+### Behaviour changes in this step
+
+Only what is listed above: the reference/response tabs and the stricter "viewed" rule, the new places for Self-view, End session and the recording review, one preview at a time, no forced scroll, the header indicator, the full-width summary with focus on its heading, and a word count and a "● Recording" line as small supporting aids. Nothing in timing, submission, Coach, storage or consent changes.
+
+### Tests
+
+Browser (`tests/browser/workspace.mjs`): the layout at desktop, a short laptop viewport, 390 px and a 640 px window at double scale; the reference alongside the portrait; tabs, keyboard use, preserved drafts and focus; reference shown or hidden and the `answerShown` flag in History for each case (including available but never displayed); long questions and long references; self-marking and Coach feedback with the question and review visible; recording in progress, pending audio and video, an earlier question's pending recording, the indicator and Open review; no scroll or focus change when a recording finishes; one preview and one set of players; both camera tracks released; the summary. Earlier browser checks are updated where the markup moved.
+
+### Limits of this step
+
+Real browser zoom cannot be driven from the test tool, so 200% is checked as a window of half the width at double scale, which gives the same layout width but is not a true zoom. Real microphone and camera behaviour still needs a person. The standalone reference panel inside the summary and the History detail are not part of this step.
+
 ## Acceptance criteria for v1
 
 - With no API key, load a .docx with 10 questions, review the extracted pairs, and run a Practice session with difficulty, timer and order.
