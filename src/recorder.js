@@ -82,15 +82,16 @@ export function createRecorder(handlers = {}) {
     if (current === s) current = null;
     const wasCurrent = s.gen === generation;
     if (wasCurrent) move('stopped');
-    if (!wasCurrent || s.cancelled) return;
+    if (!wasCurrent || s.cancelled) { s.settle('cancelled'); return; }
 
     const blob = new Blob(s.chunks, { type: s.rec.mimeType || s.mimeType || (s.kind === 'video' ? 'video/webm' : 'audio/webm') });
-    if (!blob.size) { handlers.onError?.('Nothing was recorded. Check the microphone and try again.'); return; }
+    if (!blob.size) { handlers.onError?.('Nothing was recorded. Check the microphone and try again.'); s.settle('empty'); return; }
     const durationMs = Math.round(Math.min(maxDurationMs(s.kind), Math.max(1, (s.stoppedAt || performance.now()) - s.clockStart)));
     handlers.onFinished?.({
       blob, mimeType: blob.type, kind: kindOf(blob.type), durationMs, startedAt: s.startedAt,
       deviceLabel: s.deviceLabel, notice: s.notice, reason: s.reason,
     });
+    s.settle('finished');
   }
 
   // Ask the recorder to stop. The data arrives in a moment, so finalize() runs from onstop (or
@@ -161,6 +162,8 @@ export function createRecorder(handlers = {}) {
         notice: opened.fellBack ? `The microphone you chose could not be opened, so "${deviceLabel}" is being used instead.` : '',
         finalized: false, ending: false, cancelled: false, reason: 'user', stoppedAt: 0,
       };
+      // `done` settles once this recording is over and its result (or error) has been handed to the handlers
+      s.done = new Promise((resolve) => { s.settle = resolve; });
       current = s;
       rec.ondataavailable = (e) => { if (e.data && e.data.size) s.chunks.push(e.data); };
       rec.onstop = () => finalize(s);
@@ -176,9 +179,16 @@ export function createRecorder(handlers = {}) {
     },
 
     // Stop and keep what was recorded. While still waiting for permission this just cancels.
+    // Returns a promise that settles when the recording is over and onFinished/onError has been called:
+    // 'finished' | 'empty' | 'cancelled' | 'none' (nothing was recording). It never rejects, and it
+    // settles within STOP_WAIT_MS because finalize() runs from a safety timer if the recorder is silent.
     stop() {
-      if (state === 'requesting') { generation++; move('stop'); return; }
-      if (state === 'recording' && current) endRecording(current, 'user');
+      if (state === 'requesting') { generation++; move('stop'); return Promise.resolve('none'); }
+      if (current && (state === 'recording' || state === 'stopping')) {
+        endRecording(current, 'user'); // does nothing if it is already ending
+        return current.done;
+      }
+      return Promise.resolve('none');
     },
 
     // Throw everything away (no result is delivered). Used when the page is being torn down.
@@ -193,6 +203,7 @@ export function createRecorder(handlers = {}) {
         try { if (s.rec.state !== 'inactive') s.rec.stop(); } catch { /* already stopped */ }
         release(s.stream);
         current = null;
+        s.settle('cancelled');
       }
       if (state !== 'idle') { state = 'idle'; handlers.onState?.(state); }
     },

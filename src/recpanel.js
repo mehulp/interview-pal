@@ -1,7 +1,9 @@
 // Recorder panel and the shared "unsaved recording" panel.
 //
-// The Interview screen has a small recorder panel (target length, Include video, Record, Stop,
-// clock). With video on, a small mirrored preview of the camera shows in the corner of the
+// The Interview screen has a small recorder panel (Off / Audio / Video, target length, Stop, clock).
+// Recording is driven by the answer: Start answer begins the chosen recording and Finish answer stops it and
+// waits for the result (`beginForAnswer` / `finishForAnswer`, below). "Record again" in the review is the
+// only other way to start one. With video on, a small mirrored preview of the camera shows in the corner of the
 // portrait (the only live camera picture; nothing else on screen changes, nothing goes full
 // screen). A finished recording becomes an UNSAVED ATTEMPT with a review panel (one panel, reused):
 // it lives inside the answer workspace during a session, and otherwise in a tray at the foot of the
@@ -39,6 +41,9 @@ let savedLoad = 0;
 let cameraSource = null; // () => self-view's live camera track or null (set by the practice screen)
 let trayOpen = false; // outside a session: has the user opened the review from the header indicator?
 let previewHidden = false; // the user hid the recording preview (the recording itself is not affected)
+let answerRec = null; // this answer's recording request: { mode, token, failure } (set by beginForAnswer)
+let continueWithout = null; // set by the practice screen: called when "Continue without recording" is pressed
+const FINALISE_MS = 5000; // the longest Finish answer waits for a recording; the recorder has its own, shorter, bound
 
 const onPlayerProblem = (message) => { if (pending) { pending.message = message; renderDock(); } };
 const player = createPlayer($('rec-audio'), { onProblem: onPlayerProblem });
@@ -75,7 +80,7 @@ const recorder = createRecorder({
       message: [result.kind === 'video' ? 'This video is not stored in the browser. Download it to keep it.' : '', reasons[result.reason] || ''].filter(Boolean).join(' '),
     };
     recording = null;
-    $('rec-status').textContent = '';
+    $('rec-status').textContent = result.reason === 'limit' ? 'The recording reached its length limit and stopped. The interview carries on.' : '';
     // The review appears where it belongs (in the workspace, or announced by the header indicator). The page does
     // not scroll and focus does not move: the person may be reading or typing.
     renderDock();
@@ -86,6 +91,7 @@ const recorder = createRecorder({
     recording = null;
     hidePreview();
     $('rec-status').textContent = message;
+    if (answerRec) answerRec.failure = message; // remembered so the review can say the recording did not happen
     updatePanel();
   },
 });
@@ -173,14 +179,13 @@ function updatePanel() {
   const state = recorder.getState();
   const avail = recordAvailability({ supported: !recordingProblem(), recState: state, hasPending: Boolean(pending), current: context });
   const busy = state !== 'idle';
-  $('rec-btn').hidden = busy;
-  $('rec-btn').disabled = !avail.ok;
   $('rec-stop').hidden = !busy;
   $('rec-stop').disabled = state === 'stopping';
   $('rec-stop').textContent = state === 'requesting' ? 'Cancel' : '■ Stop recording';
   $('rec-target').disabled = busy;
   $('rec-custom').disabled = busy;
-  $('rec-video').disabled = busy || Boolean(pending);
+  for (const r of document.querySelectorAll('input[name="rec-mode"]')) r.disabled = busy;
+  renderBlocked();
   $('rec-panel').classList.toggle('recording', state === 'recording');
   if (state === 'idle') {
     $('rec-clock').hidden = true;
@@ -191,11 +196,13 @@ function updatePanel() {
   }
 }
 
-function startRecording() {
+const readMode = () => document.querySelector('input[name="rec-mode"]:checked')?.value || 'off';
+function resetMode() { $('rec-mode-off').checked = true; }
+
+function startRecording(video) {
   const avail = recordAvailability({ supported: !recordingProblem(), recState: recorder.getState(), hasPending: Boolean(pending), current: context });
-  if (!avail.ok) return;
+  if (!avail.ok) return false;
   // Captured now, before anything asynchronous happens, and kept with the attempt from here on
-  const video = $('rec-video').checked;
   recording = { snapshot: makeSnapshot(context, context.token), targetSec: readTarget(), kind: video ? 'video' : 'audio' };
   savedNote = ''; // a new recording started: the old "saved" message is out of date
   renderDock();
@@ -205,7 +212,75 @@ function startRecording() {
     updatePanel();
   });
   updatePanel();
+  return true;
 }
+
+// ---- The answer drives the recording ----
+// Start answer: begin the chosen recording. It does not wait for the microphone permission (the answer and its
+// clocks carry on, and typing always works). Returns { state } where state is
+//   'off' | 'skipped' (continue without recording) | 'starting' | 'blocked' (an earlier recording is waiting) |
+//   'unsupported' | 'unavailable'
+function beginForAnswer({ withoutRecording = false } = {}) {
+  const mode = readMode();
+  answerRec = { mode, token: context ? context.token : null, failure: '' };
+  if (mode === 'off') { $('rec-status').textContent = 'Recording is off.'; return { state: 'off' }; }
+  if (withoutRecording) {
+    answerRec.mode = 'off';
+    $('rec-status').textContent = 'This answer is not being recorded.';
+    return { state: 'skipped' };
+  }
+  if (recordingProblem()) {
+    const reason = recordAvailability({ supported: false }).reason;
+    answerRec.failure = reason;
+    $('rec-status').textContent = `${reason} You can still type your answer.`;
+    return { state: 'unsupported' };
+  }
+  if (pending) { answerRec = null; renderBlocked(true); return { state: 'blocked' }; }
+  if (!startRecording(mode === 'video')) { answerRec.failure = 'Recording could not start.'; return { state: 'unavailable' }; }
+  return { state: 'starting' };
+}
+
+// Finish answer: stop the recording and wait (a bounded time) for the result to arrive. Never rejects.
+// Returns { mode, recorded, failure }: `recorded` means an unsaved attempt for this question now exists.
+async function finishForAnswer() {
+  const request = answerRec;
+  const state = recorder.getState();
+  let failure = request ? request.failure : '';
+  if (state !== 'idle') {
+    if (state === 'requesting') { recording = null; hidePreview(); failure = failure || 'The microphone permission was still waiting, so nothing was recorded.'; }
+    let timer;
+    const outcome = await Promise.race([
+      recorder.stop(),
+      new Promise((resolve) => { timer = setTimeout(() => resolve('timeout'), FINALISE_MS); }),
+    ]);
+    clearTimeout(timer);
+    if (outcome === 'timeout') {
+      recording = null;
+      recorder.cancel(); // let go of the microphone; no result will arrive
+      hidePreview();
+      failure = 'The recording could not be finished, so it was not kept.';
+      $('rec-status').textContent = failure;
+    }
+    if (request && request.failure) failure = request.failure;
+    else if (outcome === 'empty') failure = $('rec-status').textContent || 'Nothing was recorded.';
+  }
+  const recorded = Boolean(pending && request && pending.snapshot.token === request.token);
+  updatePanel();
+  return { mode: request ? request.mode : 'off', recorded, failure: recorded ? '' : failure };
+}
+
+// An earlier recording is still unsaved, so a new one is not started. Explain, and offer to carry on
+// without recording for this answer only (the Off/Audio/Video choice is left as it was).
+function renderBlocked(show) {
+  if (show !== undefined) blockedShown = show;
+  if (!pending) blockedShown = false;
+  $('rec-blocked').hidden = !blockedShown;
+  if (blockedShown) {
+    $('rec-blocked-text').textContent = 'An earlier recording is still waiting: save it, download it or discard it (in the review below), then press Start answer again. Or carry on without recording this answer.';
+  }
+}
+let blockedShown = false;
+$('rec-continue-without').addEventListener('click', () => { blockedShown = false; renderBlocked(); continueWithout?.(); });
 
 function stopRecording() {
   if (recorder.getState() === 'requesting') { recording = null; hidePreview(); } // permission was still pending: nothing will come of it
@@ -213,7 +288,6 @@ function stopRecording() {
   updatePanel();
 }
 
-$('rec-btn').addEventListener('click', startRecording);
 $('rec-stop').addEventListener('click', stopRecording);
 
 /* ---------- The unsaved recording panel ---------- */
@@ -295,6 +369,8 @@ function renderDock() {
   $('rec-discard').disabled = saving;
   const retryOk = canRetry(s, context) && recorder.getState() === 'idle' && !saving;
   $('rec-retry').hidden = !retryOk;
+  $('rec-retry').textContent = 'Record again';
+  if (retryOk) $('rec-dock-hint').textContent += ' Record again replaces only this recording: your answer text stays as handed in.';
   $('rec-dock-status').textContent = pending.message || '';
 }
 
@@ -363,7 +439,7 @@ $('rec-download').addEventListener('click', () => {
   if (!pending) return;
   downloadBlob(pending.blob, downloadName({ questionText: pending.snapshot.questionText, createdAt: pending.startedAt, mimeType: pending.mimeType }));
   pending.downloaded = true;
-  pending.message = 'Downloaded. Check your browser\'s downloads. You can keep replaying it here until you leave this page.';
+  pending.message = 'Download started. Check your browser\'s downloads: this page cannot confirm the file was kept. You can keep replaying it here until you leave this page.';
   renderDock();
 });
 $('rec-retry').addEventListener('click', () => {
@@ -371,9 +447,8 @@ $('rec-retry').addEventListener('click', () => {
   if (!pending || pending.saveState === 'saving' || !canRetry(pending.snapshot, context)) return;
   const again = pending.kind === 'video'; // retry the same kind of recording
   if (again && isAtRisk(pending) && !window.confirm('This video has not been downloaded. Discard it and record again?')) return;
-  $('rec-video').checked = again;
   clearPending();
-  startRecording();
+  startRecording(again);
 });
 
 /* ---------- Saved attempts for the current question ---------- */
@@ -424,6 +499,11 @@ export const recPanel = {
   setContext,
   setCameraSource: (fn) => { cameraSource = fn; }, // where to find self-view's camera track
   stopRecording,
+  beginForAnswer,
+  finishForAnswer,
+  resetMode,
+  mode: readMode,
+  onContinueWithout: (fn) => { continueWithout = fn; },
   hasUnsaved: () => Boolean(pending),
   isRecording: () => recorder.isBusy(),
 };
