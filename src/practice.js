@@ -19,6 +19,9 @@ import { loadInterviewers, pickInterviewer } from './interviewers.js';
 import { createSelfView } from './selfview.js';
 import { loadSets, loadQuestions, loadSettings, saveSettings, getApiKey, saveSession, readSavedSettings } from './storage.js';
 import { createMicChecker } from './miccheck.js';
+import { parseLink, studyHubPlanUrl, findPackSet } from './packs.js';
+import { ensurePack } from './review.js';
+import { setLinkedPlan } from './planlink.js';
 import {
   PRESETS, isPreset, presetSettings, isNewInstall, presetStatus, feedbackFromSettings, feedbackToSettings,
   describePressure, PRESSURE_LABELS, countNote, startBlock, summaryLines,
@@ -76,6 +79,8 @@ export function initPractice(avatar) {
   let clockTimer = null;
   let voice = { chunks: [], live: '', ms: 0, since: 0 }; // speech heard during the current answer
   let sessionStartedAt = 0; // when the whole session began (for the summary)
+  let visit = null; // a link from Study Hub, for this page visit: { pack, planId, planProblem, setId, selectionPending }
+  let sessionLink = null; // the Study Hub plan the running (or just finished) session came from: { planId } or null
   let listening = false;
   let onDeviceReady = false; // the on-device recogniser is switched on and works here
   let textBefore = '';
@@ -190,7 +195,9 @@ export function initPractice(avatar) {
   function renderSetChoices() {
     const sets = loadSets();
     const saved = loadSettings().practiceSets.filter((id) => sets.some((s) => s.id === id));
-    const ticked = saved.length ? saved : sets.map((s) => s.id);
+    // A link from Study Hub ticks only its pack, for this visit: nothing is saved, so abandoning the setup leaves the usual selection alone
+    const linked = visit?.selectionPending && visit.setId && sets.some((s) => s.id === visit.setId) ? [visit.setId] : null;
+    const ticked = linked || (saved.length ? saved : sets.map((s) => s.id));
     $('set-choices').replaceChildren(...sets.map((set) => {
       const box = document.createElement('input');
       box.type = 'checkbox';
@@ -368,6 +375,8 @@ export function initPractice(avatar) {
     $('setup').hidden = false;
     $('interview').hidden = true;
     $('finished').hidden = true;
+    sessionLink = null; // a new setup is not the linked session any more
+    $('back-to-plan').hidden = true;
     phase = 'setup';
     refreshAnswerPanel();
     refreshMicList();
@@ -384,6 +393,8 @@ export function initPractice(avatar) {
     const outOfDate = () => token !== startToken; // the user left the Interview tab meanwhile
     try {
       options = readOptions();
+      // Started from a Study Hub link with its pack ticked: this session is linked, and its selection is not saved as the usual one
+      const linkedStart = Boolean(visit?.selectionPending && visit.setId && selectedSetIds().includes(visit.setId));
       saveSettings({
         ...feedbackToSettings(options.feedback),
         preset: options.preset,
@@ -394,7 +405,7 @@ export function initPractice(avatar) {
         practiceEasyTimer: options.easyTimer,
         showModelAnswer: options.showAnswer,
         coachSpeak: options.coachSpeak,
-        practiceSets: selectedSetIds(),
+        ...(linkedStart ? {} : { practiceSets: selectedSetIds() }),
         selfView: options.selfView,
       });
 
@@ -423,6 +434,8 @@ export function initPractice(avatar) {
       session = createSession(questions);
       $('voice-note').textContent = describeVoice();
       sessionStartedAt = Date.now();
+      sessionLink = linkedStart && visit.planId ? { planId: visit.planId } : null;
+      if (linkedStart) visit.selectionPending = false; // the link's selection has been used; the next setup is the usual one
       answerVisible = options.showAnswer;
       recPanel.setMode(options.recording); // the setup choice (Off unless chosen for this session); it starts nothing
       initMethod();
@@ -1070,6 +1083,9 @@ export function initPractice(avatar) {
     $('interview').hidden = true;
     $('finished-closing').textContent = $('interviewer-line').textContent;
     $('finished').hidden = false;
+    const backUrl = sessionLink && studyHubPlanUrl(sessionLink.planId); // configured origin + validated plan ID only
+    $('back-to-plan').hidden = !backUrl;
+    $('back-to-plan').dataset.url = backUrl || '';
     const heading = $('finished-body').querySelector('h2');
     if (heading) { heading.tabIndex = -1; heading.focus(); }
 
@@ -1077,6 +1093,84 @@ export function initPractice(avatar) {
   }
 
   $('again-btn').addEventListener('click', () => { hush(); showSetup(); });
+  // Back to the Study Hub plan this session came from. Leaving the page asks first if a recording is not saved or
+  // downloaded (the existing beforeunload safeguard in recpanel.js), so a pending recording is never dropped silently.
+  $('back-to-plan').addEventListener('click', () => {
+    const url = studyHubPlanUrl(sessionLink?.planId);
+    if (url) window.location.assign(url);
+  });
+
+  /* ---------- A link from Study Hub (pilot): ?pack=<key>&plan=<plan ID> ---------- */
+  const notice = (text, { addButton = false } = {}) => {
+    $('link-notice-text').textContent = text;
+    $('link-add-pack').hidden = !addButton;
+    $('link-notice').hidden = !text;
+  };
+  $('link-dismiss').addEventListener('click', () => notice(''));
+  // Back to the Study Hub plan from the setup screen, without practising. It asks first. The address is the configured
+  // origin plus the validated plan ID, never anything taken from the link. Leaving the page is a real navigation, so the
+  // browser's own prompt still protects an unsaved recording.
+  $('back-to-plan-setup').addEventListener('click', () => {
+    const url = visit && studyHubPlanUrl(visit.planId);
+    if (!url) return;
+    if (!window.confirm('Go back to your Study Hub plan without practising?\n\nOK: go back to the plan.\nCancel: stay here.')) return;
+    stopSetupDevices(); // a microphone test or camera preview ends before we leave
+    window.location.assign(url);
+  });
+
+  // Say what the link asked for and, if its pack is not in the library, offer the explicit one-click add.
+  function renderLinkNotice() {
+    if (!visit) return;
+    const { pack, planProblem } = visit;
+    const set = findPackSet(loadSets(), pack);
+    const ready = set?.packKey === pack.key;
+    visit.setId = ready ? set.id : '';
+    const plan = planProblem ? ' The plan in the link was not valid, so there will be no Back to study plan button.' : '';
+    if (ready) notice(`Opened from your Study Hub plan: "${pack.name}" is ticked for this visit. Choose Guided rehearsal or Mock interview, then press Start.${plan}`);
+    else if (set) notice(`This link practises "${pack.name}". You already have a set with that name that is not linked to the pack yet: adding it links it and fills in any missing questions, and keeps everything you wrote.${plan}`, { addButton: true });
+    else notice(`This link practises "${pack.name}", which is not in your question library yet. Add it with one click, then choose how to practise.${plan}`, { addButton: true });
+    $('setup-back').hidden = !studyHubPlanUrl(visit.planId); // a valid plan ID in the link: offer the way back
+    renderSetChoices();
+    refreshSetup();
+  }
+
+  $('link-add-pack').addEventListener('click', () => {
+    if (!visit || $('link-add-pack').disabled) return;
+    $('link-add-pack').disabled = true; // a second click while this runs does nothing (and adding twice would not duplicate anyway)
+    try {
+      const result = ensurePack(visit.pack.key);
+      if (result.status === 'failed') {
+        notice('The question set could not be added: this browser could not store it (storage may be blocked or full). Nothing was changed.', { addButton: true });
+        return;
+      }
+      renderLinkNotice();
+    } finally {
+      $('link-add-pack').disabled = false;
+    }
+  });
+
+  // Read the address. An unknown pack changes nothing. A link that arrives during a session never touches it.
+  function applyLink(search) {
+    const link = parseLink(search);
+    if (link.status === 'none') return;
+    if (needsLeaveConfirmation(phase) || starting || ending) {
+      notice('A link from Study Hub arrived while a practice session is running, so it was not applied and your session is untouched. Finish or end the session, then open the link again.');
+      return;
+    }
+    if (link.status === 'unknown-pack') {
+      visit = null;
+      setLinkedPlan('');
+      $('setup-back').hidden = true;
+      notice(`This link asks for a question set called "${link.packKey}", which InterviewPal does not have, so nothing was changed. You can still practise your own sets.`);
+      renderSetChoices();
+      refreshSetup();
+      return;
+    }
+    visit = { pack: link.pack, planId: link.planId, planProblem: link.planProblem, setId: '', selectionPending: true };
+    setLinkedPlan(link.planId); // the Questions screen can now offer Back to study plan too
+    renderLinkNotice();
+  }
+  window.addEventListener('popstate', () => applyLink(window.location.search));
 
   /* ---------- Voice answers ---------- */
   const recognizer = createRecognizer({
@@ -1181,6 +1275,7 @@ export function initPractice(avatar) {
 
   initMethod();
   showSetup();
+  applyLink(window.location.search); // opened from a Study Hub link? (an ordinary visit has none)
 
   return {
     refreshSetup,

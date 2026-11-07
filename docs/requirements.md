@@ -844,6 +844,21 @@ It showed once in a full run under load: "Start answer" did not reach "Finish an
 10. In a private window (where storage may be limited) check that a failed save shows the Try again, Copy and Download options.
 11. Safari and iPhone remain untested.
 
+## Pilot: practise a Study Hub plan in InterviewPal (local, unreleased)
+
+A local pilot, frontend only in both apps. InterviewPal must keep working exactly as a standalone app.
+
+- **The link.** Study Hub's plan page shows **Practise in InterviewPal** for any plan that is paired with a pack. The pairing is saved on the plan in Study Hub (an optional `interviewpal_pack_key`, chosen in the plan form), so renaming the plan or the pack breaks nothing. (The first pilot paired one plan by an environment setting; that is replaced.) The shared contract is in `docs/study-hub-integration.md`. It opens `<InterviewPal address>/?pack=system-design-week-1&plan=<plan ID>`. The pack is identified by a stable **key**, never by its display name; `plan` is only the plan to come back to.
+- **The pack.** `src/packs.js` ships **System Design — Week 1** (key `system-design-week-1`): six questions, three on consistent hashing and three on the CAP theorem, mixing explanation, scenario and trade-off questions, each with a concise reference answer.
+- **Setup.** The link opens the normal setup with that pack's set ticked **for this visit only**: nothing is saved, so opening and abandoning it leaves the usual selection alone, and a session started from the link does not save its selection as the usual one either. Guided rehearsal or Mock interview is still the person's choice, and nothing starts until they press Start. A banner says what the link asked for.
+- **Making the pack available.** If the pack is not in the question library, the banner offers one explicit button, **Add this question set**. It creates an ordinary set that remembers the pack key (renaming it never breaks the link). It is safe to repeat: a set that already has the key is left alone; a set that already has the pack's name but no key is adopted and only missing questions are added; the person's own edits are never overwritten.
+- **Bad links.** An unknown pack key changes nothing and says so. A plan value that is not a UUID is ignored (the pack still opens, with no Back button and a note). A link that arrives while a session is running does not touch the session.
+- **Back to study plan.** The summary of a session that was started from the link shows **Back to study plan**. Its address is built from a trusted Study Hub origin and the validated plan ID; no address is ever taken from the link. The trusted origins are configuration in `src/packs.js` (`STUDY_HUB_ORIGINS`): `http://localhost:5173` when InterviewPal runs on localhost, and `https://study-hub.mehul-patankar.workers.dev` otherwise (hosted). Leaving the page follows the existing unsaved-recording safeguard (the browser asks first if a recording is not saved or downloaded). A session not started from a link shows no such button.
+- **Back without practising.** When the visit came from a link with a valid plan ID, the Interview setup screen (the first page after the link) and the Questions page both show **Back to study plan**. It asks "Go back to your Study Hub plan without practising?" first (Cancel stays), asks the usual Save / Discard / Stay question first if a question is being edited, and builds its address the same safe way. It is not shown for ordinary visits or links with an invalid plan ID.
+- **Another tab.** The Questions screen picks up changes made to the sets in another tab (for example the pack added by a link), so an old tab cannot save over them.
+- **Later, not now:** user-configurable pairings, several packs per plan, AI-generated sets, and sharing between accounts.
+- **Checked** with `tests/packs.test.js` and `tests/browser/studyhub-link.mjs`, including a full round trip with a Study Hub dev server. Study Hub's sign-in was mocked (see the report), not a real account.
+
 ## Acceptance criteria for v1
 
 - With no API key, load a .docx with 10 questions, review the extracted pairs, and run a Practice session with difficulty, timer and order.

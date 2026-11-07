@@ -645,3 +645,10 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* Buttons in the workspace and the review wrap on a narrow screen instead of widening the page */
 .workspace .buttons, .rec-dock .buttons, .rec-attempt .buttons { flex-wrap: wrap; }
+
+/* A link from Study Hub (pilot): a quiet banner at the top of the Interview tab */
+.link-notice { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 14px; border: 1px solid var(--selected-border); border-left-width: 4px; border-radius: 8px; background: var(--selected-bg); }
+.link-notice[hidden] { display: none; }
+.link-notice span { flex: 1 1 280px; overflow-wrap: anywhere; }
+.setup-back { margin: 0 0 8px; }
+.setup-back[hidden] { display: none; }

@@ -2,6 +2,13 @@
 
 All notable changes to InterviewPal. Dates are when the work was finished.
 
+## Unreleased (Study Hub link)
+
+- **Open a Study Hub plan's practice pack:** a link like `?pack=system-design-week-1&plan=<id>` opens setup with the curated **System Design — Week 1** pack (six questions on consistent hashing and the CAP theorem) ticked for that visit only. One click adds the pack to your library (safe to repeat; your edits are kept). You still choose Guided or Mock and press Start.
+- **Back to study plan** on the setup screen, the Questions page and the summary of a linked session. The destination comes from a trusted Study Hub address (local or hosted) plus a validated plan ID, never from the link.
+- Unknown packs and invalid plan IDs are refused with a clear message, and a link arriving during a session leaves it untouched. The Questions screen now also picks up changes made in another tab.
+- The agreement between the two apps is in `docs/study-hub-integration.md`.
+
 ## v2.0.0 (2026-11-05)
 
 A complete redesign of the interface, plus the recording features built since v1.1. Your saved sets, History, settings, API key and saved recordings carry over unchanged. In short: four colour themes, a wide two-column interview with a clear Ready / Answering / Finishing / Review sequence, a simpler one-screen setup with Guided and Mock presets, an optional audio and video recording of answers (video is download-only), and a searchable question library with safe editing and an import preview. The details, step by step:

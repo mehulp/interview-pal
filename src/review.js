@@ -9,13 +9,15 @@
 //   - everything a person's notes put on screen is set with textContent, never as HTML.
 import { parseText, parseFiles } from './parser.js';
 import { loadSets, saveSets, loadSettings, saveSettings } from './storage.js';
-import { newId, normalize, nameTaken, createSet, describeSkipped, buildExport, parseImport, mergeImport } from './sets.js';
+import { newId, normalize, nameTaken, createSet, addQuestions, describeSkipped, buildExport, parseImport, mergeImport } from './sets.js';
 import {
   clone, ensureIds, titleOf, filterQuestions, topicsOf, hasFilters, describeMatches, NO_TOPIC, NOT_TAGGED, LEVEL_LABELS,
   validateDraft, isDirty, withEdit, withAdded, withDeleted, withRestored, moveConflict, withMoved, withClearedSet,
   previewImport, importCounts, commitImport, draftAsText,
 } from './library.js';
 import { DEMO_EXPORT, DEMO_SET_NAME } from './demoset.js';
+import { getPack, findPackSet, studyHubPlanUrl } from './packs.js';
+import { onLinkedPlanChange, getLinkedPlan } from './planlink.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -765,6 +767,52 @@ $('demo-open').addEventListener('click', async () => {
   demoResult = null;
   if (demo) openSet(demo.id);
   render();
+});
+
+/* ---------- Curated packs (the Study Hub pilot) ---------- */
+// Add a shipped pack to the library as an ordinary set that remembers the pack's key. It is the explicit one-click action
+// behind the setup screen's "Add this question set". Safe to repeat: a set that already has the key is left alone, a set
+// that already has the pack's name (and no key) is adopted and only the questions it lacks are added (nothing is
+// overwritten), and a new set is made only when neither exists. Like every change here: copy, save, then replace.
+// Returns { status: 'added' | 'adopted' | 'present' | 'failed' | 'unknown', setId }.
+export function ensurePack(key) {
+  const pack = getPack(key);
+  if (!pack) return { status: 'unknown' };
+  const existing = findPackSet(sets, pack);
+  if (existing?.packKey === key) return { status: 'present', setId: existing.id }; // nothing to do, nothing saved
+  const next = clone(sets);
+  let target = existing ? next.find((s) => s.id === existing.id) : null;
+  const status = target ? 'adopted' : 'added';
+  if (!target) { target = { ...createSet(pack.name), packKey: key }; next.push(target); } else { target.packKey = key; }
+  addQuestions(next, target.id, pack.questions); // skips any question the set already has
+  if (!commit(next)) return { status: 'failed' };
+  ensureIds(sets);
+  render();
+  return { status, setId: target.id };
+}
+
+// Another tab changed the sets (for example a link from Study Hub added a pack there): take the new data, so this
+// tab can never save an old copy over it. A draft being edited here is never touched.
+window.addEventListener('storage', (event) => {
+  if (event.key !== 'interviewpal.sets' || editing()) return;
+  sets = loadSets();
+  ensureIds(sets);
+  if (!sets.some((s) => s.id === activeId)) activeId = sets[0].id;
+  if (selectedId && !selectedQuestion()) selectedId = null;
+  render();
+});
+
+/* ---------- Back to the Study Hub plan, without practising ---------- */
+// Shown only when this visit came from a valid Study Hub link. It asks first, so a stray click does not take you away.
+// Unsaved edits get their usual Save / Discard / Stay question before that, and an unsaved recording is protected by the
+// browser's own "leave this page?" prompt (recpanel.js), because leaving is a real page navigation.
+onLinkedPlanChange((planId) => { $('q-link-bar').hidden = !studyHubPlanUrl(planId); });
+$('back-to-plan-q').addEventListener('click', async () => {
+  const url = studyHubPlanUrl(getLinkedPlan()); // configured origin + validated plan ID only
+  if (!url) return;
+  if (!(await guardEdits('going back to the study plan'))) return;
+  if (!window.confirm('Go back to your Study Hub plan without practising?\n\nOK: go back to the plan.\nCancel: stay here.')) return;
+  window.location.assign(url);
 });
 
 /* ---------- Called by the app shell ---------- */

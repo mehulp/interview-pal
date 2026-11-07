@@ -29,7 +29,17 @@
 
   <!-- Interview screen: setup (with mode picker), then the interview, then the end-of-session list -->
   <main class="app-main single" id="screen-practice">
+    <!-- A link from Study Hub (pilot): what it asked for, and the one-click "add this question set" when needed -->
+    <div class="link-notice" id="link-notice" role="status" aria-live="polite" hidden>
+      <span id="link-notice-text"></span>
+      <button type="button" class="small" id="link-add-pack" hidden>Add this question set</button>
+      <button type="button" class="small" id="link-dismiss">Dismiss</button>
+    </div>
     <section class="card" id="setup" aria-label="Practice setup">
+      <!-- Only when this visit came from a Study Hub plan: a way back before practising -->
+      <p class="setup-back" id="setup-back" hidden>
+        <button type="button" class="small" id="back-to-plan-setup">← Back to study plan</button>
+      </p>
       <h2>Interview setup</h2>
 
       <!-- A. Questions -->
@@ -353,12 +363,20 @@
     <section class="card summary-card" id="finished" aria-label="Session summary" hidden>
       <p class="closing" id="finished-closing"></p>
       <div id="finished-body"></div>
-      <button type="button" class="big" id="again-btn">Practise again</button>
+      <div class="buttons">
+        <button type="button" class="big" id="again-btn">Practise again</button>
+        <button type="button" class="big secondary" id="back-to-plan" hidden>Back to study plan</button>
+      </div>
     </section>
   </main>
 
   <!-- Questions screen: load notes, then review and edit the pairs -->
   <main class="app-main single" id="screen-questions" hidden>
+    <!-- Only when this visit came from a Study Hub plan: a way back without practising -->
+    <div class="link-notice" id="q-link-bar" hidden>
+      <span>You opened InterviewPal from a Study Hub plan.</span>
+      <button type="button" class="small" id="back-to-plan-q">Back to study plan</button>
+    </div>
     <!-- Demo card: first on the screen. Once the demo set exists it becomes the one-line note below. -->
     <section class="card" id="demo-card" aria-label="Demo questions" hidden>
       <h2>New here? Try the demo</h2>
